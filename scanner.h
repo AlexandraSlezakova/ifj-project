@@ -88,23 +88,23 @@ typedef enum {
     TERR			//30 error
 }TType;
 
-struct TToken {
+typedef struct TToken {
     TType type;
     union {
-        int *ival;
-        float *fval;
+        int ival;
+        float fval;
         char* p_cval; // nazov
     }val;
-}token;
+    char *name;
+}TOKEN;
 
 char c;
 char c;
 struct TToken;
-int get_token();
-struct TToken construct_token(char ungetChar, char* buffer, struct TToken token, TType type);
+TOKEN get_token();
+struct TToken construct_token(char ungetChar, char* buffer, TType type);
 int iskeyword(char *hString);
 char* buffer;
 int count;
-
 
 #endif

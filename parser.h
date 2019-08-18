@@ -1,9 +1,3 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <memory.h>
-#include <stdbool.h>
-#include "scanner.h"
 #include "symtable.h"
 
 int recursive_descent();
@@ -18,7 +12,7 @@ int recursive_descent_if();
 int recursive_descent_while();
 struct TToken *previousTokenMain;
 struct TToken *tmpTokenMain;
-struct TToken *previousToken;
+//struct TToken *previousToken;
 struct TToken *tmpToken;
 static int counter = 0;
 static int bracket_counter = 0;

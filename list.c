@@ -9,9 +9,6 @@
 
 #include "list.h"
 
-
-
-
 int errflg;
 int solved;
 

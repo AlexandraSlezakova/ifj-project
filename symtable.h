@@ -11,10 +11,6 @@
 #ifndef HASHTABLE
 #define HASHTABLE
 
-
-
-
-
 //def velikosti tabulky
 #define HTSIZE 101
 
@@ -57,25 +53,22 @@ void* htRead(HTable *ptrht, tKey key);
 
 
 //struktura pro promennou
-typedef struct variable
-{
-    char *name;     //jmeno
-    void *value;	//hodnota
+typedef struct variable {
+    char *name;      //jmeno
+    void *item; // zoznam priradenych hodnot k premennej
 } Tvariable;
 
 
 //struktura pro fuknci
-typedef struct function
-{
-    char *name; //jmeno funkce
-    tDLList *params; //list parametru
+typedef struct function {
+    char *name;              //jmeno funkce
+    tDLList *params;        //list parametru
     HTable *local_symtable; //tabulka lokalnich promennych
-    char return_type; //navratovy typ funkce
+    char *return_type;      //navratovy typ funkce
 
 } Tfunction;
 
-
-
+HTable *htInsertNew(HTable *ptrht, tKey key, void *item);
 extern HTable *hashtable;
 
 

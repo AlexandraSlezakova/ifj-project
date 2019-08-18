@@ -1,12 +1,23 @@
 #include <string.h>
 #include <ctype.h>
-#include <memory.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include "scanner.h"
 #include "errors.h"
 
 char *keywords[9] = {"def", "do", "else", "end", "if", "not", "nil", "then", "while"};
+
+int iskeyword(char *buffer)
+{
+    for (int i = 0; i < 9; i++)
+    {
+        if (strcmp(buffer, keywords[i]) == 0)
+        {
+            return i + 5;
+        }
+    }
+    return 0;
+}
 
 bool checkcmnt_begin()
 {
@@ -39,19 +50,11 @@ bool checkcmnt_end()
 
 }
 
-int iskeyword(char *buffer) {
-    for (int i = 0; i < 9; i++) {
-        if (strcmp(buffer, keywords[i]) == 0) {
-            return i + 5;
-        }
-    }
+struct TToken construct_token(char ungetChar, char *buffer, TType type) {
 
-    return 0;
-
-}
-
-struct TToken construct_token(char ungetChar, char *buffer, struct TToken token, TType type) {
     TType kwtype;
+    TOKEN newToken;
+
     ungetc(ungetChar, stdin);
     buffer[count - 1] = '\0';
 
@@ -69,30 +72,39 @@ struct TToken construct_token(char ungetChar, char *buffer, struct TToken token,
 
     //printf("%s", buffer);
     // ulozenie typu
-    token.type = type;
+    newToken.type = type;
 
     if (type == TINT_VALUE) {
-        token.val.ival = (int)strtol(buffer, NULL, 10);
+        char *ptr;
+        //token.val.ival = strtol(buffer, NULL, 10);
+        newToken.val.ival = strtol(buffer, &ptr, 10);
 
     } else if (type == TFLOAT_VALUE) {
-        token.val.fval = strtof(buffer, NULL);
+        newToken.val.fval = strtof(buffer, NULL);
 
-    } else if (type == TID || type == TSTRING_VALUE || type == TIDFnc) {
-        token.val.p_cval = buffer;
+    } else if (type == TID || type == TIDFnc || type == TSTRING_VALUE) {
+        newToken.val.p_cval = buffer;
+        newToken.name = buffer;
+
+    } else {
+        newToken.name = NULL;
     }
 
-    return token;
+    return newToken;
 }
 
-int get_token() {
+TOKEN get_token() {
     static int debug = 0;
     static int lineNum = 0; //cislo riadku
     static int linePos = 0; //pozicia na radku
     int allocated = 0;
     free(buffer);
+
     count = 0;
     buffer = NULL;
     TState state = START; //pociatocny stav
+
+    TOKEN token;
 
     while (1) {
         // alokovanie bufferu
@@ -102,7 +114,7 @@ int get_token() {
             // end of file, ak je na zaciatku a zaroven dostane enter
             if (((c = (char)getchar()) == EOF) && (state == START)) {
                 token.type = TEOF;
-                return TOKEN_OK;
+                return token;
             }
 
             linePos++;			 //cislovanie pozic
@@ -113,7 +125,7 @@ int get_token() {
             }
         } else {
             token.type = TERR;
-            return TOKEN_ERR;
+            return token;
         }
 
         switch (state) {
@@ -126,7 +138,7 @@ int get_token() {
                 else if (isdigit(c)) {
                     // nula na zaciatku nie je povolena
                     if(c == '0')
-                        state = ERROR;
+                        state = nula;
                     else
                         state = dINT;
                     break;
@@ -141,7 +153,7 @@ int get_token() {
                     lineNum++;
                     linePos = 0;
                     token.type = TEOL; // end-of-line
-                    return 0;
+                    return token;
                 } //zaciatok stringu
                 else if (c == '"') {
                     state = strS;
@@ -155,6 +167,46 @@ int get_token() {
                     state = cmnt_equal_assignment;
                     break;
                 }
+                else if (c == '+')
+                {
+                    state = add;
+                    break;
+                }
+                else if (c == '-')
+                {
+                    state = sub;
+                    break;
+                }
+                else if (c == '*')
+                {
+                    state = mul;
+                    break;
+                }
+                else if (c == '/')
+                {
+                    state = sdiv;
+                    break;
+                }
+                else if (c == '<')
+                {
+                    state = lesser;
+                    break;
+                }
+                else if (c == '>')
+                {
+                    state = greater;
+                    break;
+                }
+                else if (c == '!')
+                {
+                    state = Snotequal;
+                    break;
+                }
+                else if (c == ',')
+                {
+                    state = carka;
+                    break;
+                }
                 else if (c == '(')
                 {
                     state = left_bracket;
@@ -164,86 +216,394 @@ int get_token() {
                 {
                     state = right_bracket;
                     break;
-                } // ciarka
-                else if (c == ',')
+                }
+
+                else
                 {
-                    state = carka;
-                    break;
-                } else {
                     state = ERROR;
                     break;
                 }
+            case nula:
+                if(isdigit(c))
+                    state = ERROR;
+                else
+                {
+                    ungetc(c, stdin);
+                    state = dINT;
+                }
+                break;
+
+                //cislice
+            case dINT:
+                if (isdigit(c))
+                {
+                    state = dINT;
+                    break;
+                }
+                else if (c == '.')
+                {
+                    state = dbl;
+                    break;
+                }
+                else if (c == 'e' || c == 'E')
+                {
+                    state = dblE;
+                    break;
+                }
+                else
+                {
+                    return construct_token(c, buffer, TINT_VALUE);
+                }
+
+                //desetinna tecka
+            case dbl:
+                if (isdigit(c))
+                {
+                    state = dblF;
+                    break;
+                }
+                else
+                    state = ERROR;
+                break;
+
+                //cislo za desetinnou teckou
+            case dblF:
+                if (isdigit(c))
+                {
+                    state = dblF;
+                    break;
+                }
+                else if (c == 'e' || c == 'E')
+                {
+                    state = dblE;
+                    break;
+                }
+                else
+                {
+                    return construct_token(c, buffer, TFLOAT_VALUE);
+                }
+
+                // E || e
+            case dblE:
+                if (c == '+' || c == '-')
+                {
+                    state = dblES;
+                    break;
+                }
+                else if (isdigit(c))
+                {
+                    state = dblEF;
+                    break;
+                }
+                else
+                    state = ERROR;
+                break;
+
+                // znak + nebo -
+            case dblES:
+                if (isdigit(c))
+                {
+                    state = dblEF;
+                    break;
+                }
+                else
+                    state = ERROR;
+                break;
+
+                //cislo znacici hodnotu exponentu
+            case dblEF:
+                if (isdigit(c))
+                {
+                    state = dblEF;
+                    break;
+                }
+                else
+                {
+                    return construct_token(c, buffer, TFLOAT_VALUE);
+                }
+
+                //pokracovani identifikatoru
             case ID:
-                // pokracovanie identifikatoru
-                if (isdigit(c) || isalpha(c) || c == '_') {
+                if (isdigit(c) || isalpha(c) || c == '_')
+                {
                     state = ID;
                     break;
-                } // identifikator funkcie
-                else if (c == '!' || c == '?') {
+                }
+                if (c == '!' || c == '?')
+                { //identifikator funkce
                     state = IDFnc;
                     break;
-                } else {
-                    token = construct_token(c, buffer, token, TID);
-                    return 0;
+                }
+                else
+                {
+                    return construct_token(c, buffer, TID);
                 }
             case IDFnc:
                 // identifikator funkcie
-                token = construct_token(c, buffer, token, TIDFnc);
-                return 0;
-            case dINT:
-                if (isdigit(c)) {
-                    state = dINT;
+                return construct_token(c, buffer, TIDFnc);
+
+            case strS:
+                if (c == '\\')
+                {
+                    state = strESC;
                     break;
-                } // desatinna bodka
-                else if (c == '.') {
-                    state = dbl;
-                    break;
-                } // exponent
-                else if (c == 'e' || c == 'E') {
-                    state = dblE;
-                    break;
-                } // vytvorenie tokenu
-                else {
-                    token = construct_token(c, buffer, token, TINT_VALUE);
-                    return 0;
                 }
-            case left_bracket:
-                token = construct_token(c, buffer, token, Tleft_bracket);
-                return 0;
+                else if (c > 31 && c != 34 && c != 92)
+                { /*34 - " 92 - \ */
+                    state = str;
+                    break;
+                }
+                else if (c == '"')
+                {
+                    state = strF;
+                    break;
+                }
+                else
+                    state = ERROR;
+                break;
 
-            case right_bracket:
-                token = construct_token(c, buffer, token, Tright_bracket);
-                return 0;
+            case str:
+                if (c > 31 && c != 34 && c != 92)
+                {
+                    state = str;
+                    break;
+                }
+                else if (c == '"')
+                {
+                    state = strF;
+                    break;
+                }
+                else if (c == '\\')
+                {
+                    state = strESC;
+                    break;
+                }
+                else
+                    state = ERROR;
+                break;
 
-            case carka:
-                token = construct_token(c, buffer, token, Tcarka);
-                return 0;
-            // zaciatok blokoveho komentara alebo priradenie
+                //prisel backslash
+            case strESC:
+                if (c == '"' || c == 'n' || c == 't' || c == 's' || c == '\\')
+                {
+                    state = str;
+                    break;
+                }
+                else if (c == 'x')
+                {
+                    state = hexa_escape;
+                    break;
+                }
+                else
+                    state = ERROR;
+                break;
+
+                //hexa escape
+            case hexa_escape: //
+                if (isdigit(c) || (c >= 'A' && c <= 'F'))
+                { // \xh
+                    state = hexa_escape2;
+                    break;
+                }
+                else
+                    state = ERROR;
+                break;
+
+            case hexa_escape2:
+                if (isdigit(c) || (c >= 'A' && c <= 'F'))
+                { // \xhh
+                    state = str;
+                    break;
+                }
+                else if (c == '\0')
+                { //jednomistne hexa cislo
+                    state = str;
+                    break;
+                }
+                else if (c == '"')
+                {
+                    state = strF;
+                    break;
+                }
+                else if (c == '\\')
+                {
+                    state = strESC;
+                    break;
+                }
+                else
+                    state = ERROR;
+                break;
+
+            case strF:
+                return construct_token(c, buffer, TSTRING_VALUE);
+
+            case add:
+                return construct_token(c, buffer, Tadd);
+
+
+            case sub:
+                return construct_token(c, buffer, Tsub);
+
+
+            case mul:
+                return construct_token(c, buffer, Tmul);
+
+
+            case sdiv:
+                return construct_token(c, buffer, Tdiv);
+
+
+            case lesser:
+                if (c == '=')
+                {
+                    state = lesserequal;
+                    break;
+                }
+                else
+                {
+                    return construct_token(c, buffer, Tlesser);
+                }
+
+
+            case greater:
+                if (c == '=')
+                {
+                    state = greaterequal;
+                    break;
+                }
+                else
+                {
+                    return construct_token(c, buffer, Tgreater);
+                }
+
+
+            case lesserequal:
+                return construct_token(c, buffer, Tlesserequal);
+
+
+            case greaterequal:
+                return construct_token(c, buffer, Tgreaterequal);
+
+
             case cmnt_equal_assignment:
-                if (c == '=') {
+                if (c == '=')
+                {
                     state = equal;
                     break;
-                } // blokovy komentar
-                else if (c == 'b' ) {
+                }
+                else if (c == 'b' )
+                {
                     if (checkcmnt_begin()) {
                         state = block_cmnt;
                         linePos += 5;
-                    } else
+                    }
+                    else
                         state = ERROR;
                     break;
-                } else
+                }
+                else
                     ungetc(c, stdin);
                 state = assignment;
                 break;
-            // priradenie
+
+            case block_cmnt:
+                if (c == 'e' && buffer[linePos-2] == '=') // linePos-2 lebo indexace je od 0 ale linePos sa pocita od 1
+                {
+                    buffer[count++] = c;
+                    if (checkcmnt_end()) {
+                        linePos += 3;
+                        if (c == '\n') {
+                            state = START;
+                            lineNum++;
+                            linePos = 0;
+                            token.type = TEOL;
+                            return token;
+                        }
+                        else state = block_cmnt_end;
+                    }
+                    else
+                        state = ERROR;
+                    break;
+                }
+                else
+                {
+                    if (c == '\n'){
+                        lineNum++;
+                        linePos = 0;
+                        count = 0;
+                        allocated = 0;
+                        token.type = TEOL;
+                    }
+                    state = block_cmnt;
+                    break;
+                }
+
+
+            case block_cmnt_end:
+                if (c == '\n') {
+                    state = START;
+                    lineNum++;
+                    linePos = 0;
+                    token.type = TEOL;
+                    return token;
+                }
+                break;
+
+            case equal:
+                return construct_token(c, buffer, Tequal);
+
+
+            case Snotequal:
+                if (c == '=') {
+                    state = notequal;
+                    break;
+                } else
+                    state = ERROR;
+                break;
+
+            case notequal:
+                return construct_token(c, buffer, Tnotequal);
+
+
+            case carka:
+                return construct_token(c, buffer, Tcarka);
+
+
             case assignment:
-                token = construct_token(c, buffer, token, Tassignment);
-                return 0;
+                return construct_token(c, buffer, Tassignment);
+
+
+            case left_bracket:
+                return construct_token(c, buffer, Tleft_bracket);
+
+
+            case right_bracket:
+                return construct_token(c, buffer, Tright_bracket);
+
+
+            case lineCMNT:
+                if (c == '\n')
+                {
+                    state = START;
+                    break;
+                }
+                else
+                {
+                    state = lineCMNT;
+                    break;
+                }
+
+
+            case ERROR:
+                fprintf(stderr, "Spatny format na radku:%d (char:%d)!\n", lineNum, linePos);
+                token.type = TERR;
+                return token;
+
+
             default:
                 state = ERROR;
                 break;
 
         }
-
     }
 }
