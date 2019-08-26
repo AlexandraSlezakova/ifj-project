@@ -6,8 +6,7 @@
  */
 #include "symtable.h"
 #include "scanner.h"
-#include "list.h"
-#include "errors.h"
+#include "symtable.h"
 #include <stdio.h>
 #ifndef _SEMANTIC_H
 #define _SEMANTIC_H
@@ -30,7 +29,7 @@ HTable *init_local_table();
  *  @param local_hashtable tabulka symbolov pre lokalne premenne
  *  @return SEM_OK, ERR_INTERNAL
  */
-int insert_function(tDLList *function_param_list, char *function_name, char *ret_type, HTable *local_hashtable);
+//int insert_function(tDLList *function_param_list, char *function_name, char *ret_type, HTable *local_hashtable);
 
 /**
  * Ukladanie parametrov do lokalnej tabulky a zoznamu parametrov
@@ -89,7 +88,7 @@ void checkIdentifierExists(HTable *local_hashtable, char *name, bool exit_switch
  * @param local_symtable
  * @return
  */
-HTable *insert_identifier(char *name, tDLList *list, HTable *local_symtable);
+int insert_identifier(char *name, tDLList *list, HTable *local_symtable);
 
 //tabulka symbolov
 HTable *global_hashtable;

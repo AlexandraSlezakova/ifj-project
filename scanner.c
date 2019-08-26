@@ -1,23 +1,12 @@
 #include <string.h>
 #include <ctype.h>
+#include <memory.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include "scanner.h"
 #include "errors.h"
 
 char *keywords[9] = {"def", "do", "else", "end", "if", "not", "nil", "then", "while"};
-
-int iskeyword(char *buffer)
-{
-    for (int i = 0; i < 9; i++)
-    {
-        if (strcmp(buffer, keywords[i]) == 0)
-        {
-            return i + 5;
-        }
-    }
-    return 0;
-}
 
 bool checkcmnt_begin()
 {
@@ -50,11 +39,21 @@ bool checkcmnt_end()
 
 }
 
-struct TToken construct_token(char ungetChar, char *buffer, TType type) {
+int iskeyword(char *buffer) {
+    for (int i = 0; i < 9; i++) {
+        if (strcmp(buffer, keywords[i]) == 0) {
+            return i + 5;
+        }
+    }
+
+    return 0;
+
+}
+
+
+struct TToken construct_token(char ungetChar, char *buffer, struct TToken new_token, TType type) {
 
     TType kwtype;
-    TOKEN newToken;
-
     ungetc(ungetChar, stdin);
     buffer[count - 1] = '\0';
 
@@ -72,28 +71,27 @@ struct TToken construct_token(char ungetChar, char *buffer, TType type) {
 
     //printf("%s", buffer);
     // ulozenie typu
-    newToken.type = type;
+    new_token.type = type;
 
     if (type == TINT_VALUE) {
         char *ptr;
         //token.val.ival = strtol(buffer, NULL, 10);
-        newToken.val.ival = strtol(buffer, &ptr, 10);
+        new_token.val.ival = strtol(buffer, &ptr, 10);
 
     } else if (type == TFLOAT_VALUE) {
-        newToken.val.fval = strtof(buffer, NULL);
+        new_token.val.fval = strtof(buffer, NULL);
 
-    } else if (type == TID || type == TIDFnc || type == TSTRING_VALUE) {
-        newToken.val.p_cval = buffer;
-        newToken.name = buffer;
-
+    } else if (type == TID) {
+        new_token.val.p_cval = buffer;
+        new_token.name = buffer;
     } else {
-        newToken.name = NULL;
+        new_token.name = NULL;
     }
 
-    return newToken;
+    return new_token;
 }
 
-TOKEN get_token() {
+int get_token() {
     static int debug = 0;
     static int lineNum = 0; //cislo riadku
     static int linePos = 0; //pozicia na radku
@@ -104,8 +102,7 @@ TOKEN get_token() {
     buffer = NULL;
     TState state = START; //pociatocny stav
 
-    TOKEN token;
-
+    //token = (struct TToken*) malloc(sizeof(struct TToken));
     while (1) {
         // alokovanie bufferu
         buffer = realloc(buffer, (size_t) ++allocated);
@@ -114,7 +111,7 @@ TOKEN get_token() {
             // end of file, ak je na zaciatku a zaroven dostane enter
             if (((c = (char)getchar()) == EOF) && (state == START)) {
                 token.type = TEOF;
-                return token;
+                return TOKEN_OK;
             }
 
             linePos++;			 //cislovanie pozic
@@ -125,7 +122,7 @@ TOKEN get_token() {
             }
         } else {
             token.type = TERR;
-            return token;
+            return TOKEN_ERR;
         }
 
         switch (state) {
@@ -153,7 +150,7 @@ TOKEN get_token() {
                     lineNum++;
                     linePos = 0;
                     token.type = TEOL; // end-of-line
-                    return token;
+                    return 0;
                 } //zaciatok stringu
                 else if (c == '"') {
                     state = strS;
@@ -252,7 +249,9 @@ TOKEN get_token() {
                 }
                 else
                 {
-                    return construct_token(c, buffer, TINT_VALUE);
+                    printf("token %s", buffer);
+                    token = construct_token(c, buffer, token, TINT_VALUE);
+                    return 0;
                 }
 
                 //desetinna tecka
@@ -280,7 +279,8 @@ TOKEN get_token() {
                 }
                 else
                 {
-                    return construct_token(c, buffer, TFLOAT_VALUE);
+                    token = construct_token(c, buffer, token, TFLOAT_VALUE);
+                    return 0;
                 }
 
                 // E || e
@@ -319,7 +319,8 @@ TOKEN get_token() {
                 }
                 else
                 {
-                    return construct_token(c, buffer, TFLOAT_VALUE);
+                    token = construct_token(c, buffer, token, TFLOAT_VALUE);
+                    return 0;
                 }
 
                 //pokracovani identifikatoru
@@ -336,11 +337,13 @@ TOKEN get_token() {
                 }
                 else
                 {
-                    return construct_token(c, buffer, TID);
+                    token = construct_token(c, buffer, token, TID);
+                    return 0;
                 }
             case IDFnc:
                 // identifikator funkcie
-                return construct_token(c, buffer, TIDFnc);
+                token = construct_token(c, buffer, token, TIDFnc);
+                return 0;
 
             case strS:
                 if (c == '\\')
@@ -435,22 +438,29 @@ TOKEN get_token() {
                 break;
 
             case strF:
-                return construct_token(c, buffer, TSTRING_VALUE);
+                token = construct_token(c, buffer, token, TSTRING_VALUE);
+                return 0;
+
+                /*************************************************************************************/
 
             case add:
-                return construct_token(c, buffer, Tadd);
+                token = construct_token(c, buffer, token, Tadd);
+                return 0;
 
 
             case sub:
-                return construct_token(c, buffer, Tsub);
+                token = construct_token(c, buffer, token, Tsub);
+                return 0;
 
 
             case mul:
-                return construct_token(c, buffer, Tmul);
+                token = construct_token(c, buffer, token, Tmul);
+                return 0;
 
 
             case sdiv:
-                return construct_token(c, buffer, Tdiv);
+                token = construct_token(c, buffer, token, Tdiv);
+                return 0;
 
 
             case lesser:
@@ -461,7 +471,8 @@ TOKEN get_token() {
                 }
                 else
                 {
-                    return construct_token(c, buffer, Tlesser);
+                    token = construct_token(c, buffer, token, Tlesser);
+                    return 0;
                 }
 
 
@@ -473,16 +484,19 @@ TOKEN get_token() {
                 }
                 else
                 {
-                    return construct_token(c, buffer, Tgreater);
+                    token = construct_token(c, buffer, token, Tgreater);
+                    return 0;
                 }
 
 
             case lesserequal:
-                return construct_token(c, buffer, Tlesserequal);
+                token = construct_token(c, buffer, token, Tlesserequal);
+                return 0;
 
 
             case greaterequal:
-                return construct_token(c, buffer, Tgreaterequal);
+                token = construct_token(c, buffer, token, Tgreaterequal);
+                return 0;
 
 
             case cmnt_equal_assignment:
@@ -517,7 +531,7 @@ TOKEN get_token() {
                             lineNum++;
                             linePos = 0;
                             token.type = TEOL;
-                            return token;
+                            return 0;
                         }
                         else state = block_cmnt_end;
                     }
@@ -545,12 +559,13 @@ TOKEN get_token() {
                     lineNum++;
                     linePos = 0;
                     token.type = TEOL;
-                    return token;
+                    return 0;
                 }
                 break;
 
             case equal:
-                return construct_token(c, buffer, Tequal);
+                token = construct_token(c, buffer, token, Tequal);
+                return 0;
 
 
             case Snotequal:
@@ -562,23 +577,28 @@ TOKEN get_token() {
                 break;
 
             case notequal:
-                return construct_token(c, buffer, Tnotequal);
+                token = construct_token(c, buffer, token, Tnotequal);
+                return 0;
 
 
             case carka:
-                return construct_token(c, buffer, Tcarka);
+                token = construct_token(c, buffer, token, Tcarka);
+                return 0;
 
 
             case assignment:
-                return construct_token(c, buffer, Tassignment);
+                token = construct_token(c, buffer, token, Tassignment);
+                return 0;
 
 
             case left_bracket:
-                return construct_token(c, buffer, Tleft_bracket);
+                token = construct_token(c, buffer, token, Tleft_bracket);
+                return 0;
 
 
             case right_bracket:
-                return construct_token(c, buffer, Tright_bracket);
+                token = construct_token(c, buffer, token, Tright_bracket);
+                return 0;
 
 
             case lineCMNT:
@@ -597,7 +617,7 @@ TOKEN get_token() {
             case ERROR:
                 fprintf(stderr, "Spatny format na radku:%d (char:%d)!\n", lineNum, linePos);
                 token.type = TERR;
-                return token;
+                return 1;
 
 
             default:

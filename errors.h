@@ -9,6 +9,7 @@
 #ifndef IFJ_ERRORS_H
 #define IFJ_ERRORS_H
 
+#define OK                          0 // vsetko ok
 #define TOKEN_OK			        0  // token je ok
 #define TOKEN_ERR                   1  // token error
 #define SYNTAX_OK 					0  // Syntaxe je ok

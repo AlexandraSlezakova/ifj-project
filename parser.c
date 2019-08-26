@@ -1,117 +1,67 @@
 #include "parser.h"
-#include "semantic.h"
-
-//pocet parametrov funkcie na kontrolu
-static int countParams = 0;
 
 void htPrintTable( HTable* ptrht ) {
     int maxlen = 0;
     int sumcnt = 0;
 
-    printf ("------------HASH TABLE--------------\n");
-    for ( int i=0; i<HTSIZE; i++ ) {
-        printf ("%i:",i);
+    printf("------------HASH TABLE--------------\n");
+    for (int i = 0; i < HTSIZE; i++) {
+        printf("%i:", i);
         int cnt = 0;
-        HTItem* ptr = ptrht->prvek[i];
-        while ( ptr != NULL ) {
-            printf (" (%s,%p)",ptr->key,ptrht->prvek[i]->item);
-            if ( ptr != NULL )
+        HTItem *ptr = ptrht[i].item;
+        while (ptr != NULL) {
+            printf(" (%s,%p)", ptr->key, ptrht[i].item);
+            if (ptr != NULL)
                 cnt++;
             ptr = ptr->next;
         }
-        printf ("\n");
+        printf("\n");
 
         if (cnt > maxlen)
             maxlen = cnt;
-        sumcnt+=cnt;
+        sumcnt += cnt;
     }
-
-    printf ("------------------------------------\n");
-    printf ("Items count %i   The longest list %i\n",sumcnt,maxlen);
-    printf ("------------------------------------\n");
-
 }
 
-TOKEN get_next_token() {
-    TOKEN token = get_token();
+int get_next_token() {
+    int result = get_token();
 
-    if (token.type == TERR) {
+    if (result) {
         exit(ERR_LEX);
-
-    } else {
-        return token;
     }
+
+    return 0;
 }
 
-tDLList *functionParams(TOKEN token, tDLList *function_param_list) {
 
-    // funkcia ma parametre
-    if (token.type == TID) {
-        countParams++;
-
-        // vlozenie do zoznamu
-        DLInsertLast(function_param_list, &token);
-        token = get_next_token();
-
-        while (token.type != Tright_bracket) {
-
-            if (token.type == Tcarka) {
-                token = get_next_token();
-
-                if (token.type == TID) {
-                    DLInsertLast(function_param_list, &token);
-                } else {
-                    printf("v error\n");
-                    exit(SYNTAX_ERR);
-                }
-
-            } else {
-                printf("nie je ciarka\n");
-                exit(SYNTAX_ERR);
-            }
-            countParams++;
-            token = get_next_token();
-        }
-
-    } // funkcia bez parametrov
-    else if (token.type == Tright_bracket) {
-        DLInsertLast(function_param_list, NULL);
-    }
-    else {
-        printf("error\n");
-        exit(SYNTAX_ERR);
-    }
-
-    return function_param_list;
-
-}
-
-HTable *recursive_descent_id(int hashtable_switch, TOKEN id, HTable *local_symtable) {
+HTable *recursive_descent_id(int hashtable_switch, HTable *local_symtable) {
 
     // zoznam pre hodnoty priradene premennej
     tDLList *list = DLInitList();
 
-    char name[30];
-    strcpy(name, id.name);
+    char *name = copy_name(token.name);
 
-    TOKEN token;
+    get_next_token();
 
-    if (get_next_token().type == Tassignment) {
+    if (token.type == Tassignment) {
 
-        token = get_next_token();
-        if (token.type == TEOL) exit(SYNTAX_ERR);
+        get_next_token();
+        if (is_eol(token.type)) return NULL;
 
         // kym nie je koniec riadku, ulozenie do zoznamu
         while (token.type != TEOL) {
             // kontrola, ci identifikator alebo identifikator funkcie je definovany
-            if (token.type == TID || token.type == TIDFnc) {
-                checkIdentifierExists(local_symtable, name, TRUE);
+            if (is_identifier(token.type)) {
 
-                token = get_next_token();
+                char *next = copy_name(token.name);
+
+              //  checkIdentifierExists(local_symtable, next, TRUE);
+
+                get_next_token();
 
                 // identifikator funkcie
                 if (token.type == Tleft_bracket) {
-                    token = get_next_token();
+                    get_next_token();
                     static int counter = 0;
 
                     if (token.type == TFLOAT_VALUE || token.type == TSTRING_VALUE || token.type == TINT_VALUE || token.type == TID) {
@@ -119,50 +69,48 @@ HTable *recursive_descent_id(int hashtable_switch, TOKEN id, HTable *local_symta
 
                         // kontrola, ci je identifikator definovany
                         if (token.type == TID) {
-                            char identifier[30];
+                            char *identifier = malloc(sizeof(char));
                             strcpy(identifier, token.name);
 
-                            checkIdentifierExists(local_symtable, identifier, TRUE);
-
+                           // checkIdentifierExists(local_symtable, identifier, TRUE);
                         }
 
-                        token = get_next_token();
+                        get_next_token();
 
                         while (token.type != Tright_bracket) {
 
                             if (token.type != Tcarka) exit(SYNTAX_ERR);
 
-                            token = get_next_token();
+                            get_next_token();
                             counter++;
 
-                            if (token.type == TFLOAT_VALUE || token.type == TSTRING_VALUE || token.type == TINT_VALUE || token.type == TID) {
+                            if (is_assignment_correct(token.type)) {
                                 // kontrola, ci je identifikator definovany
                                 if (token.type == TID) {
-                                    char nextId[30];
-                                    strcpy(nextId, token.name);
+                                    char *nextId = copy_name(token.name);
 
-                                    checkIdentifierExists(local_symtable, nextId, TRUE);
+                                   // checkIdentifierExists(local_symtable, nextId, TRUE);
 
                                 }
 
-                                token = get_next_token();
+                                get_next_token();
                             } else {
-                                exit(SYNTAX_ERR);
+                                return NULL;
                             }
                         }
                     } // ziadne parametre sa nepredavaju funkcii
-                    else if (token.type == Tright_bracket) {
+                    else if (is_right_bracket(token.type)) {
                         counter = 0;
                     } else {
                         exit(SYNTAX_ERR);
                     }
                     // kontrola na rovnaky pocet parametrov
-                    if (counter != countParams) exit(SYNTAX_ERR);
+                    //if (counter != countParams) exit(SYNTAX_ERR);
                 }
             } else if (token.type != TEOL) {
                 // todo strom pre hodnoty
                 DLInsertLast(list, &token);
-                token = get_next_token();
+                get_next_token();
             }
         }
     } else if (token.type == TEOL) {
@@ -175,11 +123,11 @@ HTable *recursive_descent_id(int hashtable_switch, TOKEN id, HTable *local_symta
     // ukladanie do lokalnej tabulky
     if (hashtable_switch) {
         //definicia premennej je mozna aj bez priradenia, kde bude zoznam prazdny
-        local_symtable = insert_identifier(name, list, local_symtable);
+//        insert_identifier(name, list, local_symtable);
 
     } // ukladanie do globalnej tabulky
     else {
-        global_hashtable = insert_identifier(name, list, 0);
+      //  insert_identifier(name, list, 0);
     }
     htPrintTable(local_symtable);
     return hashtable_switch ? local_symtable : NULL;
@@ -191,7 +139,7 @@ HTable *recursive_descent_id(int hashtable_switch, TOKEN id, HTable *local_symta
  * @param token
  * @return
  */
-int recursive_descent_if(int local_symtable, TOKEN token) {
+int recursive_descent_if(int local_symtable) {
 
 
     return 0;
@@ -202,188 +150,125 @@ int recursive_descent_if(int local_symtable, TOKEN token) {
  * @param local_symtable
  * @return
  */
-int recursive_descent(int hashtable_switch, TOKEN previousToken, HTable *local_symtable) {
+int recursive_descent(int hashtable_switch, HTable *local_symtable)
+{
 
-    TOKEN token;
-    token = local_symtable != NULL ? get_next_token() : previousToken;
+   if (local_symtable != NULL) get_next_token();
 
     while (1) {
-
-        if (token.type == TEOF) {
-            return SYNTAX_OK;
-
-        } else if (token.type == TID) {
-            recursive_descent_id(hashtable_switch, token, local_symtable);
-
-        } else if (token.type == Tif) {
-            recursive_descent_if(hashtable_switch, token);
-
-        } else {
-            printf("zle");
-            exit(SYNTAX_ERR);
+        switch (token.type)
+        {
+            case TEOF:
+                return SYNTAX_ERR;
+            case TID:
+                recursive_descent_id(hashtable_switch, local_symtable);
+                break;
+            default:
+                return SYNTAX_ERR;
         }
 
-        token = get_next_token();
+        get_next_token();
     }
 
 }
 
-//pravidlo 25
-int function_definition() {
 
-    if (get_next_token().type == Tleft_bracket) {
+int function_arguments(HTable *function_symtable, HTItem *new_item) {
 
-        // inicializacia zoznamu
-        tDLList *function_param_list;
-        function_param_list = DLInitList();
+    int countParams = 0;
+    if (is_left_bracket(token.type)) {
+        return SYNTAX_OK;
 
-        // inicializacia lokalnej tabulky
-        HTable *local_symtable = htInit();
-        TOKEN token = get_next_token();
+    /* function has arguments */
+    } else if (token.type == TID) {
 
-        // spracovanie parametrov
-        function_param_list = functionParams(token, function_param_list);
+        // todo redefinicia
+        char *name = malloc(sizeof(char));
+        strcpy(name, token.name);
+//        HTItem *inserted = insert_variable(function_symtable, name);
+        //IF_RETURN(!inserted, SYNTAX_ERR)
+        new_item->has_params = true;
 
-        token = get_next_token();
+        /* quantity of params */
+        countParams++;
 
-        token.type == TEOL ? recursive_descent(1, token, local_symtable) : exit(SYNTAX_ERR);
-    } else {
-        exit(SYNTAX_ERR);
+        get_next_token();
+
+        while (token.type != Tright_bracket) {
+            IF_RETURN(!is_comma(token.type), SYNTAX_ERR)
+            get_next_token();
+
+            IF_RETURN(!(token.type == TID), SYNTAX_ERR)
+
+            strcpy(name, token.name);
+//            inserted = insert_variable(function_symtable, name);
+  //          IF_RETURN(!inserted, SYNTAX_ERR)
+
+            countParams++;
+            get_next_token();
+        }
+
+        new_item->params_quantity = countParams;
+        return SYNTAX_OK;
+
+    } // function without arguments
+    else if (token.type == Tright_bracket) {
+        return SYNTAX_OK;
     }
-    return 0;
+
+    return SYNTAX_ERR;
 }
+
 
 int recursive_descent_main() {
 
-    previousTokenMain = NULL;
-    tmpTokenMain = NULL;
+    get_next_token();
+    HTItem *item = NULL;
+    HTable *function_table = NULL;
 
-    TOKEN token = get_next_token();
+    // end of file
+    if (token.type == TEOF) {  // rule 1 -> 2 || 5
+        return counter ? SYNTAX_ERR : SYNTAX_OK;
 
-    // koniec suboru
-    if (token.type == TEOF) {  // pravidlo 1 -> 2 alebo 5
-        if (counter) {
-            exit(SYNTAX_ERR);
-        }
-
-        return SYNTAX_OK;
-    } // definicia funkcie pravidlo 4
+    } // function definition - rule 4
     else if (token.type == Tdef) {
-        token = get_next_token();
+        get_next_token();
+        IF_RETURN(!is_identifier(token.type), SYNTAX_ERR)
 
-        // ukladanie identifikatoru funkcie do globalnej TS
-        // identifikator funkcie nemusi nutne koncit ? || !
-        if (token.type == TID || token.type == TIDFnc) {
-            // todo kontrola redefinicie funkcie a identifikatora
-            //pravidlo 25
-            function_definition();
+        char *name = malloc(sizeof(char));
+        strcpy(name, token.name);
+
+       HTItem *found = htRead(global_hashtable, name);
+
+       if (found) {
+           item = found;
+            // todo redefinicia
+       } else {
+            /* create symtable for function */
+           function_table = htInit();
+           IF_RETURN(!function_table, ERR_INTERNAL)
+
+            /* add function to global symtable*/
+            item = insert_function(function_table, name, 0, true);
         }
-        else {
-            exit(SYNTAX_ERR);
-        }
-    } // scope mimo funkcie
+
+        // todo ast
+        /* left bracket*/
+        get_next_token();
+        IF_RETURN(!is_left_bracket(token.type), SYNTAX_ERR)
+
+        get_next_token();
+        /* arguments*/
+        function_arguments(function_table, item);
+
+    } // global scope
     else {
-        recursive_descent(0, token, NULL);
+        //recursive_descent(0, token, NULL);
     }
-
 }
 
-
-
-// pravidlo 28
-int recursive_descent_nextRealParam() {
-
-//    while (token.type != Tright_bracket) {
-//
-//        if (token.type == Tcarka) {
-//            get_next_token();
-//
-//            if (token.type == TID || token.type == TFLOAT_VALUE || token.type == TSTRING_VALUE) {
-//                // todo ulozenie do tabulky
-//            } else {
-//                exit(SYNTAX_ERR);
-//            }
-//        } else if (token.type == TID || token.type == TFLOAT_VALUE || token.type == TSTRING_VALUE) {
-//            // todo ulozenie do tabulky
-//
-//        } else {
-//            exit(SYNTAX_ERR);
-//        }
-//
-//        get_next_token();
-//    }
-
-    return 0;
-}
-
-// spracovanie parametrov funkcie
-int recursive_descent_realParams() {
-
-//    if (token.type == Tleft_bracket) {
-//        get_next_token();
-//    }
-//
-//    // term => identifikator premennej, literal alebo nil
-//    if (token.type == TID || token.type == TFLOAT_VALUE || token.type == TSTRING_VALUE) {
-//        recursive_descent_nextRealParam();
-//    }
-//    else {
-//        exit(SYNTAX_ERR);
-//    }
-}
-
-// spracovanie prikazu priradenia
-int recursive_descent_rvalue(bool assignment) {
-
-//    static int bracket_count = 0;
-//
-//    if (token.type == TINT_VALUE || token.type == TSTRING_VALUE || token.type == TFLOAT_VALUE) {
-//        // definicia premennej => ulozenie hodnoty do tabulky
-//        if (assignment) {
-//            // todo ulozenie do tabulky
-//        }
-//
-//        // todo precedencna tabulka
-//        while (token.type != TEOL) {
-//            get_next_token();
-//        }
-//
-//        return SYNTAX_OK;
-//    } // identifikator funkcie, pravidlo 14
-//    else if (token.type == TIDFnc) {
-//        if (assignment) {
-//            // todo ulozenie do tabulky
-//        }
-//
-//        // pravidlo 30, 31 pre lavu zatvorku
-//        if (token.type == Tleft_bracket) {
-//            bracket_count++;
-//        }
-//
-//        recursive_descent_realParams();
-//
-//        // pravidlo 32, 33 pre pravu zatvorku
-//        if (token.type == Tright_bracket) {
-//            bracket_count--;
-//            get_next_token();
-//        }
-//
-//        if (token.type != TEOL) {
-//            exit(SYNTAX_ERR);
-//        }
-//
-//        // ak nie je rovnaky pocet pravych a lavych zatvoriek => syntax error
-//        if (bracket_count != 0) {
-//            exit(SYNTAX_ERR);
-//        }
-//    }
-
-    return 0;
-}
-
-int main(int argc, char const *argv[])
-{
-    // init globalnej tabulky
+int main(int argc, char const *argv[]) {
+    // global table init
     list_and_table_init();
 
     recursive_descent_main();

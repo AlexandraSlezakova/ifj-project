@@ -7,11 +7,11 @@ bool success;
  */
 int list_and_table_init(){
 
-    global_list = DLInitList();
+   // global_list = DLInitList();
 
-    if (global_list == NULL){
-        return ERR_INTERNAL;
-    }
+//    if (global_list == NULL){
+//        return ERR_INTERNAL;
+//    }
 
     global_hashtable = htInit();
 
@@ -26,31 +26,23 @@ int list_and_table_init(){
 /**
  * Ukladanie identifikatoru do lokalnej tabulky
  */
-HTable *insert_identifier(char *name, tDLList *list, HTable *local_symtable) {
+int insert_identifier(char *name, tDLList *list, HTable *local_symtable) {
 
     //premenna
-    Tvariable *tvariable = malloc(sizeof(Tvariable));
+    HTItem *variable = malloc(sizeof(HTItem));
 
-    if (tvariable == NULL) {
-        exit(ERR_INTERNAL);
-    }
-
-    tvariable->name = name;
-    tvariable->item = list;
+    IF_RETURN(!variable, ERR_INTERNAL)
 
     // vkladanie do lokalnej tabulky
-    if (local_symtable) {
-        return htInsertNew(local_symtable, name, tvariable);
-
-    } else {
-        return htInsertNew(global_hashtable, name, tvariable);
-    }
+    local_symtable
+        ? ht_insert(local_symtable, variable)
+        : ht_insert(global_hashtable, variable);
 }
 
 /**
  * Vkladanie funkcii do tabulky symbolov
  */
-int insert_function(tDLList *function_param_list, char *function_name, char *ret_type, HTable *local_hashtable){
+//int insert_function(tDLList *function_param_list, char *function_name, char *ret_type, HTable *local_hashtable){
 
 //    Tfunction *in_function = (Tfunction*) malloc(sizeof(struct function));
 //
@@ -79,7 +71,7 @@ int insert_function(tDLList *function_param_list, char *function_name, char *ret
 //    }
 //
 //    return ERR_INTERNAL;
-}
+//}
 
 
 /**
@@ -268,9 +260,9 @@ int save_built_in_function(){
  */
 void checkIdentifierExists(HTable *local_hashtable, char *name, bool exit_switch) {
 
-    Tvariable *varT = NULL;
+    HTItem *varT = NULL;
 
-    // hladnie v lokalnej tabulke, ak existuje
+    // hladanie v lokalnej tabulke, ak existuje
     if (local_hashtable != NULL) varT = htRead(local_hashtable, name);
 
     // ak nie je najdena v lokalnej, tak hladanie v globalnej

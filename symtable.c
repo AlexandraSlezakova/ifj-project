@@ -1,8 +1,10 @@
 #include "symtable.h"
 #include <string.h>
 
-//vytvoreni hashovaciho klice
-int zahashuj(tKey key){
+/**
+ * Hash function
+ */
+int createHash(tKey key){
 
     int retval = 1;
     int keylen = strlen(key);
@@ -11,27 +13,24 @@ int zahashuj(tKey key){
         retval = retval + key[i];
     }
 
-    return(retval % HTSIZE);
+    return(keylen % HTSIZE);
 }
 
 
-//init HT
+/**
+ * Init table
+ */
 HTable *htInit(){
 
     HTable *hstable = NULL;
 
-    if ((hstable = malloc(sizeof(HTable)))== NULL) {
-      return NULL;
-    }
+   hstable = malloc(sizeof(HTable));
+   IF_RETURN(!hstable, NULL)
+   hstable->size = HTSIZE;
 
-    hstable->velikost = HTSIZE;
-
-    if ((hstable->prvek = malloc(sizeof(HTItem *) * HTSIZE )) == NULL) {
-        return NULL;
-    }
-
-    for (int i = 0; i < HTSIZE; i++) { //naplni tabulku nully
-        hstable->prvek[i] = NULL;
+    // insert null to table
+    for (int i = 0; i < HTSIZE; i++) {
+        hstable[i].item = NULL;
     }
 
     return hstable;
@@ -39,121 +38,101 @@ HTable *htInit(){
 
 
 /**
- * Vytvorenie paru/prvku tabulky = kluc, hodnota
+ * Create pair = key, value
  */
-HTItem *ht_newpair( char *key, char *value ) {
-    HTItem *newpair;
+HTItem *ht_new_item(HTItem *item) {
 
-    if ((newpair = malloc(sizeof(HTItem))) == NULL) {
-        return NULL;
-    }
+    HTItem *new_item;
 
-    if ((newpair->key = strdup(key)) == NULL) {
-        return NULL;
-    }
+    IF_RETURN((new_item = malloc(sizeof(HTItem))) == NULL, NULL)
+    IF_RETURN((new_item->key = strdup(item->key)) == NULL, NULL)
 
-    if ((newpair->item = strdup(value)) == NULL) {
-        return NULL;
-    }
+    new_item->symtable = item->symtable;
+    new_item->params_quantity = item->params_quantity;
+    new_item->defined = item->defined;
+    new_item->type = item->type;
 
-    newpair->next = NULL;
+    new_item->next = NULL;
 
-    return newpair;
+    return new_item;
 }
 
 /**
- * Vkladanie do tabulky
+ * Insert new item
  */
-HTable *htInsertNew(HTable *ptrht, tKey key, void *item) {
+void *ht_insert(HTable *table, HTItem *new_item) {
 
     int hash = 0;
-    HTItem *next = NULL;
-    HTItem *last = NULL;
-    HTItem *newpair = NULL;
 
-    //pokud je ptr neplatny
-    if (ptrht == NULL) {
-        fprintf(stderr, "%s\n", "htInsert null pointer");
-        return false;
+    IF_RETURN(!table, NULL)
+
+    hash = createHash(new_item->key);
+
+    // todo hladat v tabulke, ci tam je
+
+    /* end of table*/
+    if (table[hash].item) {
+        table[hash].item->next = new_item;
+        table[hash].item = new_item;
+        new_item->next = NULL;
+
+    } else {
+        table[hash].item = new_item;
     }
-
-    //hashnem si mistecko v policku tabulky
-    hash = zahashuj(key);
-
-    next = ptrht->prvek[hash];
-
-    while (next != NULL && next->key != NULL && strcmp(key, next->key) > 0) {
-        last = next;
-        next = next->next;
-    }
-
-    // test, ci sa uz v tabulke nenachadza prvok s rovnakym klucom
-    if(next != NULL && next->key != NULL && strcmp(key, next->key) == 0 ) {
-        free(next->item);
-        // vytvorenie kopie
-        next->item = strdup(item);
-
-    } // pridanie noveho prvku do tabulky
-    else {
-        // vytvorenie paru
-        newpair = ht_newpair( key, item );
-
-        // ak je to prvy prvok, ktory vkladame
-        if (next == ptrht->prvek[hash]) {
-            newpair->next = next;
-            ptrht->prvek[hash] = newpair;
-
-        } // koniec tabulky
-        else if (next == NULL) {
-            last->next = newpair;
-
-        } // stred tabulky
-        else  {
-            newpair->next = next;
-            last->next = newpair;
-        }
-    }
-
-    return ptrht;
 }
 
-HTItem *htSearch(HTable *ptrht, tKey key) {
+HTItem *htSearch(HTable *table, tKey key) {
 
-    if(ptrht == NULL) {//ptr neplatny
-        fprintf(stderr, "%s\n", "htsearch null pointer");
-        return NULL;
+    IF_RETURN(!table, NULL)
+
+    // hash key
+    int hash = createHash(key);
+
+    HTItem *tmp;
+    tmp = table[hash].item;
+
+    while(tmp != NULL){
+        if (strcmp(tmp->key, key) == 0)
+            return tmp;
+        tmp = tmp->next; // move to next item
     }
 
-    //zjistime hash
-    int hash = zahashuj(key);
-
-    //do tmp dame hodnotu prvniho prvku seznamu na miste kde vychazi hash
-    HTItem *tmp = ptrht->prvek[hash];
-
-    //loop dokud nenajdeme nebo nejsme v nullu
-    while( tmp != NULL && tmp->next->key != key ){
-        tmp = tmp->next;//posunem se na dalsi
-    }
-
-    return tmp;
+    return NULL;
 
 }
 
-//vyhledavani
 void *htRead(HTable *ptrht, tKey key) {
 
-  if(ptrht == NULL){//pokud je ptr neplatny
-    fprintf(stderr, "%s\n", "htRead null pointer");
-    return NULL;
-  }
+    IF_RETURN(ptrht == NULL, NULL)
 
-  //vyhledame prvek jestli tam je
-  HTItem *tmp = htSearch(ptrht, key);
+    // search item
+    HTItem *tmp = htSearch(ptrht, key);
 
-  if(tmp == NULL){
-    return NULL;
-  }
+    return tmp == NULL ? NULL : tmp;
+}
 
-  return tmp;
+HTItem *insert_function(HTable *symtable, tKey key, int params_quantity, bool defined) {
+   HTItem *item = malloc(sizeof(HTItem));
+   IF_RETURN(!item, NULL)
 
+   item->key = key;
+   item->type = FUNCTION;
+   item->defined = defined;
+   item->params_quantity = params_quantity;
+   item->symtable = symtable;
+
+   ht_insert(symtable, item);
+   return item;
+}
+
+HTItem *insert_variable(HTable *symtable, tKey key) {
+    HTItem *item = malloc(sizeof(HTItem));
+    IF_RETURN(!item, NULL)
+
+    item->key = key;
+    item->type = IDENTIFIER;
+    item->defined = true;
+
+    ht_insert(symtable, item);
+    return item;
 }

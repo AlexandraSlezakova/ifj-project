@@ -89,7 +89,7 @@ bool DLInsertLast(tDLList *L,  void *ptr) {
         L->First = ptrNaNovy;  /* prvni je zaroven posoedni */
     }
 
-    L->Last = ptrNaNovy; /* novy je psoledni */
+    L->Last = ptrNaNovy; /* novy je posledni */
 
     return TRUE;
 }

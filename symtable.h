@@ -1,11 +1,8 @@
-
-
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include "list.h"
+#include "stack.h"
 
 
 #ifndef HASHTABLE
@@ -17,24 +14,32 @@
 //typ klice
 typedef char *tKey;
 
-/*jednotlive prvky ht*/
-typedef struct HTItem{
-  tKey key; //klic
-  struct HTItem* next;//ukazatel na nasledujici
-  void *item; //ukazatel na polozku obsahu /fce nebo promenna/
-} HTItem;
+typedef enum {
+    FUNCTION,
+    IDENTIFIER,
+}HTType;
 
 //tabulka ukazatelu na itemy
 //typedef HTItem *HTable[HTSIZE];
-
 typedef struct hashtable{
-    int velikost;
-    struct HTItem **prvek;
+    struct HTItem *item;
+    int size;
 } HTable;
 
+/*jednotlive prvky ht*/
+typedef struct HTItem{
+    tKey key; //klic
+    struct HTItem* next;//ukazatel na nasledujici
+    void *item; //ukazatel na polozku obsahu /fce nebo promenna/
+    HTable *symtable;
+    int params_quantity;
+    bool defined;
+    HTType type;
+    bool has_params;
+} HTItem;
 
 //hash funkce
-int zahashuj(tKey key);
+int createHash(tKey key);
 
 //init tabulky
 HTable * htInit();
@@ -43,33 +48,13 @@ HTable * htInit();
 //vraci null pokud nenajde, jinak vraci ukazatel na ten hledany prvek
 HTItem *htSearch(HTable *ptrht, tKey key);
 
-//VKLADANI DO HT
-//USPECH == TRUE
-//NEUSPECH == FALSE
-bool htInsert(HTable *ptrht, tKey key, void *item);
-
 //read
 void* htRead(HTable *ptrht, tKey key);
 
+void *ht_insert(HTable *table, HTItem *new_item);
+HTItem *insert_function(HTable *symtable, tKey key, int params_quantity, bool defined);
+HTItem *insert_variable(HTable *symtable, tKey key);
 
-//struktura pro promennou
-typedef struct variable {
-    char *name;      //jmeno
-    void *item; // zoznam priradenych hodnot k premennej
-} Tvariable;
-
-
-//struktura pro fuknci
-typedef struct function {
-    char *name;              //jmeno funkce
-    tDLList *params;        //list parametru
-    HTable *local_symtable; //tabulka lokalnich promennych
-    char *return_type;      //navratovy typ funkce
-
-} Tfunction;
-
-HTable *htInsertNew(HTable *ptrht, tKey key, void *item);
 extern HTable *hashtable;
-
 
 #endif
