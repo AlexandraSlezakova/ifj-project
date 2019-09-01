@@ -1,17 +1,5 @@
 #include "functions.h"
 
-/**
- * Function returns copy of name
- * @param name
- * @return
- */
-char *copy_name(char *name) {
-    char *copy = malloc(sizeof(char));
-    strcpy(copy, name);
-
-    return copy;
-}
-
 bool is_eol(TType type) {
     return type == TEOL;
 }

@@ -26,36 +26,15 @@ HTable *htInit(){
 
    hstable = malloc(sizeof(HTable));
    IF_RETURN(!hstable, NULL)
-   hstable->size = HTSIZE;
 
     // insert null to table
     for (int i = 0; i < HTSIZE; i++) {
-        hstable[i].item = NULL;
+        (*hstable).first[i] = NULL;
     }
 
     return hstable;
 }
 
-
-/**
- * Create pair = key, value
- */
-HTItem *ht_new_item(HTItem *item) {
-
-    HTItem *new_item;
-
-    IF_RETURN((new_item = malloc(sizeof(HTItem))) == NULL, NULL)
-    IF_RETURN((new_item->key = strdup(item->key)) == NULL, NULL)
-
-    new_item->symtable = item->symtable;
-    new_item->params_quantity = item->params_quantity;
-    new_item->defined = item->defined;
-    new_item->type = item->type;
-
-    new_item->next = NULL;
-
-    return new_item;
-}
 
 /**
  * Insert new item
@@ -68,16 +47,16 @@ void *ht_insert(HTable *table, HTItem *new_item) {
 
     hash = createHash(new_item->key);
 
-    // todo hladat v tabulke, ci tam je
+    // todo hladat v tabulke, ci tam je ?
 
     /* end of table*/
-    if (table[hash].item) {
-        table[hash].item->next = new_item;
-        table[hash].item = new_item;
+    if (table->first[hash] != NULL) {
+        table->first[hash]->next = new_item;
+        table->first[hash] = new_item;
         new_item->next = NULL;
 
     } else {
-        table[hash].item = new_item;
+        table->first[hash] = new_item;
     }
 }
 
@@ -85,16 +64,16 @@ HTItem *htSearch(HTable *table, tKey key) {
 
     IF_RETURN(!table, NULL)
 
-    // hash key
+    /* hash key */
     int hash = createHash(key);
 
     HTItem *tmp;
-    tmp = table[hash].item;
+    tmp = table->first[hash];
 
     while(tmp != NULL){
         if (strcmp(tmp->key, key) == 0)
             return tmp;
-        tmp = tmp->next; // move to next item
+        tmp = tmp->next; /* move to next item */
     }
 
     return NULL;
@@ -105,13 +84,13 @@ void *htRead(HTable *ptrht, tKey key) {
 
     IF_RETURN(ptrht == NULL, NULL)
 
-    // search item
+    /* search item */
     HTItem *tmp = htSearch(ptrht, key);
 
     return tmp == NULL ? NULL : tmp;
 }
 
-HTItem *insert_function(HTable *symtable, tKey key, int params_quantity, bool defined) {
+HTItem *insert_function(HTable *symtable, tKey key, int params_quantity, bool defined, tDLList *list) {
    HTItem *item = malloc(sizeof(HTItem));
    IF_RETURN(!item, NULL)
 
@@ -120,6 +99,7 @@ HTItem *insert_function(HTable *symtable, tKey key, int params_quantity, bool de
    item->defined = defined;
    item->params_quantity = params_quantity;
    item->symtable = symtable;
+   item->list = list;
 
    ht_insert(symtable, item);
    return item;

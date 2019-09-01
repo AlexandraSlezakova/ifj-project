@@ -1,10 +1,3 @@
-/**
- *
- * soubor pro definici eroru
- *
- * Tomas Majerech
- */
-
 
 #ifndef IFJ_ERRORS_H
 #define IFJ_ERRORS_H

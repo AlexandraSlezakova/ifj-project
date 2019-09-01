@@ -5,8 +5,6 @@
  * @brief Subor obsahujuci hlavicky pomocnyc funkcii semantickej analyzy
  */
 #include "symtable.h"
-#include "scanner.h"
-#include "symtable.h"
 #include <stdio.h>
 #ifndef _SEMANTIC_H
 #define _SEMANTIC_H
@@ -16,7 +14,7 @@
  *  Inicializuje zoznam a tabulku symbolov
  *  @return SEM_OK, ERR_INTERNAL
  */
-int list_and_table_init();
+int table_init();
 
 HTable *init_local_table();
 

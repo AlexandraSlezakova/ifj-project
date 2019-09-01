@@ -74,7 +74,7 @@ struct TToken construct_token(char ungetChar, char *buffer, struct TToken new_to
     new_token.type = type;
 
     if (type == TINT_VALUE) {
-        char *ptr;
+        char *ptr = malloc(sizeof(char));
         //token.val.ival = strtol(buffer, NULL, 10);
         new_token.val.ival = strtol(buffer, &ptr, 10);
 

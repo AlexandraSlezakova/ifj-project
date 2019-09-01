@@ -4,8 +4,8 @@
 #define IFJ_FUNCTIONS_H
 
 #define IF_RETURN(CONDITION, VAL) if (CONDITION) return VAL;
-#define GLOBAL_SCOPE 0;
-#define SCOPE 1;
+#define GLOBAL_SCOPE 0
+#define SCOPE 1
 
 bool is_eol(TType type);
 bool is_identifier(TType type);

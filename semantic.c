@@ -5,13 +5,7 @@ bool success;
 /**
  * Inicializacia globalnej tabulky a zoznamu
  */
-int list_and_table_init(){
-
-   // global_list = DLInitList();
-
-//    if (global_list == NULL){
-//        return ERR_INTERNAL;
-//    }
+int table_init(){
 
     global_hashtable = htInit();
 

@@ -1,12 +1,3 @@
-/**
- *
- * @file list.h
- * @authors Tomáš Majerech, Alexandra Slezáková
- * @date 25.11.2018
- * @brief Hlavičkový soubor pro práci s listem
- *
- */
-
 
 #include <stdio.h>
 #include <stdlib.h>
