@@ -68,34 +68,45 @@ void
 ast_destroy(AST_NODE **tree);
 
 typedef enum {
-    PSA_MULTIPLICATION,     /*  *  */
-    PSA_DIVISION,           /*  /  */
-    PSA_ADDITION,           /*  +  */
-    PSA_SUBTRACTION,        /*  -  */
-    PSA_LESS,               /*  <  */
-    PSA_LESSEQUAL,          /*  <= */
-    PSA_GREATER,            /*  >  */
-    PSA_GREATEREQUAL,       /*  >= */
-    PSA_EQUAL,              /*  == */
-    PSA_NOTEQUAL,           /*  != */
-    PSA_LBRACKET,           /*  (  */
-    PSA_RBRACKET,           /*  )  */
-    PSA_OPERAND,            /*  id */
-    PSA_END,                /*  $  */
+    PSA_MULTIPLICATION      = 0,     /*  *  */
+    PSA_DIVISION            = 1,     /*  /  */
+    PSA_ADDITION            = 2,     /*  +  */
+    PSA_SUBTRACTION         = 3,     /*  -  */
+    PSA_LESS                = 4,     /*  <  */
+    PSA_LESSEQUAL           = 5,     /*  <= */
+    PSA_GREATER             = 6,     /*  >  */
+    PSA_GREATEREQUAL        = 7,     /*  >= */
+    PSA_EQUAL               = 8,     /*  == */
+    PSA_NOTEQUAL            = 9,     /*  != */
+    PSA_LBRACKET            = 10,    /*  (  */
+    PSA_RBRACKET            = 11,    /*  )  */
+    PSA_OPERAND             = 12,    /*  id */
+    PSA_END                 = 13,    /*  $  */
 
-    NON_TERMINAL,           /*  E  */
+    NON_TERMINAL            = 15,    /*  E  */
 
-    START_HANDLE,           /* '<' */
-    END_HANDLE,             /* '>' */
-    PSA_NONE,
-    MATHEMATICAL_OPERATION
+    START_HANDLE            = 16,    /* '<' */
+    END_HANDLE              = 17,    /* '>' */
+    PSA_NONE                = 18,
+    MATHEMATICAL_OPERATION  = 19
 } PSA_SYMBOL;
+
+typedef enum
+{
+    TYPE_STRING,
+    TYPE_FLOAT,
+    TYPE_INTEGER,
+    TYPE_NIL,
+    TYPE_IDENTIFIER,
+    TYPE_UNKNOWN
+} DATA_TYPE;
 
 typedef struct stackElem {
     struct TToken *current_token;
     struct stackElem *next;
     AST_NODE *node;
-    int psa_symbol;
+    PSA_SYMBOL psa_symbol;
+    DATA_TYPE type;
 } S_ELEM;
 
 AST_node_type node_type(S_ELEM *stack_elem);

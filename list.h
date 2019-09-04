@@ -16,7 +16,7 @@ extern int solved;
  *Struktura pro prvek v listu
  */
 typedef struct tDLElem {                 /* prvek dvousměrně vázaného seznamu */
-    void* data;                                            /* užitečná data */
+    char* data;                                            /* užitečná data */
     struct tDLElem *lptr;          /* ukazatel na předchozí prvek seznamu */
     struct tDLElem *rptr;        /* ukazatel na následující prvek seznamu */
 } *tDLElemPtr;
@@ -40,13 +40,13 @@ tDLList * DLInitList ();
  * @param void *  ukazatel na strukturu variable/function kterou chceme přiřadit
  * @return True pokud uspech, jinak FALSE
  */
-bool DLInsertFirst (tDLList *,  void *);
+bool DLInsertFirst (tDLList *,  char *);
 /**
  * @param tDLList * ukazatel na list kam chceme přidat prvek
  * @param void * ukazatel na strukturu variable/function kterou chceme přiřadit
  * @return True pokud uspech, jinak FALSE
  */
-bool DLInsertLast(tDLList *,  void *);
+bool DLInsertLast(tDLList *,  char *);
 /**
  * @param tDLList * ukazatel na list kde chceme mazat
  * @return True pokud uspech, jinak FALSE

@@ -13,6 +13,8 @@ bool is_left_bracket(TType type);
 bool is_right_bracket(TType type);
 bool is_assignment_correct(TType type);
 bool is_comma(TType type);
+bool is_function_call(struct TToken current_token, char *name);
+bool is_term(TType type);
 char *copy_name(char *name);
 
 #endif //IFJ_FUNCTIONS_H

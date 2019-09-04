@@ -252,23 +252,25 @@ int save_built_in_function(){
 /**
  *  Kontrola identifikatoru alebo identifikatoru funkcie
  */
-void checkIdentifierExists(HTable *local_hashtable, char *name, bool exit_switch) {
-
-    HTItem *varT = NULL;
-
-    // hladanie v lokalnej tabulke, ak existuje
-    if (local_hashtable != NULL) varT = htRead(local_hashtable, name);
-
-    // ak nie je najdena v lokalnej, tak hladanie v globalnej
-    if (varT == NULL) varT = htRead(global_hashtable, name);
-
-    // pouzitie nedefinovaneho identifikatora
-    if (exit_switch) {
-        if (varT == NULL) exit(SEM_ERR_UNDEF_VAR);
-
-    // redefinicia
-    } else {
-        if (varT != NULL) exit(SEM_ERR_UNDEF_VAR);
-    }
-
-}
+//int checkIdentifierExists(HTable *local_hashtable, char *name, bool exit_switch) {
+//
+//    HTItem *varT = NULL;
+//
+//    // hladanie v lokalnej tabulke, ak existuje
+//    if (local_hashtable != NULL) varT = htRead(local_hashtable, name);
+//
+//    // ak nie je najdena v lokalnej, tak hladanie v globalnej
+//    if (varT == NULL) varT = htRead(global_hashtable, name);
+//
+//    // pouzitie nedefinovaneho identifikatora
+//    if (exit_switch) {
+//        if (varT == NULL) return SEM_ERR_UNDEF_VAR;
+//
+//    // redefinicia
+//    } else {
+//        if (varT != NULL) return SEM_ERR_UNDEF_VAR;
+//    }
+//
+//    return SEM_OK;
+//
+//}

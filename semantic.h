@@ -75,7 +75,7 @@ int checkFunctionExists(char* function_name,char typ, tDLList * local_list, HTab
  * @param list
  * @return
  */
-void checkIdentifierExists(HTable *local_hashtable, char *name, bool exit_switch);
+int checkIdentifierExists(HTable *local_hashtable, char *name, bool exit_switch);
 
 
 /**

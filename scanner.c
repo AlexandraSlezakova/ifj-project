@@ -249,7 +249,6 @@ int get_token() {
                 }
                 else
                 {
-                    printf("token %s", buffer);
                     token = construct_token(c, buffer, token, TINT_VALUE);
                     return 0;
                 }

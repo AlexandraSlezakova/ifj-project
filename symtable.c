@@ -80,16 +80,6 @@ HTItem *htSearch(HTable *table, tKey key) {
 
 }
 
-void *htRead(HTable *ptrht, tKey key) {
-
-    IF_RETURN(ptrht == NULL, NULL)
-
-    /* search item */
-    HTItem *tmp = htSearch(ptrht, key);
-
-    return tmp == NULL ? NULL : tmp;
-}
-
 HTItem *insert_function(HTable *symtable, tKey key, int params_quantity, bool defined, tDLList *list) {
    HTItem *item = malloc(sizeof(HTItem));
    IF_RETURN(!item, NULL)
@@ -105,13 +95,14 @@ HTItem *insert_function(HTable *symtable, tKey key, int params_quantity, bool de
    return item;
 }
 
-HTItem *insert_variable(HTable *symtable, tKey key) {
+HTItem *insert_variable(HTable *symtable, tKey key, DATA_TYPE data_type) {
     HTItem *item = malloc(sizeof(HTItem));
     IF_RETURN(!item, NULL)
 
     item->key = key;
     item->type = IDENTIFIER;
     item->defined = true;
+    item->data_type = data_type;
 
     ht_insert(symtable, item);
     return item;

@@ -31,7 +31,7 @@ tDLList * DLInitList () {
     return L;
 }
 
-bool DLInsertFirst (tDLList *L, void *ptr) {
+bool DLInsertFirst (tDLList *L, char *ptr) {
 /**
 ** Vloží nový prvek na začátek seznamu L.
 ** V případě, že není dostatek paměti pro nový prvek při operaci malloc,
@@ -64,7 +64,7 @@ bool DLInsertFirst (tDLList *L, void *ptr) {
 
 
 
-bool DLInsertLast(tDLList *L,  void *ptr) {
+bool DLInsertLast(tDLList *L,  char *ptr) {
 /**
 ** Vloží nový prvek na konec seznamu L (symetrická operace k DLInsertFirst).
 ** V případě, že není dostatek paměti pro nový prvek při operaci malloc,
@@ -163,10 +163,6 @@ bool DLDeleteLast (tDLList *L) {
 
 //VYHLEDANI V SEZNAMU
 bool DLSearch(tDLList * listPtr, char* key){
-    /**
-     *
-     *
-     */
 
     if(listPtr == NULL){
         return FALSE;

@@ -36,6 +36,7 @@ typedef struct HTItem{
     HTType type;
     bool has_params;
     tDLList *list;
+    DATA_TYPE data_type;
 } HTItem;
 
 //hash funkce
@@ -48,12 +49,9 @@ HTable * htInit();
 //vraci null pokud nenajde, jinak vraci ukazatel na ten hledany prvek
 HTItem *htSearch(HTable *ptrht, tKey key);
 
-//read
-void* htRead(HTable *ptrht, tKey key);
-
 void *ht_insert(HTable *table, HTItem *new_item);
 HTItem *insert_function(HTable *symtable, tKey key, int params_quantity, bool defined, tDLList *list);
-HTItem *insert_variable(HTable *symtable, tKey key);
+HTItem *insert_variable(HTable *symtable, tKey key, DATA_TYPE data_type);
 
 extern HTable *hashtable;
 
