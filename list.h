@@ -1,3 +1,13 @@
+/**
+ * Formal Languages and Compilers
+ * Implementation of the imperative language interpreter
+ * @file list.h
+ * @brief header file for list for arguments of function
+ * @author
+ * @author
+ * @author
+ * @author
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,63 +16,53 @@
 #ifndef LIST
 #define LIST
 
-#define FALSE 0
-#define TRUE 1
+#define IF_RETURN(CONDITION, VAL) if (CONDITION) return VAL;
 
-extern int errflg;
-extern int solved;
 
-/**
- *Struktura pro prvek v listu
- */
-typedef struct tDLElem {                 /* prvek dvousměrně vázaného seznamu */
-    char* data;                                            /* užitečná data */
-    struct tDLElem *lptr;          /* ukazatel na předchozí prvek seznamu */
-    struct tDLElem *rptr;        /* ukazatel na následující prvek seznamu */
+typedef struct tDLElem {
+    char* data;
+    struct tDLElem *lptr;
+    struct tDLElem *rptr;
 } *tDLElemPtr;
 
-/**
- * Struktura listu
- */
-typedef struct {                                  /* dvousměrně vázaný seznam */
-    tDLElemPtr First;                      /* ukazatel na první prvek seznamu */
-    tDLElemPtr Last;                    /* ukazatel na posledni prvek seznamu */
+
+typedef struct {
+    tDLElemPtr First;
+    tDLElemPtr Last;
 } tDLList;
 
 /**
- * Inicializuje list
- * @return ukazatel na inicializovaný list
+ * Init of list
+ * @return pointer to list
  */
 tDLList * DLInitList ();
+
 /**
- *
- * @param tDLList * ukazatel na list kam chceme přidat prvek
- * @param void *  ukazatel na strukturu variable/function kterou chceme přiřadit
- * @return True pokud uspech, jinak FALSE
+ * Insert item of list as last item
+ * @param L list
+ * @param ptr item
+ * @return true if success
  */
-bool DLInsertFirst (tDLList *,  char *);
-/**
- * @param tDLList * ukazatel na list kam chceme přidat prvek
- * @param void * ukazatel na strukturu variable/function kterou chceme přiřadit
- * @return True pokud uspech, jinak FALSE
- */
-bool DLInsertLast(tDLList *,  char *);
+bool DLInsertLast(tDLList *L,  char *ptr);
+
+//bool DLInsertFirst (tDLList *,  char *);
+
 /**
  * @param tDLList * ukazatel na list kde chceme mazat
  * @return True pokud uspech, jinak FALSE
  */
-bool DLDeleteLast (tDLList *);
+//bool DLDeleteLast (tDLList *);
 /**
  * @param tDLList * ukazatel na list kde chceme mazat
  * @return True pokud uspech, jinak FALSE
  */
-bool DLDeleteFirst(tDLList *);
+//bool DLDeleteFirst(tDLList *);
 /**
  * @param tDLList * ukazatel na list kde chceme vyhledavat
  * @param char* string s nazvem
  * @return True pokud uspech, jinak FALSE
  */
-bool DLSearch(tDLList *, char*);
+//bool DLSearch(tDLList *, char*);
 
 
 #endif

@@ -1,3 +1,13 @@
+/**
+ * Formal Languages and Compilers
+ * Implementation of the imperative language interpreter
+ * @file errors.h
+ * @brief header file for error codes
+ * @author
+ * @author
+ * @author
+ * @author
+ */
 
 #ifndef IFJ_ERRORS_H
 #define IFJ_ERRORS_H

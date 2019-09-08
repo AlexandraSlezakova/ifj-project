@@ -1,17 +1,25 @@
+/**
+ * Formal Languages and Compilers
+ * Implementation of the imperative language interpreter
+ * @file symtable.h
+ * @brief header file of symtable.c
+ * @author
+ * @author
+ * @author
+ * @author
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include "list.h"
 #include "stack.h"
 
-#ifndef HASHTABLE
-#define HASHTABLE
+#ifndef SYMTABLE
+#define SYMTABLE
 
-//def velikosti tabulky
-#define HTSIZE 101
-
-//typ klice
-typedef char *tKey;
+/* size of table */
+#define SIZE 101
 
 typedef enum {
     FUNCTION,
@@ -19,17 +27,15 @@ typedef enum {
 }HTType;
 
 
-//tabulka ukazatelu na itemy
-//typedef HTItem *HTable[HTSIZE];
 typedef struct hashtable{
-    struct HTItem *first[HTSIZE];
+    struct HTItem *first[SIZE];
 } HTable;
 
 
-/*jednotlive prvky ht*/
+/* item of hashtable */
 typedef struct HTItem{
-    tKey key; //klic
-    struct HTItem *next;//ukazatel na nasledujici
+    char *key;
+    struct HTItem *next;
     HTable *symtable;
     int params_quantity;
     bool defined;
@@ -39,20 +45,12 @@ typedef struct HTItem{
     DATA_TYPE data_type;
 } HTItem;
 
-//hash funkce
-int createHash(tKey key);
 
-//init tabulky
-HTable * htInit();
-
-//vyhledavani
-//vraci null pokud nenajde, jinak vraci ukazatel na ten hledany prvek
-HTItem *htSearch(HTable *ptrht, tKey key);
-
+int createHash(char *key);
+HTable * ht_init();
+HTItem *ht_search(HTable *table, char *key);
 void *ht_insert(HTable *table, HTItem *new_item);
-HTItem *insert_function(HTable *symtable, tKey key, int params_quantity, bool defined, tDLList *list);
-HTItem *insert_variable(HTable *symtable, tKey key, DATA_TYPE data_type);
-
-extern HTable *hashtable;
+HTItem *insert_function(HTable *symtable, char *key, int params_quantity, bool defined, tDLList *list);
+HTItem *insert_variable(HTable *symtable, char *key, DATA_TYPE data_type);
 
 #endif

@@ -1,74 +1,84 @@
+/**
+ * Formal Languages and Compilers
+ * Implementation of the imperative language interpreter
+ * @file symtable.c
+ * @brief implementation of symbol table as a hash table
+ * @author
+ * @author
+ * @author
+ * @author
+ */
 #include "symtable.h"
 #include <string.h>
 
 /**
  * Hash function
  */
-int createHash(tKey key){
+int createHash(char *key){
 
-    int retval = 1;
-    int keylen = strlen(key);
+    int ret = 1;
+    int key_length = strlen(key);
 
-    for(int i = 0; i < keylen; i++) {
-        retval = retval + key[i];
+    for(int i = 0; i < key_length; i++) {
+        ret = ret + key[i];
     }
 
-    return(keylen % HTSIZE);
+    return(key_length % SIZE);
 }
 
 
 /**
  * Init table
  */
-HTable *htInit(){
+HTable *ht_init(){
 
-    HTable *hstable = NULL;
+    HTable *symtable = NULL;
 
-   hstable = malloc(sizeof(HTable));
-   IF_RETURN(!hstable, NULL)
+    symtable = malloc(sizeof(HTable));
+   IF_RETURN(!symtable, NULL)
 
-    // insert null to table
-    for (int i = 0; i < HTSIZE; i++) {
-        (*hstable).first[i] = NULL;
+    /* insert null into table */
+    for (int i = 0; i < SIZE; i++) {
+        (*symtable).first[i] = NULL;
     }
 
-    return hstable;
+    return symtable;
 }
 
 
 /**
  * Insert new item
  */
-void *ht_insert(HTable *table, HTItem *new_item) {
+void *ht_insert(HTable *symtable, HTItem *new_item) {
 
     int hash = 0;
 
-    IF_RETURN(!table, NULL)
+    IF_RETURN(!symtable, NULL)
 
     hash = createHash(new_item->key);
 
     // todo hladat v tabulke, ci tam je ?
 
     /* end of table*/
-    if (table->first[hash] != NULL) {
-        table->first[hash]->next = new_item;
-        table->first[hash] = new_item;
+    if (symtable->first[hash] != NULL) {
+        symtable->first[hash]->next = new_item;
+        symtable->first[hash] = new_item;
         new_item->next = NULL;
 
     } else {
-        table->first[hash] = new_item;
+        symtable->first[hash] = new_item;
     }
 }
 
-HTItem *htSearch(HTable *table, tKey key) {
+HTItem *ht_search(HTable *symtable, char *key) {
 
-    IF_RETURN(!table, NULL)
+    IF_RETURN(!symtable, NULL)
 
     /* hash key */
     int hash = createHash(key);
 
     HTItem *tmp;
-    tmp = table->first[hash];
+    tmp = symtable->first[hash];
 
     while(tmp != NULL){
         if (strcmp(tmp->key, key) == 0)
@@ -80,7 +90,7 @@ HTItem *htSearch(HTable *table, tKey key) {
 
 }
 
-HTItem *insert_function(HTable *symtable, tKey key, int params_quantity, bool defined, tDLList *list) {
+HTItem *insert_function(HTable *symtable, char *key, int params_quantity, bool defined, tDLList *list) {
    HTItem *item = malloc(sizeof(HTItem));
    IF_RETURN(!item, NULL)
 
@@ -95,7 +105,7 @@ HTItem *insert_function(HTable *symtable, tKey key, int params_quantity, bool de
    return item;
 }
 
-HTItem *insert_variable(HTable *symtable, tKey key, DATA_TYPE data_type) {
+HTItem *insert_variable(HTable *symtable, char *key, DATA_TYPE data_type) {
     HTItem *item = malloc(sizeof(HTItem));
     IF_RETURN(!item, NULL)
 

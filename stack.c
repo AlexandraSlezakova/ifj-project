@@ -1,4 +1,15 @@
+/**
+ * Formal Languages and Compilers
+ * Implementation of the imperative language interpreter
+ * @file stack.c
+ * @brief implementation of stack
+ * @author
+ * @author
+ * @author
+ * @author
+ */
 #include "stack.h"
+#include "scanner.h"
 #include <stdlib.h>
 
 void stack_init(STACK *stack) {
@@ -42,11 +53,11 @@ int stack_push(STACK *stack, struct TToken *current_token, AST_NODE *node, PSA_S
     /* deep copy of token*/
     if (current_token != NULL) {
         stack_elem->current_token = current_token;
-        stack_elem->current_token->type = current_token->type;
-        stack_elem->current_token->name = current_token->name;
-        stack_elem->current_token->val.ival = current_token->val.ival;
-        stack_elem->current_token->val.fval = current_token->val.fval;
-        stack_elem->current_token->val.p_cval = current_token->val.p_cval;
+//        stack_elem->current_token->type = current_token->type;
+//        stack_elem->current_token->name = current_token->name;
+//        stack_elem->current_token->value.is_int = current_token->value.is_int;
+//        stack_elem->current_token->value.is_float = current_token->value.is_float;
+//        stack_elem->current_token->value.is_char = current_token->value.is_char;
     }
 
     stack_elem->next = stack->top;

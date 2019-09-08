@@ -1,3 +1,13 @@
+/**
+ * Formal Languages and Compilers
+ * Implementation of the imperative language interpreter
+ * @file stack.h
+ * @brief header file of stack.c
+ * @author
+ * @author
+ * @author
+ * @author
+ */
 #include "ast.h"
 
 #ifndef IFJ_STACK_H
