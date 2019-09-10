@@ -17,7 +17,7 @@
 #include "scanner.h"
 #include "errors.h"
 
-char *keywords[9] = {"def", "do", "else", "end", "if", "not", "nil", "then", "while"};
+char *keywords[9] = {"def", "do", "while", "if", "then", "elif", "not", "end", "nil"};
 
 bool is_comment_begin()
 {
@@ -61,15 +61,6 @@ void create_token(char character, char *string, struct TToken *new_token, TType 
     ungetc(character, stdin);
     buffer[count - 1] = '\0';
 
-    // todo
-    if (type == T_VAR) {
-        int i = 0;
-        while (string[i] != '\0') {
-            string[i] = (char)tolower(string[i]);
-            i++;
-        }
-    }
-
     new_token->type = (keyword_type = (TType)is_keyword(string))
             ? keyword_type
             : type;
@@ -102,14 +93,17 @@ int get_token() {
     buffer = NULL;
     TState state = START; /* initial state */
 
-
     while (1) {
         /* buffer realloc */
         buffer = realloc(buffer, (size_t) ++allocated);
 
         if (state != S_ERROR) {
             /* end of file at the beginning */
-            if (((c = (char)getchar()) == EOF) && (state == START)) {
+            if (c != '\n') {
+                c = (char)getchar();
+            }
+
+            if (c == EOF && state == START) {
                 token.type = T_IS_EOF;
                 return TOKEN_OK;
             }
@@ -205,15 +199,24 @@ int get_token() {
                 }
                 else if (c == '(')
                 {
-                    state = S_LEFT_BRACKET;
-                    break;
+                    create_token(c, buffer, &token, T_LEFT_BRACKET);
+                    return 0;
                 }
                 else if (c == ')')
                 {
-                    state = S_RIGHT_BRACKET;
-                    break;
+                    create_token(c, buffer, &token, T_RIGHT_BRACKET);
+                    return 0;
                 }
-
+                else if (c == ':')
+                {
+                    create_token(c, buffer, &token, T_COLON);
+                    return 0;
+                }
+                else if (c == '\t')
+                {
+                    create_token(c, buffer, &token, T_TAB);
+                    return 0;
+                }
                 else
                 {
                     state = S_ERROR;
@@ -583,17 +586,6 @@ int get_token() {
             case S_ASSIGNMENT:
                 create_token(c, buffer, &token, T_ASSIGNMENT);
                 return 0;
-
-
-            case S_LEFT_BRACKET:
-                create_token(c, buffer, &token, T_LEFT_BRACKET);
-                return 0;
-
-
-            case S_RIGHT_BRACKET:
-                create_token(c, buffer, &token, T_RIGHT_BRACKET);
-                return 0;
-
 
             case S_COMMENT:
                 if (c == '\n')

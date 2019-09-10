@@ -59,3 +59,4 @@ void *create_value(struct TToken *current_token);
 PSA_SYMBOL token_to_psa_symbol();
 DATA_TYPE token_to_data_type(struct TToken current_token);
 DATA_TYPE check_data_type(DATA_TYPE type1, DATA_TYPE type2);
+AST_node_type condition_to_node(TType token_type);

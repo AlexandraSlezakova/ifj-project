@@ -36,12 +36,13 @@ typedef enum {
     S_EQUAL,                    /* znak rovnosti */
     START_BLOCK_COMMENT,        /* blokovy komentar */
     END_BLOCK_COMMENT,          /* koniec blokoveho komentara */
+    S_COLON,                    /* dvojbodka */
     S_ASSIGNMENT,
     S_ADD,
     S_SUB,
-    S_ZERO,
     S_MUL,
     S_DIV,
+    S_ZERO,
     S_SMALLER,
     S_GREATER,
     S_IS_SMALLER_OR_EQUAL,
@@ -69,7 +70,7 @@ typedef enum {
     T_WHILE,                /* 7  */
     T_IF,                   /* 8  */
     T_THEN,                 /* 9  */
-    T_ELSE,                 /* 10 */
+    T_ELIF,                 /* 10 */
     T_NOT,			        /* 11 */
     T_END,                  /* 12 */
     T_NIL,                  /* 13 */
@@ -93,7 +94,9 @@ typedef enum {
     T_RIGHT_BRACKET,        /* 27 */
     T_IS_EOF,			    /* 28 */
     T_IS_EOL,			    /* 29 */
-    T_IS_ERR			    /* 30 */
+    T_IS_ERR,			    /* 30 */
+    T_COLON,
+    T_TAB,
 }TType;
 
 struct TToken {

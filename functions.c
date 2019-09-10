@@ -71,3 +71,18 @@ bool is_global_scope(int scope)
 {
     return scope == GLOBAL_SCOPE;
 }
+
+bool is_condition(TType type)
+{
+    return type == S_SMALLER
+        || type == S_GREATER
+        || type == S_IS_SMALLER_OR_EQUAL
+        || type == S_IS_GREATER_OR_EQUAL
+        || type == S_IS_NOT_EQUAL2
+        || type == S_EQUAL;
+}
+
+bool is_tab (TType type)
+{
+    return type == T_TAB;
+}
