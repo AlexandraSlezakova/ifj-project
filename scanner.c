@@ -63,8 +63,8 @@ void create_token(char character, char *string, struct TToken *new_token, TType 
     buffer[i - 1] = '\0';
 
     new_token->type = (keyword_type = (TType)is_keyword(string))
-            ? keyword_type
-            : type;
+                      ? keyword_type
+                      : type;
 
 
     if (new_token->type == T_INT) {
@@ -74,7 +74,7 @@ void create_token(char character, char *string, struct TToken *new_token, TType 
     } else if (new_token->type  == T_FLOAT) {
         new_token->value.is_float = strtof(string, NULL);
 
-    } else if (new_token->type  == T_VAR || new_token->type == T_FCE) {
+    } else if (new_token->type  == T_VAR || new_token->type == T_FCE || new_token->type == T_STRING) {
         new_token->value.is_char = string;
     }
 }
@@ -94,8 +94,7 @@ int get_token() {
         buffer = realloc(buffer, (size_t) ++allocated);
 
         if (state != S_ERROR) {
-            c = getchar();
-            if (c == EOF && state == START) {
+            if ((c = getchar()) == EOF && state == START) {
                 token.type = T_IS_EOF;
                 return TOKEN_OK;
             }
@@ -151,21 +150,25 @@ int get_token() {
                 }  /* mathematical operations */
                 else if (c == '+')
                 {
+                    c = getchar();
                     create_token(c, buffer, &token, T_ADD);
                     return 0;
                 }
                 else if (c == '-')
                 {
+                    c = getchar();
                     create_token(c, buffer, &token, T_SUB);
                     return 0;
                 }
                 else if (c == '*')
                 {
+                    c = getchar();
                     create_token(c, buffer, &token, T_MUL);
                     return 0;
                 }
                 else if (c == '/')
                 {
+                    c = getchar();
                     create_token(c, buffer, &token, T_DIV);
                     return 0;
                 }
@@ -186,21 +189,25 @@ int get_token() {
                 }
                 else if (c == ',')
                 {
+                    c = getchar();
                     create_token(c, buffer, &token, T_IS_COMMA);
                     return 0;
                 }
                 else if (c == '(')
                 {
-                    state = S_LEFT_BRACKET;
-                    break;
+                    c = getchar();
+                    create_token(c, buffer, &token, T_LEFT_BRACKET);
+                    return 0;
                 }
                 else if (c == ')')
                 {
-                    state = S_RIGHT_BRACKET;
-                    break;
+                    c = getchar();
+                    create_token(c, buffer, &token, T_RIGHT_BRACKET);
+                    return 0;
                 }
                 else if (c == ':')
                 {
+                    c = getchar();
                     create_token(c, buffer, &token, T_COLON);
                     return 0;
                 }
@@ -224,7 +231,7 @@ int get_token() {
                 }
                 break;
 
-            /* NUMBERS */
+                /* NUMBERS */
             case S_INT:
                 if (isdigit(c))
                 {
@@ -241,7 +248,7 @@ int get_token() {
                     state = S_EXP;
                     break;
                 }
-                else if (c <= 47 || c >= 58)
+                else if (is_special_character_number())
                 {
                     state = S_ERROR;
                     break;
@@ -252,7 +259,7 @@ int get_token() {
                     return 0;
                 }
 
-            /* decimal separator */
+                /* decimal separator */
             case S_DEC_SEP:
                 if (isdigit(c))
                 {
@@ -263,7 +270,7 @@ int get_token() {
                     state = S_ERROR;
                 break;
 
-            /* fractional part of number */
+                /* fractional part of number */
             case S_FLOAT:
                 if (isdigit(c))
                 {
@@ -275,7 +282,7 @@ int get_token() {
                     state = S_EXP;
                     break;
                 }
-                else if (c <= 47 || c >= 58)
+                else if (is_special_character_number())
                 {
                     state = S_ERROR;
                     break;
@@ -286,7 +293,7 @@ int get_token() {
                     return 0;
                 }
 
-            /* E || e */
+                /* E || e */
             case S_EXP:
                 if (c == '+' || c == '-')
                 {
@@ -298,11 +305,12 @@ int get_token() {
                     state = S_NUMBER_END;
                     break;
                 }
-                else
-                    state = S_FLOAT;
-                break;
+                else {
+                    create_token(c, buffer, &token, T_FLOAT);
+                    return 0;
+                }
 
-            /* character + or - */
+                /* character + or - */
             case S_EXP_CHAR:
                 if (isdigit(c))
                 {
@@ -313,14 +321,14 @@ int get_token() {
                     state = S_ERROR;
                 break;
 
-            /* exponent number */
+                /* exponent number */
             case S_NUMBER_END:
                 if (isdigit(c))
                 {
                     state = S_NUMBER_END;
                     break;
                 }
-                else if (c <= 47 || c >= 58)
+                else if (is_special_character_number())
                 {
                     state = S_ERROR;
                     break;
@@ -331,7 +339,7 @@ int get_token() {
                     return 0;
                 }
 
-            /* identifier */
+                /* identifier */
             case S_VAR:
                 if (isdigit(c) || isalpha(c) || c == '_')
                 {
@@ -340,6 +348,7 @@ int get_token() {
                 } /* function identifier */
                 else if (c == '!' || c == '?')
                 {
+                    c = getchar();
                     create_token(c, buffer, &token, T_FCE);
                     return 0;
                 }
@@ -393,7 +402,7 @@ int get_token() {
                     state = S_ERROR;
                 break;
 
-            /* escape sequence */
+                /* escape sequence */
             case S_ESC:
                 if (c == '"' || c == 'n' || c == 't' || c == 's' || c == '\\')
                 {
@@ -409,7 +418,7 @@ int get_token() {
                     state = S_ERROR;
                 break;
 
-            /* hex sequence */
+                /* hex sequence */
             case S_HEX_ESCAPE: //
                 if (isdigit(c) || (c >= 'A' && c <= 'F'))
                 {  /* \xh */
@@ -433,6 +442,7 @@ int get_token() {
                 }
                 else if (c == '"')
                 {
+                    c = getchar();
                     create_token(c, buffer, &token, T_STRING);
                     return 0;
                 }
@@ -448,6 +458,7 @@ int get_token() {
             case S_SMALLER:
                 if (c == '=')
                 {
+                    c = getchar();
                     create_token(c, buffer, &token, T_IS_SMALLER_OR_EQUAL);
                     return 0;
                 }
@@ -461,6 +472,7 @@ int get_token() {
             case S_GREATER:
                 if (c == '=')
                 {
+                    c = getchar();
                     create_token(c, buffer, &token, T_IS_GREATER_OR_EQUAL);
                     return 0;
                 }
@@ -473,6 +485,7 @@ int get_token() {
             case S_COMMENT_EQ_ASSIGNMENT:
                 if (c == '=')
                 {
+                    c = getchar();
                     create_token(c, buffer, &token, T_IS_EQUAL);
                     return 0;
                 }
@@ -533,6 +546,7 @@ int get_token() {
 
             case S_IS_NOT_EQUAL:
                 if (c == '=') {
+                    c = getchar();
                     create_token(c, buffer, &token, T_IS_NOT_EQUAL);
                     return 0;
                 } else
@@ -565,12 +579,21 @@ int get_token() {
 
 bool is_special_character()
 {
-    /* semicolon, colon, special characters, @ */
+    /* semicolon, special characters, @ */
     return c == 59
-           || c == 58
            || c == '.'
-           || c <= 39
+           || (c >= 33 && c <= 39)
            || c == 64
            || (c >= 91 && c <= 96)
            || c >= 123;
+}
+
+bool is_special_character_number()
+{
+    /* special characters, comma, hyphen, semicolon */
+    return (c >= 33 && c <= 39)
+        || c == 44
+        || c == 45
+        || c == 59
+        || c >= 63;
 }
