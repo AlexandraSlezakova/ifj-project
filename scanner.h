@@ -37,6 +37,7 @@ typedef enum {
     START_BLOCK_COMMENT,        /* blokovy komentar */
     END_BLOCK_COMMENT,          /* koniec blokoveho komentara */
     S_COLON,                    /* dvojbodka */
+    S_TAB,                      /* tabulator */
     S_ASSIGNMENT,
     S_ADD,
     S_SUB,
@@ -106,13 +107,13 @@ struct TToken {
         float is_float;
         char *is_char;
     }value;
-    char *name;
 } token;
 
-char c;
 int get_token();
-void create_token(char character, char *string,  struct TToken *new_token, TType type);
 int is_keyword(char *string);
+void create_token(char character, char *string,  struct TToken *new_token, TType type);
+bool is_special_character();
 char *buffer;
-int count;
+int i;
+int c;
 #endif

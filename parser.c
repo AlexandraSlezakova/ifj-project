@@ -8,6 +8,7 @@
  * @author
  */
 #include "parser.h"
+#include "scanner.h"
 
 int get_next_token() {
     int result = get_token();
@@ -30,7 +31,7 @@ int function_arguments(HTable *function_symtable, HTItem *new_item) {
 
         // todo redefinicia + datovy typ argumentu funkcie
         char *name = malloc(sizeof(char));
-        strcpy(name, token.name);
+        strcpy(name, token.value.is_char);
         HTItem *inserted = insert_variable(function_symtable, name, TYPE_UNKNOWN);
         IF_RETURN(!inserted, SYNTAX_ERR)
 
@@ -49,7 +50,7 @@ int function_arguments(HTable *function_symtable, HTItem *new_item) {
 
             IF_RETURN(!(token.type == T_VAR), SYNTAX_ERR)
 
-            strcpy(name, token.name);
+            strcpy(name, token.value.is_char);
             /* insert argument to table of function*/
             inserted = insert_variable(function_symtable, name, TYPE_UNKNOWN);
             IF_RETURN(!inserted, SYNTAX_ERR)
@@ -103,7 +104,7 @@ int recursive_descent(AST_NODE **ast) {
             IF_RETURN(!is_identifier(token.type), SYNTAX_ERR)
 
             char *name = malloc(sizeof(char));
-            strcpy(name, token.name);
+            strcpy(name, token.value.is_char);
 
             HTItem *found = ht_search(global_hashtable, name);
 
@@ -190,7 +191,7 @@ int statement(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *va
         IF_RETURN(!equals, ERR_INTERNAL)
 
         char *name = malloc(sizeof(name));
-        strcpy(name, token.name);
+        strcpy(name, token.value.is_char);
         AST_NODE *l_value = ast_add_node(&equals, VAR, name, is_global_scope(scope));
         IF_RETURN(!l_value, ERR_INTERNAL)
 
@@ -236,7 +237,7 @@ int expression(int scope, STACK *stack, HTable *function_table, AST_NODE **ast, 
     if (is_term(token.type)) {
         if (token.type == T_VAR) {
             /* check if identifier exists */
-            HTItem *found = ht_search(function_table, token.name);
+            HTItem *found = ht_search(function_table, token.value.is_char);
             IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
         }
         result = psa(scope, stack, *ast, function_table, variable, token_name);
@@ -310,7 +311,7 @@ int check_function_arguments(HTable *table, HTItem *arg)
 {
     if (token.type == T_VAR) {
         /* variable used in function call*/
-        HTItem *item = ht_search(table, token.name);
+        HTItem *item = ht_search(table, token.value.is_char);
         IF_RETURN(!item, SEM_ERR_UNDEF_VAR)
 
         /* check data type of variables*/
@@ -353,15 +354,15 @@ int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable
                 IF_RETURN(!(stack_push(stack, &token, node, input, TYPE_UNKNOWN) == OK), ERR_INTERNAL)
 
                 previous->type = token.type;
-                previous->name = token.name;
+                previous->value.is_char = token.value.is_char;
                 previous->value = token.value;
 
                 IF_RETURN(get_next_token(), TOKEN_ERR)
 
                 /* find identifier */
                 if (token.type == T_VAR) {
-                    found = ht_search(table, token.name);
-                    if (!found) found = ht_search(table, token.name);
+                    found = ht_search(table, token.value.is_char);
+                    if (!found) found = ht_search(table, token.value.is_char);
                     IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
                 }
 
@@ -374,7 +375,7 @@ int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable
 
                 /* find identifier before push with correct data type*/
                 if (token.type == T_VAR) {
-                    found = ht_search(table, token.name);
+                    found = ht_search(table, token.value.is_char);
                     IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
                     /* push to stack */
                     IF_RETURN(!(stack_push(stack, &token, NULL, input, found->data_type) == OK), ERR_INTERNAL)
@@ -385,7 +386,7 @@ int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable
 
                 /* save token used in reduction*/
                 previous->type = token.type;
-                previous->name = token.name;
+                previous->value.is_char = token.value.is_char;
                 previous->value = token.value;
 
                 IF_RETURN(get_next_token(), TOKEN_ERR)
@@ -439,14 +440,14 @@ int reduce(int scope, STACK *stack, HTable *table, struct TToken *previous)
 
                 original->type = stack_elem[0].current_token->type;
                 original->value = stack_elem[0].current_token->value;
-                original->name = stack_elem[0].current_token->name;
+                original->value.is_char = stack_elem[0].current_token->value.is_char;
                 node = ast_add_node(&node, original->type == T_VAR ? VAR : VAL, create_value(original), is_global_scope(scope));
                 break;
             case BRACKET_RULE:
                 type = token_to_data_type(*stack_elem[1].current_token);
                 original->type = stack_elem[1].current_token->type;
                 original->value = stack_elem[1].current_token->value;
-                original->name = stack_elem[1].current_token->name;
+                original->value.is_char = stack_elem[1].current_token->value.is_char;
                 node = stack_elem[1].node;
                 break;
             case MATHEMATICAL_OPERATION_RULE:
@@ -528,7 +529,7 @@ void *create_value(struct TToken *current_token)
             value = "nil";
             break;
         case T_VAR || T_FCE:
-            value = current_token->name;
+            value = current_token->value.is_char;
             break;
         default:
             value = NULL;
@@ -662,7 +663,10 @@ int main(int argc, char const *argv[]) {
     AST_NODE *ast = NULL;
     ast_init(&ast);
 
-    printf("%d",  recursive_descent(&ast));
+    //printf("%d",  recursive_descent(&ast));
+    while (1) {
+        get_next_token();
+    }
 
     //return recursive_descent(&ast);
     return 0;

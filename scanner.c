@@ -21,8 +21,8 @@ char *keywords[9] = {"def", "do", "while", "if", "then", "elif", "not", "end", "
 
 bool is_comment_begin()
 {
-    for (int i = 0; i < 5; ++i) {
-        buffer[count++] = (char)getchar();
+    for (int j = 0; j < 5; ++j) {
+        buffer[i++] = getchar();
     }
 
     return ((!strcmp(buffer, "=begin ")) || (!strcmp(buffer, "=begin\t")) || (!strcmp(buffer, "=begin\n")));
@@ -31,12 +31,12 @@ bool is_comment_begin()
 
 bool is_comment_end()
 {
-    for (int i = 0; i < 3; ++i) {
-        buffer[count++] = (char)getchar();
+    for (int j = 0; j < 3; ++j) {
+        buffer[i++] = (char)getchar();
     }
 
     char *pom_buffer = malloc(5);
-    memcpy(pom_buffer, buffer + (count-5), 5);
+    memcpy(pom_buffer, buffer + (i-5), 5);
 
     return ((!strcmp(pom_buffer, "=end ")) || (!strcmp(pom_buffer, "=end\t")) || (!strcmp(pom_buffer, "=end\n")));
 
@@ -44,9 +44,9 @@ bool is_comment_end()
 
 int is_keyword(char *string)
 {
-    for (int i = 0; i < 9; i++) {
-        if (strcmp(string, keywords[i]) == 0) {
-            return i + 5;
+    for (int j = 0; j < 9; j++) {
+        if (strcmp(string, keywords[j]) == 0) {
+            return j + 5;
         }
     }
 
@@ -58,8 +58,9 @@ int is_keyword(char *string)
 void create_token(char character, char *string, struct TToken *new_token, TType type) {
 
     TType keyword_type;
+    /* return read character for another reading */
     ungetc(character, stdin);
-    buffer[count - 1] = '\0';
+    buffer[i - 1] = '\0';
 
     new_token->type = (keyword_type = (TType)is_keyword(string))
             ? keyword_type
@@ -75,21 +76,16 @@ void create_token(char character, char *string, struct TToken *new_token, TType 
 
     } else if (new_token->type  == T_VAR || new_token->type == T_FCE) {
         new_token->value.is_char = string;
-        new_token->name = string;
-
-    } else {
-        new_token->name = NULL;
     }
 }
 
 int get_token() {
 
     static int lineNum = 0; /* number of line */
-    static int linePos = 0; /* position */
+    int linePos = 0; /* position */
     int allocated = 0;
-    free(buffer);
 
-    count = 0;
+    i = 0;
     buffer = NULL;
     TState state = START; /* initial state */
 
@@ -98,11 +94,7 @@ int get_token() {
         buffer = realloc(buffer, (size_t) ++allocated);
 
         if (state != S_ERROR) {
-            /* end of file at the beginning */
-            if (c != '\n') {
-                c = (char)getchar();
-            }
-
+            c = getchar();
             if (c == EOF && state == START) {
                 token.type = T_IS_EOF;
                 return TOKEN_OK;
@@ -112,10 +104,11 @@ int get_token() {
 
             /* write to buffer without comments */
             if (!((state == START_BLOCK_COMMENT || state == END_BLOCK_COMMENT) && c != '=')) {
-                buffer[count++] = c; /* save character to buffer */
+                buffer[i++] = c; /* save character to buffer */
             }
         } else {
             token.type = T_IS_ERR;
+            fprintf(stderr, "Wrong token - line:%d (character:%d)!\n", lineNum, linePos);
             return TOKEN_ERR;
         }
 
@@ -135,13 +128,12 @@ int get_token() {
                 } /* white-space character*/
                 else if (isspace(c) && c != '\n') {
                     state = START;
-                    count = 0;
+                    i = 0;
                     allocated = 0;
                     break;
                 } /* new line*/
                 else if (c == '\n') {
                     lineNum++;
-                    linePos = 0;
                     token.type = T_IS_EOL; /* end of line */
                     return 0;
                 } /* beginning of string*/
@@ -156,26 +148,26 @@ int get_token() {
                 else if (c == '=') {
                     state = S_COMMENT_EQ_ASSIGNMENT;
                     break;
-                }
+                }  /* mathematical operations */
                 else if (c == '+')
                 {
-                    state = S_ADD;
-                    break;
+                    create_token(c, buffer, &token, T_ADD);
+                    return 0;
                 }
                 else if (c == '-')
                 {
-                    state = S_SUB;
-                    break;
+                    create_token(c, buffer, &token, T_SUB);
+                    return 0;
                 }
                 else if (c == '*')
                 {
-                    state = S_MUL;
-                    break;
+                    create_token(c, buffer, &token, T_MUL);
+                    return 0;
                 }
                 else if (c == '/')
                 {
-                    state = S_DIV;
-                    break;
+                    create_token(c, buffer, &token, T_DIV);
+                    return 0;
                 }
                 else if (c == '<')
                 {
@@ -194,18 +186,18 @@ int get_token() {
                 }
                 else if (c == ',')
                 {
-                    state = S_IS_COMMA;
-                    break;
+                    create_token(c, buffer, &token, T_IS_COMMA);
+                    return 0;
                 }
                 else if (c == '(')
                 {
-                    create_token(c, buffer, &token, T_LEFT_BRACKET);
-                    return 0;
+                    state = S_LEFT_BRACKET;
+                    break;
                 }
                 else if (c == ')')
                 {
-                    create_token(c, buffer, &token, T_RIGHT_BRACKET);
-                    return 0;
+                    state = S_RIGHT_BRACKET;
+                    break;
                 }
                 else if (c == ':')
                 {
@@ -214,8 +206,8 @@ int get_token() {
                 }
                 else if (c == '\t')
                 {
-                    create_token(c, buffer, &token, T_TAB);
-                    return 0;
+                    state = S_TAB;
+                    break;
                 }
                 else
                 {
@@ -249,6 +241,11 @@ int get_token() {
                     state = S_EXP;
                     break;
                 }
+                else if (c <= 47 || c >= 58)
+                {
+                    state = S_ERROR;
+                    break;
+                }
                 else
                 {
                     create_token(c, buffer, &token, T_INT);
@@ -276,6 +273,11 @@ int get_token() {
                 else if (c == 'e' || c == 'E')
                 {
                     state = S_EXP;
+                    break;
+                }
+                else if (c <= 47 || c >= 58)
+                {
+                    state = S_ERROR;
                     break;
                 }
                 else
@@ -318,6 +320,11 @@ int get_token() {
                     state = S_NUMBER_END;
                     break;
                 }
+                else if (c <= 47 || c >= 58)
+                {
+                    state = S_ERROR;
+                    break;
+                }
                 else
                 {
                     create_token(c, buffer, &token, T_FLOAT);
@@ -331,9 +338,13 @@ int get_token() {
                     state = S_VAR;
                     break;
                 } /* function identifier */
-                if (c == '!' || c == '?')
+                else if (c == '!' || c == '?')
                 {
-                    state = S_FCE;
+                    create_token(c, buffer, &token, T_FCE);
+                    return 0;
+                }
+                else if (is_special_character()) {
+                    state = S_ERROR;
                     break;
                 }
                 else
@@ -341,9 +352,6 @@ int get_token() {
                     create_token(c, buffer, &token, T_VAR);
                     return 0;
                 }
-            case S_FCE:
-                create_token(c, buffer, &token, T_FCE);
-                return 0;
 
             case START_STRING:
                 if (c == '\\')
@@ -425,8 +433,8 @@ int get_token() {
                 }
                 else if (c == '"')
                 {
-                    state = END_STRING;
-                    break;
+                    create_token(c, buffer, &token, T_STRING);
+                    return 0;
                 }
                 else if (c == '\\')
                 {
@@ -437,36 +445,11 @@ int get_token() {
                     state = S_ERROR;
                 break;
 
-            case END_STRING:
-                create_token(c, buffer, &token, T_STRING);
-                return 0;
-
-            /* mathematical operations */
-            case S_ADD:
-                create_token(c, buffer, &token, T_ADD);
-                return 0;
-
-
-            case S_SUB:
-                create_token(c, buffer, &token, T_SUB);
-                return 0;
-
-
-            case S_MUL:
-                create_token(c, buffer, &token, T_MUL);
-                return 0;
-
-
-            case S_DIV:
-                create_token(c, buffer, &token, T_DIV);
-                return 0;
-
-
             case S_SMALLER:
                 if (c == '=')
                 {
-                    state = S_IS_SMALLER_OR_EQUAL;
-                    break;
+                    create_token(c, buffer, &token, T_IS_SMALLER_OR_EQUAL);
+                    return 0;
                 }
                 else
                 {
@@ -478,8 +461,8 @@ int get_token() {
             case S_GREATER:
                 if (c == '=')
                 {
-                    state = S_IS_GREATER_OR_EQUAL;
-                    break;
+                    create_token(c, buffer, &token, T_IS_GREATER_OR_EQUAL);
+                    return 0;
                 }
                 else
                 {
@@ -487,24 +470,13 @@ int get_token() {
                     return 0;
                 }
 
-
-            case S_IS_SMALLER_OR_EQUAL:
-                create_token(c, buffer, &token, T_IS_SMALLER_OR_EQUAL);
-                return 0;
-
-
-            case S_IS_GREATER_OR_EQUAL:
-                create_token(c, buffer, &token, T_IS_GREATER_OR_EQUAL);
-                return 0;
-
-
             case S_COMMENT_EQ_ASSIGNMENT:
                 if (c == '=')
                 {
-                    state = S_EQUAL;
-                    break;
+                    create_token(c, buffer, &token, T_IS_EQUAL);
+                    return 0;
                 }
-                else if (c == 'b' )
+                else if (c == 'b')
                 {
                     if (is_comment_begin()) {
                         state = START_BLOCK_COMMENT;
@@ -522,12 +494,11 @@ int get_token() {
             case START_BLOCK_COMMENT:
                 if (c == 'e' && buffer[linePos-2] == '=') // linePos-2 lebo indexace je od 0 ale linePos sa pocita od 1
                 {
-                    buffer[count++] = c;
+                    buffer[i++] = c;
                     if (is_comment_end()) {
                         linePos += 3;
                         if (c == '\n') {
                             lineNum++;
-                            linePos = 0;
                             token.type = T_IS_EOL;
                             return 0;
                         }
@@ -542,7 +513,7 @@ int get_token() {
                     if (c == '\n'){
                         lineNum++;
                         linePos = 0;
-                        count = 0;
+                        i = 0;
                         allocated = 0;
                         token.type = T_IS_EOL;
                     }
@@ -554,34 +525,19 @@ int get_token() {
             case END_BLOCK_COMMENT:
                 if (c == '\n') {
                     lineNum++;
-                    linePos = 0;
                     token.type = T_IS_EOL;
                     return 0;
                 }
                 break;
 
-            case S_EQUAL:
-                create_token(c, buffer, &token, T_IS_EQUAL);
-                return 0;
 
-            // todo ??
             case S_IS_NOT_EQUAL:
                 if (c == '=') {
-                    state = S_IS_NOT_EQUAL2;
-                    break;
+                    create_token(c, buffer, &token, T_IS_NOT_EQUAL);
+                    return 0;
                 } else
                     state = S_ERROR;
                 break;
-
-            case S_IS_NOT_EQUAL2:
-                create_token(c, buffer, &token, T_IS_NOT_EQUAL);
-                return 0;
-
-
-            case S_IS_COMMA:
-                create_token(c, buffer, &token, T_IS_COMMA);
-                return 0;
-
 
             case S_ASSIGNMENT:
                 create_token(c, buffer, &token, T_ASSIGNMENT);
@@ -599,17 +555,22 @@ int get_token() {
                     break;
                 }
 
-
-            case S_ERROR:
-                fprintf(stderr, "Spatny format na radku:%d (char:%d)!\n", lineNum, linePos);
-                token.type = T_IS_ERR;
-                return 1;
-
-
             default:
                 state = S_ERROR;
                 break;
 
         }
     }
+}
+
+bool is_special_character()
+{
+    /* semicolon, colon, special characters, @ */
+    return c == 59
+           || c == 58
+           || c == '.'
+           || c <= 39
+           || c == 64
+           || (c >= 91 && c <= 96)
+           || c >= 123;
 }
