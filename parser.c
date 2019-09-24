@@ -168,7 +168,7 @@ int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTIte
     int result = 0;
     if (table != NULL) get_next_token();
 
-    if (token.type == T_END) {
+    if (token.type == T_IS_EOL) {
         return SYNTAX_OK;
 
     } else if (is_eol(token.type)) {
@@ -192,14 +192,21 @@ int statement(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *va
 
         char *name = malloc(sizeof(name));
         strcpy(name, token.value.is_char);
-        AST_NODE *l_value = ast_add_node(&equals, VAR, name, is_global_scope(scope));
-        IF_RETURN(!l_value, ERR_INTERNAL)
 
-        /* equals */
+        /* variable definition if it does not exist */
+        HTItem *found = ht_search(table, name);
+        AST_NODE *l_value = found
+                ? ast_add_node(&equals, VAR, name, is_global_scope(scope))
+                : ast_add_node(&equals, VARDEF, name, is_global_scope(scope));
+        IF_RETURN(!l_value, ERR_INTERNAL)
+        /* save name for later */
+        l_value->data = name;
+
+        /* assignment */
         IF_RETURN(get_next_token(), TOKEN_ERR)
         if (token.type == T_ASSIGNMENT) {
             IF_RETURN(get_next_token(), TOKEN_ERR)
-            result = expression(scope, stack, table, ast, name, variable);
+            result = expression(scope, stack, table, &l_value, name, variable);
         } else {
             *variable = *insert_variable(table, name, TYPE_UNKNOWN);
             result = SYNTAX_OK;
@@ -511,24 +518,24 @@ bool is_rule(PSA_SYMBOL *rule, int *rule_index)
     return false;
 }
 
-void *create_value(struct TToken *current_token)
+char *create_value(struct TToken *current_token)
 {
-    void *value;
+    char *value = malloc(sizeof(char *));
 
     switch (current_token->type) {
         case T_STRING:
-            value = current_token->value.is_char;
+            value = strcat("string@",current_token->value.is_char);
             break;
         case T_INT:
-            value = &current_token->value.is_int;
+            sprintf(value, "int@%d", current_token->value.is_int);
             break;
         case T_FLOAT:
-            value = &current_token->value.is_float;
+            sprintf(value, "int@%f", current_token->value.is_float);
             break;
-        case T_NIL:
-            value = "nil";
+        case T_NONE:
+            value = "nil@nil";
             break;
-        case T_VAR || T_FCE:
+        case T_VAR:
             value = current_token->value.is_char;
             break;
         default:
@@ -552,7 +559,7 @@ DATA_TYPE token_to_data_type(struct TToken current_token)
         case T_FLOAT:
             type = TYPE_FLOAT;
             break;
-        case T_NIL:
+        case T_NONE:
             type = TYPE_NIL;
             break;
         case T_VAR:
@@ -607,7 +614,6 @@ PSA_SYMBOL token_to_psa_symbol() {
             symbol = PSA_RBRACKET;
             break;
         case T_VAR:
-        case T_FCE:
         case T_INT:
         case T_FLOAT:
         case T_STRING:

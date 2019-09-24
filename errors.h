@@ -17,7 +17,7 @@
 #define TOKEN_ERR                   1  // token error
 #define SYNTAX_OK 					0  // Syntaxe je ok
 #define SEM_OK                      0  // Semantika je ok
-#define ERR_LEX		            	1  // Chyba v programu lexikální analýzy
+#define LEX_ERR		            	1  // Chyba v programu lexikální analýzy
 #define SYNTAX_ERR					2  // Chyba v programu v rámci syntaktické analýzy
 #define SEM_ERR_UNDEF_VAR		    3  // Sémantická chyba v programu - nedefinovaná funkce / proměnná, pokus o redefinici funkce nebo proměnné
 #define SEM_ERR_COMPAT			    4  // Sémantická/běhová chyba typové kompatibilty v aritmetických, řetězových a relačních výrazech

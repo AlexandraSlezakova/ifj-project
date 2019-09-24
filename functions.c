@@ -10,6 +10,7 @@
  */
 
 #include "functions.h"
+#include "scanner.h"
 
 bool is_eol(TType type)
 {
@@ -18,7 +19,7 @@ bool is_eol(TType type)
 
 bool is_identifier(TType type)
 {
-    return type == T_VAR || type == T_FCE;
+    return type == T_VAR;
 }
 
 bool is_left_bracket(TType type)
@@ -37,8 +38,7 @@ bool is_assignment_correct(TType type)
         || type == T_FLOAT
         || type == T_INT
         || type == T_VAR
-        || type == T_FCE
-        || type == T_NIL
+        || type == T_NONE
         || type == T_LEFT_BRACKET;
 }
 
@@ -49,8 +49,8 @@ bool is_comma(TType type)
 
 bool is_function_call(struct TToken current_token, char *name)
 {
-    if (current_token.type == T_VAR || current_token.type == T_FCE) {
-        *name = *current_token.name;
+    if (current_token.type == T_VAR) {
+        *name = *current_token.value.is_char;
         get_token();
         if (is_left_bracket(token.type)) return true;
     }
@@ -64,7 +64,7 @@ bool is_term(TType type)
            || type == T_FLOAT
            || type == T_INT
            || type == T_VAR
-           || type == T_NIL;
+           || type == T_NONE;
 }
 
 bool is_global_scope(int scope)
@@ -74,15 +74,15 @@ bool is_global_scope(int scope)
 
 bool is_condition(TType type)
 {
-    return type == S_SMALLER
-        || type == S_GREATER
-        || type == S_IS_SMALLER_OR_EQUAL
-        || type == S_IS_GREATER_OR_EQUAL
-        || type == S_IS_NOT_EQUAL2
-        || type == S_EQUAL;
+    return type == T_IS_SMALLER
+        || type == T_IS_GREATER
+        || type == T_IS_SMALLER_OR_EQUAL
+        || type == T_IS_GREATER_OR_EQUAL
+        || type == T_IS_NOT_EQUAL
+        || type == T_IS_EQUAL;
 }
 
 bool is_tab (TType type)
 {
-    return type == T_TAB;
+    return type == T_INDENT;
 }

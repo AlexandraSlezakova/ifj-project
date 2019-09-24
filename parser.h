@@ -8,7 +8,7 @@
  * @author
  * @author
  */
-#include "symtable.h"
+#include "generator.h"
 
 const char psa_table[14][14] =
 { /*  *    /    +    -    <    <=   >    >=   ==   !=   (    )   id    $  */
@@ -55,7 +55,7 @@ int check_function_arguments(HTable *table, HTItem *arg);
 int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable, char *token_name);
 bool is_rule(PSA_SYMBOL *rule, int *rule_index);
 bool compare_rules(PSA_SYMBOL *rule1, PSA_SYMBOL *rule2);
-void *create_value(struct TToken *current_token);
+char *create_value(struct TToken *current_token);
 PSA_SYMBOL token_to_psa_symbol();
 DATA_TYPE token_to_data_type(struct TToken current_token);
 DATA_TYPE check_data_type(DATA_TYPE type1, DATA_TYPE type2);

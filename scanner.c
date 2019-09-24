@@ -17,41 +17,17 @@
 #include "scanner.h"
 #include "errors.h"
 
-char *keywords[9] = {"def", "do", "while", "if", "then", "elif", "not", "end", "nil"};
-
-bool is_comment_begin()
-{
-    for (int j = 0; j < 5; ++j) {
-        buffer[i++] = getchar();
-    }
-
-    return ((!strcmp(buffer, "=begin ")) || (!strcmp(buffer, "=begin\t")) || (!strcmp(buffer, "=begin\n")));
-
-}
-
-bool is_comment_end()
-{
-    for (int j = 0; j < 3; ++j) {
-        buffer[i++] = (char)getchar();
-    }
-
-    char *pom_buffer = malloc(5);
-    memcpy(pom_buffer, buffer + (i-5), 5);
-
-    return ((!strcmp(pom_buffer, "=end ")) || (!strcmp(pom_buffer, "=end\t")) || (!strcmp(pom_buffer, "=end\n")));
-
-}
+char *keywords[7] = {"def", "else", "if", "None", "pass", "return", "while"};
 
 int is_keyword(char *string)
 {
-    for (int j = 0; j < 9; j++) {
+    for (int j = 0; j < 7; j++) {
         if (strcmp(string, keywords[j]) == 0) {
-            return j + 5;
+            return j + 4;
         }
     }
 
     return 0;
-
 }
 
 
@@ -60,7 +36,7 @@ void create_token(char character, char *string, struct TToken *new_token, TType 
     TType keyword_type;
     /* return read character for another reading */
     ungetc(character, stdin);
-    buffer[i - 1] = '\0';
+    buffer[iterator - 1] = '\0';
 
     new_token->type = (keyword_type = (TType)is_keyword(string))
                       ? keyword_type
@@ -74,23 +50,23 @@ void create_token(char character, char *string, struct TToken *new_token, TType 
     } else if (new_token->type  == T_FLOAT) {
         new_token->value.is_float = strtof(string, NULL);
 
-    } else if (new_token->type  == T_VAR || new_token->type == T_FCE || new_token->type == T_STRING) {
+    } else if (new_token->type  == T_VAR || new_token->type == T_STRING) {
         new_token->value.is_char = string;
     }
 }
 
 int get_token() {
 
-    static int lineNum = 0; /* number of line */
-    int linePos = 0; /* position */
+    static int line_counter = 0; /* number of lines */
+    int line_position = 0;       /* position */
     int allocated = 0;
 
-    i = 0;
+    iterator = 0;
     buffer = NULL;
     TState state = START; /* initial state */
 
     while (1) {
-        /* buffer realloc */
+        /* buffer reallocation */
         buffer = realloc(buffer, (size_t) ++allocated);
 
         if (state != S_ERROR) {
@@ -99,22 +75,23 @@ int get_token() {
                 return TOKEN_OK;
             }
 
-            linePos++;
+            line_position++;
 
             /* write to buffer without comments */
-            if (!((state == START_BLOCK_COMMENT || state == END_BLOCK_COMMENT) && c != '=')) {
-                buffer[i++] = c; /* save character to buffer */
+            if (((c != 34) && state != S_DOC_CONTENT) && (c != 35 && state != S_LINE_COMMENT)) {
+                buffer[iterator++] = c;
             }
+
         } else {
             token.type = T_IS_ERR;
-            fprintf(stderr, "Wrong token - line:%d (character:%d)!\n", lineNum, linePos);
+            fprintf(stderr, "Wrong token - line:%d (character:%d)!\n", line_counter, line_position);
             return TOKEN_ERR;
         }
 
         switch (state) {
             case START:
                 /* identifier */
-                if ((c>='a' && c<='z') || (c == '_')) {
+                if (isalpha(c) || (c == '_')) {
                     state = S_VAR;
                     break;
                 }  /* number */
@@ -124,185 +101,145 @@ int get_token() {
                     else
                         state = S_INT;
                     break;
-                } /* white-space character*/
-                else if (isspace(c) && c != '\n') {
+                } /* white-space character */ // todo
+                else if (c == '\v' || c == '\f' || c == '\r' || c == '\t') {
                     state = START;
-                    i = 0;
+                    iterator = 0;
                     allocated = 0;
                     break;
-                } /* new line*/
+                } /* new line */
                 else if (c == '\n') {
-                    lineNum++;
+                    line_counter++;
                     token.type = T_IS_EOL; /* end of line */
                     return 0;
-                } /* beginning of string*/
-                else if (c == '"') {
+                } /* beginning of string */
+                else if (c == 39) {
                     state = START_STRING;
                     break;
-                } /* line comment*/
-                else if (c == '#') {
-                    state = S_COMMENT;
+                } /* documentation string */
+                else if (c == 34) {
+                    state = S_START_DOC_1;
                     break;
-                } /* block comment, equal or assignment */
+                } /* line comment */
+                else if (c == '#') {
+                    state = S_LINE_COMMENT;
+                    break;
+                } /* equal or assign */
                 else if (c == '=') {
-                    state = S_COMMENT_EQ_ASSIGNMENT;
+                    state = S_ASSIGN;
                     break;
                 }  /* mathematical operations */
-                else if (c == '+')
-                {
-                    c = getchar();
-                    create_token(c, buffer, &token, T_ADD);
-                    return 0;
+                else if (c == '+' || c == '-' || c == '*' || c == '/') {
+                    state = S_MATH_OP;
+                    break;
                 }
-                else if (c == '-')
-                {
-                    c = getchar();
-                    create_token(c, buffer, &token, T_SUB);
-                    return 0;
-                }
-                else if (c == '*')
-                {
-                    c = getchar();
-                    create_token(c, buffer, &token, T_MUL);
-                    return 0;
-                }
-                else if (c == '/')
-                {
-                    c = getchar();
-                    create_token(c, buffer, &token, T_DIV);
-                    return 0;
-                }
-                else if (c == '<')
-                {
+                else if (c == '<') {
                     state = S_SMALLER;
                     break;
                 }
-                else if (c == '>')
-                {
+                else if (c == '>') {
                     state = S_GREATER;
                     break;
                 }
-                else if (c == '!')
-                {
+                else if (c == '!') {
                     state = S_IS_NOT_EQUAL;
                     break;
                 }
-                else if (c == ',')
-                {
-                    c = getchar();
-                    create_token(c, buffer, &token, T_IS_COMMA);
-                    return 0;
-                }
-                else if (c == '(')
-                {
-                    c = getchar();
-                    create_token(c, buffer, &token, T_LEFT_BRACKET);
-                    return 0;
-                }
-                else if (c == ')')
-                {
-                    c = getchar();
-                    create_token(c, buffer, &token, T_RIGHT_BRACKET);
-                    return 0;
-                }
-                else if (c == ':')
-                {
-                    c = getchar();
-                    create_token(c, buffer, &token, T_COLON);
-                    return 0;
-                }
-                else if (c == '\t')
-                {
-                    state = S_TAB;
+                else if (c == ',') {
+                    state = S_IS_COMMA;
                     break;
                 }
-                else
-                {
+                else if (c == '(') {
+                    state = S_LEFT_BRACKET;
+                    break;
+                }
+                else if (c == ')') {
+                    state = S_RIGHT_BRACKET;
+                    break;
+                }
+                else if (c == ':') {
+                    state = S_COLON;
+                    break;
+                }
+                else if (c == ' ') {
+                    // todo indent
+                    break;
+                }
+                else {
                     state = S_ERROR;
                     break;
                 }
             case S_ZERO:
-                if(isdigit(c))
+                if(isdigit(c) || isalpha(c)) {
                     state = S_ERROR;
-                else
-                {
-                    ungetc(c, stdin);
-                    state = S_INT;
+                    break;
                 }
-                break;
+                else {
+                    create_token(c, buffer, &token, T_INT);
+                    return 0;
+                }
 
-                /* NUMBERS */
+
+                /* numbers */
             case S_INT:
-                if (isdigit(c))
-                {
+                if (isdigit(c)) {
                     state = S_INT;
                     break;
                 }
-                else if (c == '.')
-                {
+                else if (c == '.') {
                     state = S_DEC_SEP;
                     break;
                 }
-                else if (c == 'e' || c == 'E')
-                {
+                else if (c == 'e' || c == 'E') {
                     state = S_EXP;
                     break;
                 }
-                else if (is_special_character_number())
-                {
+                else if (is_special_character_number()) {
                     state = S_ERROR;
                     break;
                 }
-                else
-                {
+                else {
                     create_token(c, buffer, &token, T_INT);
                     return 0;
                 }
 
                 /* decimal separator */
             case S_DEC_SEP:
-                if (isdigit(c))
-                {
+                if (isdigit(c)) {
                     state = S_FLOAT;
-                    break;
                 }
-                else
+                else {
                     state = S_ERROR;
+                }
                 break;
 
                 /* fractional part of number */
             case S_FLOAT:
-                if (isdigit(c))
-                {
+                if (isdigit(c)) {
                     state = S_FLOAT;
                     break;
                 }
-                else if (c == 'e' || c == 'E')
-                {
+                else if (c == 'e' || c == 'E') {
                     state = S_EXP;
                     break;
                 }
-                else if (is_special_character_number())
-                {
+                else if (is_special_character_number()) {
                     state = S_ERROR;
                     break;
                 }
-                else
-                {
+                else {
                     create_token(c, buffer, &token, T_FLOAT);
                     return 0;
                 }
 
                 /* E || e */
             case S_EXP:
-                if (c == '+' || c == '-')
-                {
+                if (c == '+' || c == '-') {
                     state = S_EXP_CHAR;
                     break;
                 }
-                else if (isdigit(c))
-                {
-                    state = S_NUMBER_END;
+                else if (isdigit(c)) {
+                    state = S_NUMBER;
                     break;
                 }
                 else {
@@ -312,262 +249,254 @@ int get_token() {
 
                 /* character + or - */
             case S_EXP_CHAR:
-                if (isdigit(c))
-                {
-                    state = S_NUMBER_END;
-                    break;
+                if (isdigit(c)) {
+                    state = S_NUMBER;
                 }
-                else
+                else {
                     state = S_ERROR;
+                }
                 break;
 
                 /* exponent number */
-            case S_NUMBER_END:
-                if (isdigit(c))
-                {
-                    state = S_NUMBER_END;
+            case S_NUMBER:
+                if (isdigit(c)) {
+                    state = S_NUMBER;
                     break;
                 }
-                else if (is_special_character_number())
-                {
+                else if (is_special_character_number()) {
                     state = S_ERROR;
                     break;
                 }
-                else
-                {
+                else {
                     create_token(c, buffer, &token, T_FLOAT);
                     return 0;
                 }
 
                 /* identifier */
             case S_VAR:
-                if (isdigit(c) || isalpha(c) || c == '_')
-                {
+                if (isdigit(c) || isalpha(c) || c == '_') {
                     state = S_VAR;
                     break;
-                } /* function identifier */
-                else if (c == '!' || c == '?')
-                {
-                    c = getchar();
-                    create_token(c, buffer, &token, T_FCE);
-                    return 0;
                 }
                 else if (is_special_character()) {
                     state = S_ERROR;
                     break;
                 }
-                else
-                {
+                else {
                     create_token(c, buffer, &token, T_VAR);
                     return 0;
                 }
 
             case START_STRING:
-                if (c == '\\')
-                {
+                if (c == '\\') {
                     state = S_ESC;
-                    break;
                 }
-                else if (c > 31 && c != 34 && c != 92)
-                { /* 34 - " 92 - \ */
+                else if (c > 31 && c != 34 && c != 92) {
+                    /* 34 - " 92 - \ */
+                    state = S_STRING_CONTENT;
+                }
+                else if (c == 39) {
                     state = S_STRING;
-                    break;
                 }
-                else if (c == '"')
-                {
-                    state = END_STRING;
-                    break;
-                }
-                else
+                else {
                     state = S_ERROR;
+                }
                 break;
 
-            case S_STRING:
-                if (c > 31 && c != 34 && c != 92)
-                {
+            case S_STRING_CONTENT:
+                if (c > 31 && c != 34 && c != 92 && c != 39) {
+                    state = S_STRING_CONTENT;
+                }
+                else if (c == 39) {
                     state = S_STRING;
-                    break;
                 }
-                else if (c == '"')
-                {
-                    state = END_STRING;
-                    break;
-                }
-                else if (c == '\\')
-                {
+                else if (c == '\\') {
                     state = S_ESC;
-                    break;
                 }
-                else
+                else {
                     state = S_ERROR;
+                }
                 break;
 
                 /* escape sequence */
             case S_ESC:
-                if (c == '"' || c == 'n' || c == 't' || c == 's' || c == '\\')
-                {
-                    state = S_STRING;
-                    break;
+                if (c == '"' || c == 'n' || c == 't' || c == 39 || c == '\\') {
+                    state = S_STRING_CONTENT;
                 }
-                else if (c == 'x')
-                {
+                else if (c == 'x') {
                     state = S_HEX_ESCAPE;
-                    break;
                 }
-                else
+                else {
                     state = S_ERROR;
+                }
                 break;
 
                 /* hex sequence */
             case S_HEX_ESCAPE: //
-                if (isdigit(c) || (c >= 'A' && c <= 'F'))
-                {  /* \xh */
+                if (isdigit(c) || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')) {
+                    /* \xh */
                     state = S_HEX_ESCAPE2;
-                    break;
                 }
-                else
+                else {
                     state = S_ERROR;
+                }
                 break;
 
             case S_HEX_ESCAPE2:
-                if (isdigit(c) || (c >= 'A' && c <= 'F'))
-                {   /* \xhh */
-                    state = S_STRING;
+                if (isdigit(c) || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')) {
+                    /* \xhh */
+                    state = S_STRING_CONTENT;
                     break;
                 }
-                else if (c == '\0')
-                {
+                else if (c == '\0' || (c > 31 && c != 39)) {
+                    state = S_STRING_CONTENT;
+                }
+                else if (c == 39) {
                     state = S_STRING;
-                    break;
                 }
-                else if (c == '"')
-                {
-                    c = getchar();
-                    create_token(c, buffer, &token, T_STRING);
-                    return 0;
-                }
-                else if (c == '\\')
-                {
+                else if (c == '\\') {
                     state = S_ESC;
-                    break;
                 }
-                else
+                else {
                     state = S_ERROR;
+                }
                 break;
 
+            case S_STRING:
+                create_token(c, buffer, &token, T_STRING);
+                return 0;
+
             case S_SMALLER:
-                if (c == '=')
-                {
-                    c = getchar();
-                    create_token(c, buffer, &token, T_IS_SMALLER_OR_EQUAL);
-                    return 0;
+                if (c == '=') {
+                    state = S_IS_SMALLER_OR_EQUAL;
+                    break;
                 }
-                else
-                {
+                else {
                     create_token(c, buffer, &token, T_IS_SMALLER);
                     return 0;
                 }
 
+            case S_IS_SMALLER_OR_EQUAL:
+                create_token(c, buffer, &token, T_IS_SMALLER_OR_EQUAL);
+                return 0;
 
             case S_GREATER:
-                if (c == '=')
-                {
-                    c = getchar();
-                    create_token(c, buffer, &token, T_IS_GREATER_OR_EQUAL);
-                    return 0;
+                if (c == '=') {
+                    state = S_IS_GREATER_OR_EQUAL;
+                    break;
                 }
-                else
-                {
+                else {
                     create_token(c, buffer, &token, T_IS_GREATER);
                     return 0;
                 }
 
-            case S_COMMENT_EQ_ASSIGNMENT:
-                if (c == '=')
-                {
-                    c = getchar();
-                    create_token(c, buffer, &token, T_IS_EQUAL);
+            case S_IS_GREATER_OR_EQUAL:
+                create_token(c, buffer, &token, T_IS_GREATER_OR_EQUAL);
+                return 0;
+
+            case S_ASSIGN:
+                if (c == '=') {
+                    state = S_IS_EQUAL;
+                    break;
+                } else {
+                    create_token(c, buffer, &token, T_ASSIGNMENT);
                     return 0;
                 }
-                else if (c == 'b')
-                {
-                    if (is_comment_begin()) {
-                        state = START_BLOCK_COMMENT;
-                        linePos += 5;
-                    }
-                    else
-                        state = S_ERROR;
-                    break;
-                }
-                else
-                    ungetc(c, stdin);
-                state = S_ASSIGNMENT;
-                break;
 
-            case START_BLOCK_COMMENT:
-                if (c == 'e' && buffer[linePos-2] == '=') // linePos-2 lebo indexace je od 0 ale linePos sa pocita od 1
-                {
-                    buffer[i++] = c;
-                    if (is_comment_end()) {
-                        linePos += 3;
-                        if (c == '\n') {
-                            lineNum++;
-                            token.type = T_IS_EOL;
-                            return 0;
-                        }
-                        else state = END_BLOCK_COMMENT;
-                    }
-                    else
-                        state = S_ERROR;
-                    break;
-                }
-                else
-                {
-                    if (c == '\n'){
-                        lineNum++;
-                        linePos = 0;
-                        i = 0;
-                        allocated = 0;
-                        token.type = T_IS_EOL;
-                    }
-                    state = START_BLOCK_COMMENT;
-                    break;
-                }
+            case S_IS_EQUAL:
+                create_token(c, buffer, &token, T_IS_EQUAL);
+                return 0;
 
-
-            case END_BLOCK_COMMENT:
-                if (c == '\n') {
-                    lineNum++;
-                    token.type = T_IS_EOL;
+            /* mathematical operation */
+            case S_MATH_OP:
+                if (buffer[iterator - 2] == '+') {
+                    create_token(c, buffer, &token, T_ADD);
                     return 0;
+                }
+                else if (buffer[iterator - 2] == '-') {
+                    create_token(c, buffer, &token, T_SUB);
+                    return 0;
+                }
+                else if (buffer[iterator - 2] == '*') {
+                    create_token(c, buffer, &token, T_MUL);
+                    return 0;
+                }
+                else if (buffer[iterator - 2] == '/') {
+                    create_token(c, buffer, &token, T_DIV);
+                    return 0;
+                }
+                else {
+                    state = S_ERROR;
+                    break;
+                }
+
+            /* documentation string */
+            case S_START_DOC_1:
+                if (c == 34) {
+                    state = S_START_DOC_2;
+                } else {
+                    state = S_ERROR;
                 }
                 break;
 
+            case S_START_DOC_2:
+                if (c == 34) {
+                    state = S_DOC_CONTENT;
+                } else {
+                    state = S_ERROR;
+                }
+                break;
 
+            case S_DOC_CONTENT:
+                if (c != 34) {
+                    state = S_DOC_CONTENT;
+                } else {
+                    state = S_END_DOC_1;
+                }
+                break;
+
+            case S_END_DOC_1:
+                if (c == 34) {
+                    state = S_END_DOC_2;
+                } else {
+                    state = S_ERROR;
+                }
+                break;
+
+            case S_END_DOC_2:
+                if (c == 34) {
+                    state = S_END_DOC_2;
+                } else if (c == '\n') {
+                    state = START;
+                    allocated = 0;
+                    iterator = 0;
+                    line_position = 0;
+                    line_counter++;
+                } else {
+                    state = S_ERROR;
+                }
+                break;
+
+            /* no equal */
             case S_IS_NOT_EQUAL:
                 if (c == '=') {
                     c = getchar();
+                    buffer[iterator++] = c;
                     create_token(c, buffer, &token, T_IS_NOT_EQUAL);
                     return 0;
-                } else
+                } else {
                     state = S_ERROR;
-                break;
+                    break;
+                }
 
-            case S_ASSIGNMENT:
-                create_token(c, buffer, &token, T_ASSIGNMENT);
-                return 0;
-
-            case S_COMMENT:
-                if (c == '\n')
-                {
+            case S_LINE_COMMENT:
+                if (c == '\n') {
                     state = START;
-                    break;
                 }
-                else
-                {
-                    state = S_COMMENT;
-                    break;
+                else {
+                    state = S_LINE_COMMENT;
                 }
+                break;
 
             default:
                 state = S_ERROR;
@@ -579,21 +508,23 @@ int get_token() {
 
 bool is_special_character()
 {
-    /* semicolon, special characters, @ */
-    return c == 59
+    /* special characters */
+    return c == 59                      /*   semicolon   */
            || c == '.'
            || (c >= 33 && c <= 39)
-           || c == 64
-           || (c >= 91 && c <= 96)
+           || c == 64                   /*       @       */
+           || (c >= 91 && c <= 96)      /* [, \, ], ^, _ */
            || c >= 123;
 }
 
 bool is_special_character_number()
 {
-    /* special characters, comma, hyphen, semicolon */
+    /* special characters */
     return (c >= 33 && c <= 39)
-        || c == 44
-        || c == 45
-        || c == 59
+        || c == 44  /*    comma  */
+        || c == 45  /*   hyphen  */
+        || c == 46  /*    dot    */
+        || c == 58  /*   colon   */
+        || c == 59  /* semicolon */
         || c >= 63;
 }

@@ -22,27 +22,26 @@ typedef enum {
     S_INT,
     S_DEC_SEP,                  /* desatinna bodka */
     S_EXP,                      /* exponent */
+    S_EXP_CHAR,                 /* nepovinne znamienko +/- za exponentom */
     S_FLOAT,                    /* cislo s desatinnou bodkou */
-    S_EXP_CHAR,                 /* nepovinne znameniko +/- za exponentom */
-    S_NUMBER_END,               /* koniec ciselneho literalu */
+    S_NUMBER,                   /* ciselny literalu */
     S_VAR,                      /* identifikator */
-    S_FCE,                      /* identifikator funkcie */
     START_STRING,               /* zaciatok retazca */
     S_ESC,                      /* escape sekvencia v retazci */
+    S_STRING_CONTENT,           /* obsah retazca */
     S_STRING,                   /* retazec */
-    END_STRING,                 /* koniec retazca */
-    S_COMMENT,                  /* riadkovy komentar */
-    S_COMMENT_EQ_ASSIGNMENT,    /* znak rovnosti na zaciatok blokoveho komentara */
-    S_EQUAL,                    /* znak rovnosti */
-    START_BLOCK_COMMENT,        /* blokovy komentar */
-    END_BLOCK_COMMENT,          /* koniec blokoveho komentara */
+    S_LINE_COMMENT,             /* riadkovy komentar */
+    S_ASSIGN,                    /* znak rovnosti */
+    S_IS_EQUAL,                 /*       ==      */
+    S_START_DOC_1,              /* druha uvodzovka pre dokumentacny retazec */
+    S_START_DOC_2,              /* tretia uvodzovka pre dokumentacny retazec */
+    S_DOC_CONTENT,              /* obsah komentara */
+    S_END_DOC_1,                /* koniec - druha uvodzovka pre dokumentacny retazec */
+    S_END_DOC_2,                /* koniec - tretia uvodzovka pre dokumentacny retazec */
     S_COLON,                    /* dvojbodka */
     S_TAB,                      /* tabulator */
-    S_ASSIGNMENT,
-    S_ADD,
-    S_SUB,
-    S_MUL,
-    S_DIV,
+    S_SPACE,                    /* medzera */
+    S_MATH_OP,                  /* matematicka operacia */
     S_ZERO,
     S_SMALLER,
     S_GREATER,
@@ -60,44 +59,42 @@ typedef enum {
 
 typedef enum {
     T_VAR,			        /* 0  */
-    T_FCE,	                /* 1  */
-    T_INT,		            /* 2  */
-    T_FLOAT,	            /* 3  */
-    T_STRING,	            /* 4  */
+    T_INT,		            /* 1  */
+    T_FLOAT,	            /* 2  */
+    T_STRING,	            /* 3  */
 
     /* keywords */
-    T_DEF,			        /* 5  */
-    T_DO,			        /* 6  */
-    T_WHILE,                /* 7  */
-    T_IF,                   /* 8  */
-    T_THEN,                 /* 9  */
-    T_ELIF,                 /* 10 */
-    T_NOT,			        /* 11 */
-    T_END,                  /* 12 */
-    T_NIL,                  /* 13 */
+    T_DEF,			        /* 4  */
+    T_ELSE,			        /* 5  */
+    T_IF,                   /* 6  */
+    T_NONE,                 /* 7  */
+    T_PASS,                 /* 8 */
+    T_RETURN,               /* 9 */
+    T_WHILE,    	        /* 10 */
 
     /* mathematical operations */
-    T_ADD,			        /* 14 */
-    T_SUB,			        /* 15 */
-    T_MUL,			        /* 16 */
-    T_DIV,			        /* 17 */
-    T_IS_SMALLER,		    /* 18 */
-    T_IS_GREATER,		    /* 19 */
-    T_IS_SMALLER_OR_EQUAL,	/* 20 */
-    T_IS_GREATER_OR_EQUAL,	/* 21 */
-    T_IS_EQUAL,			    /* 22 */
-    T_IS_NOT_EQUAL,		    /* 23 */
+    T_ADD,			        /* 11 */
+    T_SUB,			        /* 12 */
+    T_MUL,			        /* 13 */
+    T_DIV,			        /* 14 */
+    T_IS_SMALLER,		    /* 16 */
+    T_IS_GREATER,		    /* 17 */
+    T_IS_SMALLER_OR_EQUAL,	/* 18 */
+    T_IS_GREATER_OR_EQUAL,	/* 19 */
+    T_IS_EQUAL,			    /* 20 */
+    T_IS_NOT_EQUAL,		    /* 21 */
 
     /* others */
-    T_IS_COMMA,			    /* 24 */
-    T_ASSIGNMENT,           /* 25 */
-    T_LEFT_BRACKET,         /* 26 */
-    T_RIGHT_BRACKET,        /* 27 */
-    T_IS_EOF,			    /* 28 */
-    T_IS_EOL,			    /* 29 */
-    T_IS_ERR,			    /* 30 */
-    T_COLON,
-    T_TAB,
+    T_IS_COMMA,			    /* 22 */
+    T_ASSIGNMENT,           /* 23 */
+    T_LEFT_BRACKET,         /* 24 */
+    T_RIGHT_BRACKET,        /* 25 */
+    T_IS_EOF,			    /* 26 */
+    T_IS_EOL,			    /* 27 */
+    T_IS_ERR,			    /* 28 */
+    T_COLON,                /* 29 */
+    T_INDENT,               /* 30 */
+    T_DEDENT,               /* 31 */
 }TType;
 
 struct TToken {
@@ -115,6 +112,6 @@ void create_token(char character, char *string,  struct TToken *new_token, TType
 bool is_special_character();
 bool is_special_character_number();
 char *buffer;
-int i;
+int iterator;
 int c;
 #endif
