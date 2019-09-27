@@ -13,7 +13,6 @@
 #include "functions.h"
 #include "errors.h"
 
-
 typedef enum {
     PROG,       /**< PROG     */
     ADD,        /**< +        */
@@ -107,6 +106,8 @@ typedef struct stackElem {
     AST_NODE *node;
     PSA_SYMBOL psa_symbol;
     DATA_TYPE type;
+    TType indent_type;      /* indent or dedent */
+    int indent_counter;     /* number of spaces - indentation level */
 } S_ELEM;
 
 AST_node_type node_type(S_ELEM *stack_elem);

@@ -27,7 +27,7 @@ S_ELEM *stack_top(STACK *stack) {
 }
 
 S_ELEM *top_terminal(STACK *stack) {
-     S_ELEM *terminal;
+    S_ELEM *terminal;
     if (stack && stack->top) {
         terminal = stack->top;
         while (terminal) {
@@ -37,6 +37,8 @@ S_ELEM *top_terminal(STACK *stack) {
             terminal = terminal->next;
         }
     }
+
+    return NULL;
 }
 
 bool is_terminal(S_ELEM *elem) {
@@ -147,3 +149,5 @@ void stack_destroy(STACK *stack)
         }
     }
 }
+
+void

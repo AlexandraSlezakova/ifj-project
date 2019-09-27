@@ -1,0 +1,16 @@
+- indent na zaciatku prveho riadku
+- indenty vsade
+- EOF
+- abstract syntax tree
+- if
+- while
+- return
+- pass
+- generator
+- skontrolovat 
+	- scanner
+	- parser
+	- generator
+- vela volneho casu ? optimalizacia : kaslat na to
+
+

@@ -95,7 +95,8 @@ int recursive_descent(AST_NODE **ast, STACK *indent_stack) {
 
         // end of file
         if (token.type == T_IS_EOF) {  // rule 1 -> 2 || 5
-            return counter ? SYNTAX_ERR : SYNTAX_OK;
+            // todo ???
+            result = counter ? SYNTAX_ERR : SYNTAX_OK;
 
         } /* function definition - rule 4 */
         else if (token.type == T_DEF) {
@@ -349,6 +350,7 @@ int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable
 
    do {
         top = top_terminal(stack);
+        IF_RETURN(!top, ERR_INTERNAL)
 
         /* current token from input*/
         input = token_to_psa_symbol();
@@ -475,7 +477,7 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
             stack_pop(stack);
         }
 
-        /* pop start handle*/
+        /* pop start handle */
         stack_pop(stack);
 
         stack_push(stack, original, node, NON_TERMINAL, type);
