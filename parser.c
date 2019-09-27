@@ -8,7 +8,6 @@
  * @author
  */
 #include "parser.h"
-#include "scanner.h"
 
 int get_next_token() {
     int result = get_token();
@@ -17,7 +16,7 @@ int get_next_token() {
 }
 
 
-int function_arguments(HTable *function_symtable, HTItem *new_item) {
+int function_arguments(HTable *function_symtable, HTItem *new_item, STACK *indent_stack) {
 
     tDLList *arg_list = NULL;
     arg_list = DLInitList();
@@ -77,7 +76,7 @@ int function_arguments(HTable *function_symtable, HTItem *new_item) {
 }
 
 
-int recursive_descent(AST_NODE **ast) {
+int recursive_descent(AST_NODE **ast, STACK *indent_stack) {
 
     int result = 0;
 
@@ -131,7 +130,7 @@ int recursive_descent(AST_NODE **ast) {
 
             IF_RETURN(get_next_token(), TOKEN_ERR)
             /* arguments*/
-            int arg = function_arguments(function_table, item);
+            int arg = function_arguments(function_table, item, indent_stack);
             IF_RETURN(arg != SYNTAX_OK, SYNTAX_ERR)
 
             /* add body of function to ast*/
@@ -139,18 +138,18 @@ int recursive_descent(AST_NODE **ast) {
             IF_RETURN(!function_body, ERR_INTERNAL)
 
             /* statement list */
-            result = statement_list(SCOPE, function_table, &function_body, stack, variable);
+            result = statement_list(SCOPE, function_table, &function_body, stack, variable, indent_stack);
 
         } /* rule 11 */
         else if (token.type == T_VAR) {
-            result = statement(GLOBAL_SCOPE, global_hashtable, ast, stack, variable);
+            result = statement(GLOBAL_SCOPE, global_hashtable, ast, stack, variable, indent_stack);
 
         } // todo pravidlo
         else if (token.type == T_IF) {
             AST_NODE *if_node = ast_add_node(ast, IF_NODE, NULL, GLOBAL_SCOPE);
             IF_RETURN(!if_node, ERR_INTERNAL)
             variable = NULL;
-            result = statement(GLOBAL_SCOPE, global_hashtable, &if_node, stack, variable);
+            result = statement(GLOBAL_SCOPE, global_hashtable, &if_node, stack, variable, indent_stack);
         }
 
     } while (result == 0);
@@ -163,7 +162,7 @@ int recursive_descent(AST_NODE **ast) {
  * @param local_symtable
  * @return
  */
-int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *variable)
+int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *variable, STACK *indent_stack)
 {
     int result = 0;
     if (table != NULL) get_next_token();
@@ -174,7 +173,7 @@ int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTIte
     } else if (is_eol(token.type)) {
         IF_RETURN(get_next_token(), TOKEN_ERR)
         if (token.type == T_IF || token.type == T_WHILE || token.type == T_VAR)
-            result = statement(scope, table, ast, stack, variable);
+            result = statement(scope, table, ast, stack, variable, indent_stack);
 
         return result;
     }
@@ -182,7 +181,7 @@ int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTIte
     return SYNTAX_ERR;
 }
 
-int statement(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *variable)
+int statement(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *variable, STACK *indent_stack)
 {
     int result = 0;
     /* rule 11 */
@@ -206,7 +205,7 @@ int statement(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *va
         IF_RETURN(get_next_token(), TOKEN_ERR)
         if (token.type == T_ASSIGNMENT) {
             IF_RETURN(get_next_token(), TOKEN_ERR)
-            result = expression(scope, stack, table, &l_value, name, variable);
+            result = expression(scope, stack, table, &l_value, name, variable, indent_stack);
         } else {
             *variable = *insert_variable(table, name, TYPE_UNKNOWN);
             result = SYNTAX_OK;
@@ -215,7 +214,7 @@ int statement(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *va
     } else if (token.type == T_IF) {
         /* condition -> expression */
         IF_RETURN(get_next_token(), TOKEN_ERR)
-        int condition = expression(scope, stack, global_hashtable, ast, NULL, variable);
+        int condition = expression(scope, stack, global_hashtable, ast, NULL, variable, indent_stack);
         IF_RETURN(condition, condition)
 
         /* next token -> colon */
@@ -234,7 +233,7 @@ int statement(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *va
     return result;
 }
 
-int expression(int scope, STACK *stack, HTable *function_table, AST_NODE **ast, char *token_name, HTItem *variable) {
+int expression(int scope, STACK *stack, HTable *function_table, AST_NODE **ast, char *token_name, HTItem *variable, STACK *indent_stack) {
 
     IF_RETURN(!(is_assignment_correct(token.type)), SYNTAX_ERR)
     /* function identifier */
@@ -247,7 +246,7 @@ int expression(int scope, STACK *stack, HTable *function_table, AST_NODE **ast, 
             HTItem *found = ht_search(function_table, token.value.is_char);
             IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
         }
-        result = psa(scope, stack, *ast, function_table, variable, token_name);
+        result = psa(scope, stack, *ast, function_table, variable, token_name, indent_stack);
 
     } else if (is_function_call(token, tkn_name)) {
         HTItem *found = ht_search(global_hashtable, tkn_name);
@@ -258,7 +257,7 @@ int expression(int scope, STACK *stack, HTable *function_table, AST_NODE **ast, 
         IF_RETURN(!call_node, ERR_INTERNAL)
 
         // todo LL gramatika pravidlo
-        result = function_call(found, function_table, ast);
+        result = function_call(found, function_table, ast, indent_stack);
 
     } else if (is_eol(token.type)) {
         result = SYNTAX_OK;
@@ -268,7 +267,7 @@ int expression(int scope, STACK *stack, HTable *function_table, AST_NODE **ast, 
 
 }
 
-int function_call(HTItem *found, HTable *function_table, AST_NODE **ast)
+int function_call(HTItem *found, HTable *function_table, AST_NODE **ast, STACK *indent_stack)
 {
     IF_RETURN(get_next_token(), TOKEN_ERR)
 
@@ -278,13 +277,13 @@ int function_call(HTItem *found, HTable *function_table, AST_NODE **ast)
     } else {
         // todo pravidlo k function call
         IF_RETURN(!is_term(token.type), SYNTAX_ERR)
-        int result = function_call_arg(found, function_table, ast);
+        int result = function_call_arg(found, function_table, ast, indent_stack);
 
         return result;
     }
 }
 
-int function_call_arg(HTItem *found, HTable *table, AST_NODE **ast) {
+int function_call_arg(HTItem *found, HTable *table, AST_NODE **ast, STACK *indent_stack) {
     tDLList *list_of_arguments = found->list;
 
     int countParams = 0;
@@ -338,7 +337,7 @@ int check_function_arguments(HTable *table, HTItem *arg)
 }
 
 
-int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable, char *token_name) {
+int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable, char *token_name, STACK *indent_stack) {
 
     S_ELEM *top;
     PSA_SYMBOL input;
@@ -404,7 +403,7 @@ int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable
                 IF_RETURN(!(input <= PSA_END), ERR_INTERNAL)
                 break;
             case '>':
-                result = reduce(scope, stack, table, previous);
+                result = reduce(scope, stack, previous);
                 IF_RETURN(result != SYNTAX_OK, result)
                 break;
             case 0:
@@ -424,7 +423,7 @@ int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable
     return SYNTAX_OK;
 }
 
-int reduce(int scope, STACK *stack, HTable *table, struct TToken *previous)
+int reduce(int scope, STACK *stack, struct TToken *previous)
 {
 
     PSA_SYMBOL rule[4] = {END_HANDLE, END_HANDLE, END_HANDLE, END_HANDLE};
@@ -669,10 +668,15 @@ int main(int argc, char const *argv[]) {
     AST_NODE *ast = NULL;
     ast_init(&ast);
 
-    //printf("%d",  recursive_descent(&ast));
-    while (1) {
-        get_next_token();
-    }
+    STACK *indent_stack = malloc(sizeof(STACK));
+    stack_init(indent_stack);
+    indent_stack->top = 0;
+
+
+    //printf("%d",  recursive_descent(&ast, indent_stack));
+//    while (1) {
+//        get_next_token();
+//    }
 
     //return recursive_descent(&ast);
     return 0;

@@ -10,7 +10,6 @@
  */
 
 #include "functions.h"
-#include "scanner.h"
 
 bool is_eol(TType type)
 {

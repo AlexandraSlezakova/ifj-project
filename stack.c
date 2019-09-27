@@ -9,7 +9,6 @@
  * @author
  */
 #include "stack.h"
-#include "scanner.h"
 #include <stdlib.h>
 
 void stack_init(STACK *stack) {
@@ -53,11 +52,6 @@ int stack_push(STACK *stack, struct TToken *current_token, AST_NODE *node, PSA_S
     /* deep copy of token*/
     if (current_token != NULL) {
         stack_elem->current_token = current_token;
-//        stack_elem->current_token->type = current_token->type;
-//        stack_elem->current_token->name = current_token->name;
-//        stack_elem->current_token->value.is_int = current_token->value.is_int;
-//        stack_elem->current_token->value.is_float = current_token->value.is_float;
-//        stack_elem->current_token->value.is_char = current_token->value.is_char;
     }
 
     stack_elem->next = stack->top;
@@ -132,7 +126,7 @@ int stack_top_rule(STACK *stack, PSA_SYMBOL psa_buffer[4], S_ELEM stack_elem[4],
     return OK;
 }
 
-void stack_pop (STACK *stack)
+void stack_pop(STACK *stack)
 {
     if (stack && stack->top) {
         S_ELEM *elem = stack->top;
