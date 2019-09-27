@@ -9,13 +9,8 @@
  * @author
  */
 
-#include <string.h>
-#include <ctype.h>
-#include <memory.h>
-#include <stdlib.h>
-#include <stdbool.h>
+
 #include "scanner.h"
-#include "errors.h"
 
 char *keywords[7] = {"def", "else", "if", "None", "pass", "return", "while"};
 
@@ -111,6 +106,8 @@ int get_token() {
                 else if (c == '\n') {
                     line_counter++;
                     token.type = T_IS_EOL; /* end of line */
+                    previous_state = S_IS_EOL;
+                    indent_counter = 0;
                     return 0;
                 } /* beginning of string */
                 else if (c == 39) {
@@ -162,7 +159,16 @@ int get_token() {
                     break;
                 }
                 else if (c == ' ') {
-                    // todo indent
+                    if (previous_state == S_IS_EOL) {
+                        do {
+                            c = getchar();
+                            indent_counter++;
+                        } while (c == 32);  /* 32 - space */
+                        ungetc(c, stdin);
+                    }
+                    state = START;
+                    iterator = 0;
+                    allocated = 0;
                     break;
                 }
                 else {
@@ -175,6 +181,7 @@ int get_token() {
                     break;
                 }
                 else {
+                    previous_state =  S_ZERO;
                     create_token(c, buffer, &token, T_INT);
                     return 0;
                 }
@@ -199,6 +206,7 @@ int get_token() {
                     break;
                 }
                 else {
+                    previous_state = S_INT;
                     create_token(c, buffer, &token, T_INT);
                     return 0;
                 }
@@ -228,6 +236,7 @@ int get_token() {
                     break;
                 }
                 else {
+                    previous_state = S_FLOAT;
                     create_token(c, buffer, &token, T_FLOAT);
                     return 0;
                 }
@@ -243,6 +252,7 @@ int get_token() {
                     break;
                 }
                 else {
+                    previous_state = S_EXP;
                     create_token(c, buffer, &token, T_FLOAT);
                     return 0;
                 }
@@ -268,6 +278,7 @@ int get_token() {
                     break;
                 }
                 else {
+                    previous_state = S_NUMBER;
                     create_token(c, buffer, &token, T_FLOAT);
                     return 0;
                 }
@@ -283,6 +294,7 @@ int get_token() {
                     break;
                 }
                 else {
+                    previous_state = S_VAR;
                     create_token(c, buffer, &token, T_VAR);
                     return 0;
                 }
@@ -363,6 +375,7 @@ int get_token() {
                 break;
 
             case S_STRING:
+                previous_state = S_STRING;
                 create_token(c, buffer, &token, T_STRING);
                 return 0;
 
@@ -372,11 +385,13 @@ int get_token() {
                     break;
                 }
                 else {
+                    previous_state = S_SMALLER;
                     create_token(c, buffer, &token, T_IS_SMALLER);
                     return 0;
                 }
 
             case S_IS_SMALLER_OR_EQUAL:
+                previous_state = S_IS_SMALLER_OR_EQUAL;
                 create_token(c, buffer, &token, T_IS_SMALLER_OR_EQUAL);
                 return 0;
 
@@ -386,11 +401,13 @@ int get_token() {
                     break;
                 }
                 else {
+                    previous_state = S_GREATER;
                     create_token(c, buffer, &token, T_IS_GREATER);
                     return 0;
                 }
 
             case S_IS_GREATER_OR_EQUAL:
+                previous_state = S_IS_GREATER_OR_EQUAL;
                 create_token(c, buffer, &token, T_IS_GREATER_OR_EQUAL);
                 return 0;
 
@@ -399,29 +416,35 @@ int get_token() {
                     state = S_IS_EQUAL;
                     break;
                 } else {
+                    previous_state = S_ASSIGN;
                     create_token(c, buffer, &token, T_ASSIGNMENT);
                     return 0;
                 }
 
             case S_IS_EQUAL:
+                previous_state = S_IS_EQUAL;
                 create_token(c, buffer, &token, T_IS_EQUAL);
                 return 0;
 
             /* mathematical operation */
             case S_MATH_OP:
                 if (buffer[iterator - 2] == '+') {
+                    previous_state = S_MATH_OP;
                     create_token(c, buffer, &token, T_ADD);
                     return 0;
                 }
                 else if (buffer[iterator - 2] == '-') {
+                    previous_state = S_MATH_OP;
                     create_token(c, buffer, &token, T_SUB);
                     return 0;
                 }
                 else if (buffer[iterator - 2] == '*') {
+                    previous_state = S_MATH_OP;
                     create_token(c, buffer, &token, T_MUL);
                     return 0;
                 }
                 else if (buffer[iterator - 2] == '/') {
+                    previous_state = S_MATH_OP;
                     create_token(c, buffer, &token, T_DIV);
                     return 0;
                 }
@@ -475,6 +498,7 @@ int get_token() {
                 } else {
                     state = S_ERROR;
                 }
+                previous_state = S_END_DOC_2;
                 break;
 
             /* no equal */
@@ -482,6 +506,7 @@ int get_token() {
                 if (c == '=') {
                     c = getchar();
                     buffer[iterator++] = c;
+                    previous_state = S_IS_NOT_EQUAL;
                     create_token(c, buffer, &token, T_IS_NOT_EQUAL);
                     return 0;
                 } else {

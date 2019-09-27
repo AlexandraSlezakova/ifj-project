@@ -14,8 +14,10 @@
 #include <memory.h>
 #include <stdbool.h>
 
-#ifndef SCANNER_H
-#define SCANNER_H
+#include "errors.h"
+
+#ifndef IFJ_SCANNER_H
+#define IFJ_SCANNER_H
 
 typedef enum {
     START,                      /* pociatocny stav */
@@ -54,8 +56,9 @@ typedef enum {
     S_RIGHT_BRACKET,
     S_HEX_ESCAPE,
     S_HEX_ESCAPE2,
-    S_ERROR
-}TState;
+    S_ERROR,
+    S_IS_EOL,
+} TState;
 
 typedef enum {
     T_VAR,			        /* 0  */
@@ -95,7 +98,7 @@ typedef enum {
     T_COLON,                /* 29 */
     T_INDENT,               /* 30 */
     T_DEDENT,               /* 31 */
-}TType;
+} TType;
 
 struct TToken {
     TType type;
@@ -114,4 +117,7 @@ bool is_special_character_number();
 char *buffer;
 int iterator;
 int c;
+int indent_counter;
+TState previous_state;
+
 #endif
