@@ -44,7 +44,6 @@ PSA_SYMBOL psa_rules[3][4] =
 
 static int counter = 0;
 HTable *global_hashtable;
-int get_next_token();
 int statement(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *variable, STACK *indent_stack);
 int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *variable, STACK *indent_stack);
 int reduce(int scope, STACK *stack, struct TToken *previous);

@@ -28,6 +28,8 @@ typedef enum {
     VAR,        /**< variable */
     VAL,        /**< value    */
     IF_NODE,    /**< if       */
+    IF_BODY,
+    ELSE_BODY,
     WHILE_NODE, /**< while    */
     BODY,       /**< body     */
     CALL,       /**< call     */
@@ -36,7 +38,7 @@ typedef enum {
     VARDEF,     /**< DEFVAR */
     ASSIGN,     /**< = */
     BODY_TO_PROCESS, /**< BODY PROCESSED WITH BUFFER */
-    /* TODO define more operations */
+    CONDITION,
     NO_NODE     =   100
 } AST_node_type;
 

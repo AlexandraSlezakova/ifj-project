@@ -80,8 +80,3 @@ bool is_condition(TType type)
         || type == T_IS_NOT_EQUAL
         || type == T_IS_EQUAL;
 }
-
-bool is_tab (TType type)
-{
-    return type == T_INDENT;
-}

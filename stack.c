@@ -98,6 +98,23 @@ int stack_push_handle(STACK *stack, S_ELEM *elem, PSA_SYMBOL psa_symbol) {
     return OK;
 }
 
+int stack_push_indent(STACK *stack, int count_indent, TType indent_type) {
+
+    IF_RETURN(!stack, ERR_INTERNAL)
+
+    S_ELEM *new_elem = malloc(sizeof(S_ELEM));
+    IF_RETURN(!new_elem, ERR_INTERNAL)
+
+    new_elem->next = stack->top;
+    new_elem->indent_counter = count_indent;
+    new_elem->indent_type = indent_type;
+
+    stack->top = new_elem;
+
+    return OK;
+
+}
+
 int stack_top_rule(STACK *stack, PSA_SYMBOL psa_buffer[4], S_ELEM stack_elem[4], struct TToken *previous) {
 
     S_ELEM *tmp = NULL;
@@ -149,5 +166,3 @@ void stack_destroy(STACK *stack)
         }
     }
 }
-
-void

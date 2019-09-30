@@ -17,6 +17,7 @@
 #define LIST
 
 #define IF_RETURN(CONDITION, VAL) if (CONDITION) return VAL;
+#define IF_VALUE_RETURN(VALUE) if (VALUE) return VALUE;
 
 
 typedef struct tDLElem {

@@ -26,7 +26,7 @@ int is_keyword(char *string)
 }
 
 
-void create_token(char character, char *string, struct TToken *new_token, TType type) {
+void create_token(int character, char *string, struct TToken *new_token, TType type) {
 
     TType keyword_type;
     /* return read character for another reading */
@@ -40,7 +40,7 @@ void create_token(char character, char *string, struct TToken *new_token, TType 
 
     if (new_token->type == T_INT) {
         char *ptr = malloc(sizeof(char));
-        new_token->value.is_int = strtol(string, &ptr, 10);
+        new_token->value.is_int = (int)strtol(string, &ptr, 10);
 
     } else if (new_token->type  == T_FLOAT) {
         new_token->value.is_float = strtof(string, NULL);
@@ -59,6 +59,8 @@ int get_token() {
     iterator = 0;
     buffer = NULL;
     TState state = START; /* initial state */
+
+    indent_counter = 0;
 
     while (1) {
         /* buffer reallocation */
@@ -107,7 +109,6 @@ int get_token() {
                     line_counter++;
                     token.type = T_IS_EOL; /* end of line */
                     previous_state = S_IS_EOL;
-                    indent_counter = 0;
                     return 0;
                 } /* beginning of string */
                 else if (c == 39) {
@@ -175,6 +176,8 @@ int get_token() {
                     state = S_ERROR;
                     break;
                 }
+
+
             case S_ZERO:
                 if(isdigit(c) || isalpha(c)) {
                     state = S_ERROR;
@@ -186,6 +189,10 @@ int get_token() {
                     return 0;
                 }
 
+            case S_COLON:
+                previous_state = S_COLON;
+                create_token(c, buffer, &token, T_IS_COLON);
+                return 0;
 
                 /* numbers */
             case S_INT:
@@ -332,8 +339,11 @@ int get_token() {
 
                 /* escape sequence */
             case S_ESC:
-                if (c == '"' || c == 'n' || c == 't' || c == 39 || c == '\\') {
+                if (c == '"' || c == 'n' || c == 't' || c == '\\') {
                     state = S_STRING_CONTENT;
+                }
+                else if (c == 39) {
+                    state = S_STRING;
                 }
                 else if (c == 'x') {
                     state = S_HEX_ESCAPE;
@@ -348,6 +358,9 @@ int get_token() {
                 if (isdigit(c) || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')) {
                     /* \xh */
                     state = S_HEX_ESCAPE2;
+                }
+                else if (c == 39) {
+                    state = S_STRING;
                 }
                 else {
                     state = S_ERROR;
@@ -523,6 +536,21 @@ int get_token() {
                 }
                 break;
 
+            case S_IS_COMMA:
+                previous_state = S_IS_COMMA;
+                create_token(c, buffer, &token, T_IS_COMMA);
+                return 0;
+
+            case S_LEFT_BRACKET:
+                previous_state = S_LEFT_BRACKET;
+                create_token(c, buffer, &token, T_LEFT_BRACKET);
+                return 0;
+
+            case S_RIGHT_BRACKET:
+                previous_state = S_RIGHT_BRACKET;
+                create_token(c, buffer, &token, T_RIGHT_BRACKET);
+                return 0;
+
             default:
                 state = S_ERROR;
                 break;
@@ -546,10 +574,7 @@ bool is_special_character_number()
 {
     /* special characters */
     return (c >= 33 && c <= 39)
-        || c == 44  /*    comma  */
         || c == 45  /*   hyphen  */
-        || c == 46  /*    dot    */
-        || c == 58  /*   colon   */
         || c == 59  /* semicolon */
         || c >= 63;
 }

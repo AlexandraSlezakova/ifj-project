@@ -95,9 +95,10 @@ typedef enum {
     T_IS_EOF,			    /* 26 */
     T_IS_EOL,			    /* 27 */
     T_IS_ERR,			    /* 28 */
-    T_COLON,                /* 29 */
+    T_IS_COLON,             /* 29 */
     T_INDENT,               /* 30 */
     T_DEDENT,               /* 31 */
+    T_UNKNOWN,
 } TType;
 
 struct TToken {
@@ -111,7 +112,7 @@ struct TToken {
 
 int get_token();
 int is_keyword(char *string);
-void create_token(char character, char *string,  struct TToken *new_token, TType type);
+void create_token(int character, char *string,  struct TToken *new_token, TType type);
 bool is_special_character();
 bool is_special_character_number();
 char *buffer;

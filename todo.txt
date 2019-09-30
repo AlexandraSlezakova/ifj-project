@@ -1,16 +1,23 @@
 - indent na zaciatku prveho riadku
-- indenty vsade
+- redefinicia + datovy typ argumentu funkcie
+- indenty vsade (def, if, else by mal byt spraveny)
+- vstavane funkcie
 - EOF
 - abstract syntax tree
-- if
 - while
 - return
 - pass
+- volanie funkcie
 - generator
 - skontrolovat 
 	- scanner
 	- parser
 	- generator
+	- error kody
 - vela volneho casu ? optimalizacia : kaslat na to
+
+- cisla: 1.34, => chyba (pri volani funkcie tam ciarka moze byt, ked sa predava ako parameter),
+rovnako aj dvojbodka v if napriklad
+- if - ked nie je dvojbodka
 
 
