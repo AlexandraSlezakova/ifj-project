@@ -9,7 +9,6 @@
  */
 #include "parser.h"
 
-
 int function_arguments(HTable *function_symtable, HTItem *new_item) {
 
     tDLList *arg_list = NULL;
@@ -156,10 +155,8 @@ int recursive_descent(AST_NODE **ast, STACK *indent_stack) {
 
         } // todo pravidlo
         else if (token.type == T_IF) {
-            AST_NODE *if_node = ast_add_node(ast, IF_NODE, NULL, GLOBAL_SCOPE);
-            IF_RETURN(!if_node, ERR_INTERNAL)
             variable = NULL;
-            result = statement(GLOBAL_SCOPE, global_hashtable, &if_node, stack, variable, indent_stack);
+            result = statement(GLOBAL_SCOPE, global_hashtable, ast, stack, variable, indent_stack);
         }
 
         IF_VALUE_RETURN(result)
@@ -445,6 +442,7 @@ int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable
 
         /* current token from input*/
         input = token_to_psa_symbol();
+        IF_RETURN(node->operation == CONDITION && token.type == T_IS_EOL, SYNTAX_ERR)
         if (token.type == T_IS_COLON) input = PSA_END;
 
         IF_RETURN(!(input <= PSA_END), ERR_INTERNAL)

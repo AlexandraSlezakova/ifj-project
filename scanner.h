@@ -113,8 +113,6 @@ struct TToken {
 int get_token();
 int is_keyword(char *string);
 void create_token(int character, char *string,  struct TToken *new_token, TType type);
-bool is_special_character();
-bool is_special_character_number();
 char *buffer;
 int iterator;
 int c;

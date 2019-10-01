@@ -208,10 +208,6 @@ int get_token() {
                     state = S_EXP;
                     break;
                 }
-                else if (is_special_character_number()) {
-                    state = S_ERROR;
-                    break;
-                }
                 else {
                     previous_state = S_INT;
                     create_token(c, buffer, &token, T_INT);
@@ -236,10 +232,6 @@ int get_token() {
                 }
                 else if (c == 'e' || c == 'E') {
                     state = S_EXP;
-                    break;
-                }
-                else if (is_special_character_number()) {
-                    state = S_ERROR;
                     break;
                 }
                 else {
@@ -280,10 +272,6 @@ int get_token() {
                     state = S_NUMBER;
                     break;
                 }
-                else if (is_special_character_number()) {
-                    state = S_ERROR;
-                    break;
-                }
                 else {
                     previous_state = S_NUMBER;
                     create_token(c, buffer, &token, T_FLOAT);
@@ -294,10 +282,6 @@ int get_token() {
             case S_VAR:
                 if (isdigit(c) || isalpha(c) || c == '_') {
                     state = S_VAR;
-                    break;
-                }
-                else if (is_special_character()) {
-                    state = S_ERROR;
                     break;
                 }
                 else {
@@ -557,24 +541,4 @@ int get_token() {
 
         }
     }
-}
-
-bool is_special_character()
-{
-    /* special characters */
-    return c == 59                      /*   semicolon   */
-           || c == '.'
-           || (c >= 33 && c <= 39)
-           || c == 64                   /*       @       */
-           || (c >= 91 && c <= 96)      /* [, \, ], ^, _ */
-           || c >= 123;
-}
-
-bool is_special_character_number()
-{
-    /* special characters */
-    return (c >= 33 && c <= 39)
-        || c == 45  /*   hyphen  */
-        || c == 59  /* semicolon */
-        || c >= 63;
 }
