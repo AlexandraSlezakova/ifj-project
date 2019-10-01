@@ -50,6 +50,7 @@ void create_token(int character, char *string, struct TToken *new_token, TType t
     }
 }
 
+
 int get_token() {
 
     static int line_counter = 0; /* number of lines */
@@ -166,6 +167,9 @@ int get_token() {
                             indent_counter++;
                         } while (c == 32);  /* 32 - space */
                         ungetc(c, stdin);
+                    } else if (previous_state == START) {
+                        state = S_ERROR;
+                        break;
                     }
                     state = START;
                     iterator = 0;
@@ -441,14 +445,25 @@ int get_token() {
                     return 0;
                 }
                 else if (buffer[iterator - 2] == '/') {
-                    previous_state = S_MATH_OP;
-                    create_token(c, buffer, &token, T_DIV);
-                    return 0;
+                    if (buffer[iterator - 1] == '/') {
+                        state = S_DIV_INT;
+                        break;
+                    } else {
+                        previous_state = S_MATH_OP;
+                        create_token(c, buffer, &token, T_DIV);
+                        return 0;
+                    }
+
                 }
                 else {
                     state = S_ERROR;
                     break;
                 }
+
+            case S_DIV_INT:
+                previous_state = S_DIV_INT;
+                create_token(c, buffer, &token, T_DIV_INT);
+                return 0;
 
             /* documentation string */
             case S_START_DOC_1:

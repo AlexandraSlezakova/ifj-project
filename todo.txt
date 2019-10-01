@@ -1,4 +1,3 @@
-- indent na zaciatku prveho riadku
 - redefinicia + datovy typ argumentu funkcie
 - indenty vsade (def, if, else by mal byt spraveny)
 - vstavane funkcie
@@ -16,5 +15,3 @@
 	- generator
 	- error kody
 - vela volneho casu ? optimalizacia : kaslat na to
-
-- if - ked nie je dvojbodka

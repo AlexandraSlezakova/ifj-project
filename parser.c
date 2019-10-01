@@ -433,6 +433,7 @@ int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable
     HTItem *found;
     struct TToken *previous = malloc(sizeof(struct TToken));
     int result = 0;
+    int colon_counter = 0;
 
     IF_RETURN(stack_push(stack, NULL, NULL, PSA_END, TYPE_UNKNOWN) != OK, ERR_INTERNAL)
 
@@ -442,8 +443,13 @@ int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable
 
         /* current token from input*/
         input = token_to_psa_symbol();
+
+        /* EOL is PSA_END but colon has to be in IF */
         IF_RETURN(node->operation == CONDITION && token.type == T_IS_EOL, SYNTAX_ERR)
-        if (token.type == T_IS_COLON) input = PSA_END;
+        if (token.type == T_IS_COLON && node->operation == CONDITION) {
+            colon_counter++;
+            if (colon_counter == 1) input = PSA_END;
+        }
 
         IF_RETURN(!(input <= PSA_END), ERR_INTERNAL)
 
@@ -765,6 +771,7 @@ int main(int argc, char const *argv[]) {
     stack_init(indent_stack);
     IF_RETURN((stack_push_indent(indent_stack, 0, T_UNKNOWN)), ERR_INTERNAL)
 
+    previous_state = START;
     printf("%d",  recursive_descent(&ast, indent_stack));
 //    while (1) {
 //        get_token();

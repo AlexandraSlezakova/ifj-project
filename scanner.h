@@ -44,6 +44,7 @@ typedef enum {
     S_TAB,                      /* tabulator */
     S_SPACE,                    /* medzera */
     S_MATH_OP,                  /* matematicka operacia */
+    S_DIV_INT,                  /* // */
     S_ZERO,
     S_SMALLER,
     S_GREATER,
@@ -99,6 +100,7 @@ typedef enum {
     T_INDENT,               /* 30 */
     T_DEDENT,               /* 31 */
     T_UNKNOWN,
+    T_DIV_INT,
 } TType;
 
 struct TToken {
