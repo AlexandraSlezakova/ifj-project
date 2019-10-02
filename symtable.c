@@ -49,25 +49,36 @@ HTable *ht_init(){
 /**
  * Insert new item
  */
-void *ht_insert(HTable *symtable, HTItem *new_item) {
+int ht_insert(HTable *symtable, HTItem *new_item) {
 
     int hash = 0;
 
-    IF_RETURN(!symtable, NULL)
+    IF_RETURN(!symtable, ERR_INTERNAL)
 
     hash = createHash(new_item->key);
 
-    // todo hladat v tabulke, ci tam je ?
-
-    /* end of table*/
-    if (symtable->first[hash] != NULL) {
-        symtable->first[hash]->next = new_item;
-        symtable->first[hash] = new_item;
-        new_item->next = NULL;
-
-    } else {
-        symtable->first[hash] = new_item;
+    /* rewrite value if key exists */
+    HTItem *found = ht_search(symtable, new_item->key);
+    if (found) {
+        if (((found->data_type != TYPE_UNKNOWN && new_item->data_type != TYPE_UNKNOWN) && (found->data_type == new_item->data_type))
+            || (found->data_type == TYPE_UNKNOWN)) {
+            *found = *new_item;
+        } else {
+            return SEM_ERR_UNDEF_VAR;
+        }
     }
+    else {
+        if (symtable->first[hash] != NULL) {
+            symtable->first[hash]->next = new_item;
+            symtable->first[hash] = new_item;
+            new_item->next = NULL;
+
+        } else {
+            symtable->first[hash] = new_item;
+        }
+    }
+
+    return OK;
 }
 
 HTItem *ht_search(HTable *symtable, char *key) {
@@ -90,9 +101,9 @@ HTItem *ht_search(HTable *symtable, char *key) {
 
 }
 
-HTItem *insert_function(HTable *symtable, char *key, int params_quantity, bool defined, tDLList *list) {
+int insert_function(HTable *symtable, char *key, int params_quantity, bool defined, tDLList *list) {
    HTItem *item = malloc(sizeof(HTItem));
-   IF_RETURN(!item, NULL)
+   IF_RETURN(!item, ERR_INTERNAL)
 
    item->key = key;
    item->type = FUNCTION;
@@ -101,19 +112,17 @@ HTItem *insert_function(HTable *symtable, char *key, int params_quantity, bool d
    item->symtable = symtable;
    item->list = list;
 
-   ht_insert(symtable, item);
-   return item;
+   return ht_insert(symtable, item);
 }
 
-HTItem *insert_variable(HTable *symtable, char *key, DATA_TYPE data_type) {
+int insert_variable(HTable *symtable, char *key, DATA_TYPE data_type) {
     HTItem *item = malloc(sizeof(HTItem));
-    IF_RETURN(!item, NULL)
+    IF_RETURN(!item, ERR_INTERNAL)
 
     item->key = key;
     item->type = IDENTIFIER;
     item->defined = true;
     item->data_type = data_type;
 
-    ht_insert(symtable, item);
-    return item;
+    return ht_insert(symtable, item);
 }

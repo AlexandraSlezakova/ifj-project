@@ -19,6 +19,7 @@ typedef enum {
     SUB,        /**< -        */
     MUL,        /**< *        */
     DIV,        /**< /        */
+    DIV_INT,    /**< //       */
     GREATER,    /**< >        */
     GEQ,        /**< >=       */
     LESS,       /**< <        */
@@ -71,25 +72,26 @@ ast_destroy(AST_NODE **tree);
 typedef enum {
     PSA_MULTIPLICATION      = 0,     /*  *  */
     PSA_DIVISION            = 1,     /*  /  */
-    PSA_ADDITION            = 2,     /*  +  */
-    PSA_SUBTRACTION         = 3,     /*  -  */
-    PSA_LESS                = 4,     /*  <  */
-    PSA_LESSEQUAL           = 5,     /*  <= */
-    PSA_GREATER             = 6,     /*  >  */
-    PSA_GREATEREQUAL        = 7,     /*  >= */
-    PSA_EQUAL               = 8,     /*  == */
-    PSA_NOTEQUAL            = 9,     /*  != */
-    PSA_LBRACKET            = 10,    /*  (  */
-    PSA_RBRACKET            = 11,    /*  )  */
-    PSA_OPERAND             = 12,    /*  id */
-    PSA_END                 = 13,    /*  $  */
+    PSA_DIVISION_INT        = 2,     /*  // */
+    PSA_ADDITION            = 3,     /*  +  */
+    PSA_SUBTRACTION         = 4,     /*  -  */
+    PSA_LESS                = 5,     /*  <  */
+    PSA_LESSEQUAL           = 6,     /*  <= */
+    PSA_GREATER             = 7,     /*  >  */
+    PSA_GREATEREQUAL        = 8,     /*  >= */
+    PSA_EQUAL               = 9,     /*  == */
+    PSA_NOTEQUAL            = 10,    /*  != */
+    PSA_LBRACKET            = 11,    /*  (  */
+    PSA_RBRACKET            = 12,    /*  )  */
+    PSA_OPERAND             = 13,    /*  id */
+    PSA_END                 = 14,    /*  $  */
 
-    NON_TERMINAL            = 15,    /*  E  */
+    NON_TERMINAL            = 16,    /*  E  */
 
-    START_HANDLE            = 16,    /* '<' */
-    END_HANDLE              = 17,    /* '>' */
-    PSA_NONE                = 18,
-    MATHEMATICAL_OPERATION  = 19
+    START_HANDLE            = 18,    /* '<' */
+    END_HANDLE              = 19,    /* '>' */
+    PSA_NONE                = 20,
+    MATHEMATICAL_OPERATION  = 21
 } PSA_SYMBOL;
 
 typedef enum
@@ -99,7 +101,8 @@ typedef enum
     TYPE_INTEGER,
     TYPE_NIL,
     TYPE_IDENTIFIER,
-    TYPE_UNKNOWN
+    TYPE_UNKNOWN,
+    UNDEFINED
 } DATA_TYPE;
 
 typedef struct stackElem {

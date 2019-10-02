@@ -9,9 +9,13 @@
  */
 #include "parser.h"
 
-int function_arguments(HTable *function_symtable, HTItem *new_item) {
+int function_arguments(HTable *function_symtable, char *function_name)
+{
 
     tDLList *arg_list = NULL;
+    HTItem *function = ht_search(global_hashtable, function_name);
+    IF_RETURN(!function, ERR_INTERNAL)
+
     arg_list = DLInitList();
 
     int countParams = 0;
@@ -22,12 +26,12 @@ int function_arguments(HTable *function_symtable, HTItem *new_item) {
         char *name = malloc(sizeof(char));
         strcpy(name, token.value.is_char);
         /* insert variable name into function table */
-        HTItem *inserted = insert_variable(function_symtable, name, TYPE_UNKNOWN);
-        IF_RETURN(!inserted, SYNTAX_ERR)
+        int inserted = insert_variable(function_symtable, name, TYPE_UNKNOWN);
+        IF_VALUE_RETURN(inserted)
 
-        /* insert argument name to list of arguments*/
+        /* insert argument name to list of arguments */
         IF_RETURN(!DLInsertLast(arg_list, name), ERR_INTERNAL)
-        new_item->has_params = true;
+
 
         /* quantity of params */
         countParams++;
@@ -45,21 +49,21 @@ int function_arguments(HTable *function_symtable, HTItem *new_item) {
             inserted = insert_variable(function_symtable, name, TYPE_UNKNOWN);
             IF_RETURN(!inserted, SYNTAX_ERR)
 
-            /* insert argument name to list of arguments*/
+            /* insert argument name to list of arguments */
             IF_RETURN(!DLInsertLast(arg_list, name), ERR_INTERNAL)
 
             countParams++;
             IF_RETURN(get_token(), TOKEN_ERR)
         }
 
-        new_item->params_quantity = countParams;
-        new_item->list = arg_list;
+        function->params_quantity = countParams;
+        function->list = arg_list;
         return SYNTAX_OK;
 
     } /* function without arguments */
     else if (token.type == T_RIGHT_BRACKET) {
-        new_item->params_quantity = 0;
-        new_item->list = NULL;
+        function->params_quantity = 0;
+        function->list = NULL;
         return SYNTAX_OK;
     }
 
@@ -67,29 +71,24 @@ int function_arguments(HTable *function_symtable, HTItem *new_item) {
 }
 
 
-int recursive_descent(AST_NODE **ast, STACK *indent_stack) {
+int recursive_descent(AST_NODE **ast, STACK *indent_stack)
+{
 
     int result = 0;
 
     while (1) {
         IF_RETURN(get_token(), TOKEN_ERR)
 
-        HTItem *item = NULL;
+        int item = OK;
         HTable *function_table = NULL;
-        /* variable inserted to table after psa reduction*/
-        HTItem *variable = malloc(sizeof(HTItem));
-
-        /* stack init */
-        STACK *stack = malloc(sizeof(STACK));
-        stack_init(stack);
 
         IF_RETURN(!ast_add_node(ast, PROG, NULL, true), ERR_INTERNAL)
 
-        // end of file
-        if (token.type == T_IS_EOF) {  // rule 1 -> 2 || 5
+        /* end of file */
+        if (token.type == T_IS_EOF) {
             // todo ???
 
-        } /* function definition - rule 4 */
+        } /* function definition */
         else if (token.type == T_DEF) {
             IF_RETURN(get_token(), TOKEN_ERR)
 
@@ -102,17 +101,16 @@ int recursive_descent(AST_NODE **ast, STACK *indent_stack) {
 
             HTItem *found = ht_search(global_hashtable, name);
 
-            if (found) {
-                /* definition of existing function or using same name is not possible */
-                IF_RETURN(found->type != FUNCTION, SYNTAX_ERR) // todo navratovy kod
-            } else {
-                /* create symtable for function */
-                function_table = ht_init();
-                IF_RETURN(!function_table, ERR_INTERNAL)
+            /* definition of existing function or using same name is not possible */
+            IF_RETURN(found, SEM_ERR_UNDEF_VAR) // todo nemozem vytvorit funkciu s rovnakym nazvom ako ina funkcia alebo premenna?
 
-                /* add function to global symtable*/
-                item = insert_function(global_hashtable, name, -1, true, NULL);
-            }
+            /* create symtable for function */
+            function_table = ht_init();
+            IF_RETURN(!function_table, ERR_INTERNAL)
+
+            /* add function to global symtable*/
+            item = insert_function(global_hashtable, name, -1, true, NULL);
+            IF_VALUE_RETURN(item)
 
             /* add node to AST*/
             AST_NODE *function_node = ast_add_node(ast, FUNC_DEF, name, SCOPE);
@@ -126,7 +124,7 @@ int recursive_descent(AST_NODE **ast, STACK *indent_stack) {
             IF_RETURN(get_token(), TOKEN_ERR)
 
             /* arguments with right bracket */
-            int arg = function_arguments(function_table, item);
+            int arg = function_arguments(function_table, name);
             IF_RETURN(arg != SYNTAX_OK, SYNTAX_ERR)
 
             /* colon */
@@ -147,16 +145,18 @@ int recursive_descent(AST_NODE **ast, STACK *indent_stack) {
             IF_RETURN(!function_body, ERR_INTERNAL)
 
             /* statement list - body of function */
-            result = statement_list(SCOPE, function_table, &function_body, stack, variable, indent_stack);
+            result = statement_list(SCOPE, function_table, &function_body, indent_stack);
 
-        } /* rule 11 */
+        }
         else if (token.type == T_VAR) {
-            result = statement(GLOBAL_SCOPE, global_hashtable, ast, stack, variable, indent_stack);
+            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack);
 
-        } // todo pravidlo
+        }
         else if (token.type == T_IF) {
-            variable = NULL;
-            result = statement(GLOBAL_SCOPE, global_hashtable, ast, stack, variable, indent_stack);
+            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack);
+        }
+        else if (token.type == T_WHILE) {
+            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack);
         }
 
         IF_VALUE_RETURN(result)
@@ -164,7 +164,7 @@ int recursive_descent(AST_NODE **ast, STACK *indent_stack) {
 }
 
 
-int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *variable, STACK *indent_stack)
+int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack)
 {
     /* FUNCTION BODY */
     int result = 0;
@@ -176,7 +176,7 @@ int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTIte
     /* function definition */
     while (indent_stack->top->indent_counter != initial_indent) {
         if (token.type == T_IF || token.type == T_WHILE || token.type == T_VAR)
-            result = statement(scope, table, ast, stack, variable, indent_stack);
+            result = statement(scope, table, ast, indent_stack);
 
         IF_VALUE_RETURN(result)
 
@@ -203,10 +203,14 @@ int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTIte
 
 }
 
-int statement(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *variable, STACK *indent_stack)
+int statement(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack)
 {
     int result = 0;
-    /* rule 11 */
+
+    /* stack init */
+    STACK *stack = malloc(sizeof(STACK));
+    stack_init(stack);
+
     if (token.type == T_VAR) {
         AST_NODE *equals = ast_add_node(ast, ASSIGN, NULL, is_global_scope(scope));
         IF_RETURN(!equals, ERR_INTERNAL)
@@ -228,11 +232,10 @@ int statement(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *va
 
         if (token.type == T_ASSIGNMENT) {
             IF_RETURN(get_token(), TOKEN_ERR)
+            result = expression(scope, stack, table, &l_value, name, indent_stack);
 
-            result = expression(scope, stack, table, &l_value, name, variable, indent_stack);
         } else {
-            *variable = *insert_variable(table, name, TYPE_UNKNOWN);
-            result = SYNTAX_OK;
+            result = insert_variable(table, name, UNDEFINED);
         }
 
     } else if (token.type == T_IF) {
@@ -241,7 +244,7 @@ int statement(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *va
         AST_NODE *if_node = ast_add_node(ast, IF_NODE, NULL, is_global_scope(scope));
         AST_NODE *condition_node = ast_add_node(&if_node, CONDITION, NULL, is_global_scope(scope));
 
-        int condition = expression(scope, stack, table, &condition_node, NULL, variable, indent_stack);
+        int condition = expression(scope, stack, table, &condition_node, NULL, indent_stack);
         IF_VALUE_RETURN(condition)
 
         /* eol */
@@ -256,26 +259,8 @@ int statement(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *va
         IF_RETURN(indent_stack->top->indent_counter >= indent_counter, SYNTAX_ERR)
         IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
 
-        do {
-            result = statement(scope, table, &if_body, stack, variable, indent_stack); // todo variable ??
-            /* indent */
-            IF_RETURN(get_token(), TOKEN_ERR)
-            if (indent_stack->top->indent_counter < indent_counter) {
-                /* greater indent only in IF or WHILE */
-                IF_RETURN(token.type != T_IF && token.type != T_WHILE, TOKEN_ERR)
-                IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
-            }
-        } while (indent_counter >= indent_stack->top->indent_counter);
-
+        result = handle_indent(scope, table, &if_body, indent_stack);
         IF_VALUE_RETURN(result)
-
-        /* indent counter is always smaller here */
-        while (indent_stack->top->indent_counter != indent_counter) {
-            stack_pop(indent_stack);
-            /* wrong indent */
-            IF_RETURN((indent_stack->top->indent_counter != indent_counter)
-                      && (indent_stack->top->indent_counter == 0), SYNTAX_ERR)
-        }
 
         /* else */
         IF_RETURN(token.type != T_ELSE, LEX_ERR) /* lex error because of wrong indent */
@@ -295,32 +280,63 @@ int statement(int scope, HTable *table, AST_NODE **ast, STACK *stack, HTItem *va
         IF_RETURN(indent_stack->top->indent_counter >= indent_counter, SYNTAX_ERR)
         IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
 
-        do {
-            result = statement(scope, table, &else_body, stack, variable, indent_stack); // todo variable ??
-            /* indent */
-            IF_RETURN(get_token(), TOKEN_ERR)
-            if (indent_stack->top->indent_counter < indent_counter) {
-                /* greater indent only in IF or WHILE */
-                IF_RETURN(token.type != T_IF && token.type != T_WHILE, TOKEN_ERR)
-                IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
-            }
-        } while (indent_counter >= indent_stack->top->indent_counter);
+        result = handle_indent(scope, table, &else_body, indent_stack);
 
-        /* indent counter is always smaller here */
-        while (indent_stack->top->indent_counter != indent_counter) {
-            stack_pop(indent_stack);
-            /* wrong indent */
-            IF_RETURN((indent_stack->top->indent_counter != indent_counter)
-                      && (indent_stack->top->indent_counter == 0), SYNTAX_ERR)
+    }
+    else if (token.type == T_WHILE) {
+        AST_NODE *while_node = ast_add_node(ast, WHILE_NODE, NULL, is_global_scope(GLOBAL_SCOPE));
+
+        IF_RETURN(get_token(), TOKEN_ERR)
+        int condition = expression(scope, stack, table, &while_node, NULL, indent_stack);
+        IF_VALUE_RETURN(condition)
+
+        /* eol */
+        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
+
+        AST_NODE *while_body = ast_add_node(&while_node, BODY, NULL, is_global_scope(GLOBAL_SCOPE));
+
+        /* indent */
+        IF_RETURN(get_token(), TOKEN_ERR)
+        /* indent has to be greater */
+        IF_RETURN(indent_stack->top->indent_counter >= indent_counter, SYNTAX_ERR)
+        IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
+
+        result = handle_indent(scope, table, &while_body, indent_stack);
+    }
+
+    return result;
+}
+
+int handle_indent(int scope, HTable *table, AST_NODE **node, STACK *indent_stack)
+{
+    int result = 0;
+
+    do {
+        result = statement(scope, table, node, indent_stack);
+        /* indent */
+        IF_RETURN(get_token(), TOKEN_ERR)
+        if (indent_stack->top->indent_counter < indent_counter) {
+            /* greater indent only in IF or WHILE */
+            IF_RETURN(token.type != T_IF && token.type != T_WHILE, TOKEN_ERR)
+            IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
         }
+    } while (indent_counter >= indent_stack->top->indent_counter);
 
+    /* indent counter is always smaller here */
+    while (indent_stack->top->indent_counter != indent_counter) {
+        stack_pop(indent_stack);
+        /* wrong indent */
+        IF_RETURN((indent_stack->top->indent_counter != indent_counter)
+                  && (indent_stack->top->indent_counter == 0), SYNTAX_ERR)
     }
 
     return result;
 }
 
 
-int expression(int scope, STACK *stack, HTable *function_table, AST_NODE **ast, char *token_name, HTItem *variable, STACK *indent_stack) {
+int expression(int scope, STACK *stack, HTable *function_table, AST_NODE **ast, char *token_name, STACK *indent_stack)
+{
 
     IF_RETURN(!(is_assignment_correct(token.type)), SYNTAX_ERR)
     /* function identifier */
@@ -333,7 +349,7 @@ int expression(int scope, STACK *stack, HTable *function_table, AST_NODE **ast, 
             HTItem *found = ht_search(function_table, token.value.is_char);
             IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
         }
-        result = psa(scope, stack, *ast, function_table, variable, token_name, indent_stack);
+        result = psa(scope, stack, *ast, function_table, token_name, indent_stack);
 
     } else if (is_function_call(token, tkn_name)) {
         HTItem *found = ht_search(global_hashtable, tkn_name);
@@ -371,7 +387,8 @@ int function_call(HTItem *found, HTable *function_table, AST_NODE **ast, STACK *
     }
 }
 
-int function_call_arg(HTItem *found, HTable *table, AST_NODE **ast, STACK *indent_stack) {
+int function_call_arg(HTItem *found, HTable *table, AST_NODE **ast, STACK *indent_stack)
+{
     tDLList *list_of_arguments = found->list;
 
     int countParams = 0;
@@ -426,7 +443,8 @@ int check_function_arguments(HTable *table, HTItem *arg)
 }
 
 
-int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable, char *token_name, STACK *indent_stack) {
+int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, char *token_name, STACK *indent_stack)
+{
 
     S_ELEM *top;
     PSA_SYMBOL input;
@@ -437,19 +455,16 @@ int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable
 
     IF_RETURN(stack_push(stack, NULL, NULL, PSA_END, TYPE_UNKNOWN) != OK, ERR_INTERNAL)
 
-   do {
-        top = top_terminal(stack);
-        IF_RETURN(!top, ERR_INTERNAL)
+    top = top_terminal(stack);
+    IF_RETURN(!top, ERR_INTERNAL)
 
-        /* current token from input*/
-        input = token_to_psa_symbol();
+    /* current token from input*/
+    input = token_to_psa_symbol();
 
-        /* EOL is PSA_END but colon has to be in IF */
-        IF_RETURN(node->operation == CONDITION && token.type == T_IS_EOL, SYNTAX_ERR)
-        if (token.type == T_IS_COLON && node->operation == CONDITION) {
-            colon_counter++;
-            if (colon_counter == 1) input = PSA_END;
-        }
+    while (input != PSA_END || top->psa_symbol != PSA_END) {
+
+        /* EOL is PSA_END but colon has to be in IF or WHILE */
+        IF_RETURN((node->operation == CONDITION || node->operation == WHILE_NODE) && token.type == T_IS_EOL, SYNTAX_ERR)
 
         IF_RETURN(!(input <= PSA_END), ERR_INTERNAL)
 
@@ -488,31 +503,44 @@ int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, HTItem *variable
                     IF_RETURN(!(stack_push(stack, &token, NULL, input, token_to_data_type(token)) == OK), ERR_INTERNAL)
                 }
 
-                /* save token used in reduction*/
+                /* save token used in reduction */
                 previous->type = token.type;
                 previous->value.is_char = token.value.is_char;
                 previous->value = token.value;
 
                 IF_RETURN(get_token(), TOKEN_ERR)
+                if (token.type == T_IS_COLON && (node->operation == CONDITION || node->operation == WHILE_NODE)) {
+                    colon_counter++;
+                    IF_RETURN(colon_counter > 1, SYNTAX_ERR)
+                }
+
                 break;
             case '>':
                 result = reduce(scope, stack, previous);
                 IF_RETURN(result != SYNTAX_OK, result)
                 break;
             case 0:
-                break;
+                return SYNTAX_ERR;
             default:
                 return ERR_INTERNAL;
         }
-    } while (input != PSA_END || top->psa_symbol != PSA_END);
 
-    if (variable && token_name) {
-        *variable = *insert_variable(table, token_name, stack->top->type);
+        top = top_terminal(stack);
+        IF_RETURN(!top, ERR_INTERNAL)
+
+        /* current token from input*/
+        input = token_to_psa_symbol();
+    }
+
+    if (token_name) {
+       result = insert_variable(table, token_name, stack->top->type);
+       IF_VALUE_RETURN(result)
     }
 
     node->childs[node->child_count] = stack->top->node;
     node->child_count++;
     stack_destroy(stack);
+
     return SYNTAX_OK;
 }
 
@@ -526,7 +554,7 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
     AST_NODE *node = NULL;
     AST_node_type type_of_node;
     struct TToken *original = malloc(sizeof(struct TToken));
-    DATA_TYPE type;
+    DATA_TYPE type = TYPE_UNKNOWN;
 
     int result1 = stack_top_rule(stack, rule, stack_elem, previous);
     bool result2 = is_rule(rule, &rule_index);
@@ -557,6 +585,10 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                     type = check_data_type(stack_elem[0].type, stack_elem[2].type);
                     IF_RETURN(type == TYPE_UNKNOWN, SEM_ERR_COMPAT)
                 }
+
+                /* undefined variable */
+                IF_RETURN(stack_elem[0].type == UNDEFINED || stack_elem[2].type == UNDEFINED, SEM_ERR_UNDEF_VAR)
+
                 original = NULL;
                 type_of_node = node_type(&stack_elem[1]);
                 IF_RETURN(type_of_node == NO_NODE, ERR_INTERNAL)
@@ -619,16 +651,30 @@ bool is_rule(PSA_SYMBOL *rule, int *rule_index)
 char *create_value(struct TToken *current_token)
 {
     char *value = malloc(sizeof(char *));
+    char *string = NULL;
+
+    if (current_token->type == T_STRING) {
+        int i = 0, allocated = 0;
+        while (current_token->value.is_char[i] != '\0') {
+            if (current_token->value.is_char[i] != 39) {
+                string = realloc(string, (size_t) allocated++);
+                string[allocated - 1] = current_token->value.is_char[i];
+            }
+            i++;
+        }
+    }
 
     switch (current_token->type) {
         case T_STRING:
-            value = strcat("string@",current_token->value.is_char);
+            strcpy(value, "string@");
+            value = realloc(value, sizeof(string));
+            strcat(value, string);
             break;
         case T_INT:
             sprintf(value, "int@%d", current_token->value.is_int);
             break;
         case T_FLOAT:
-            sprintf(value, "int@%f", current_token->value.is_float);
+            sprintf(value, "float@%f", current_token->value.is_float);
             break;
         case T_NONE:
             value = "nil@nil";
@@ -671,7 +717,8 @@ DATA_TYPE token_to_data_type(struct TToken current_token)
     return type;
 }
 
-PSA_SYMBOL token_to_psa_symbol() {
+PSA_SYMBOL token_to_psa_symbol()
+{
     PSA_SYMBOL symbol;
 
     switch (token.type) {
@@ -680,6 +727,9 @@ PSA_SYMBOL token_to_psa_symbol() {
             break;
         case T_DIV:
             symbol = PSA_DIVISION;
+            break;
+        case T_DIV_INT:
+            symbol = PSA_DIVISION_INT;
             break;
         case T_ADD:
             symbol = PSA_ADDITION;
@@ -718,6 +768,7 @@ PSA_SYMBOL token_to_psa_symbol() {
             symbol = PSA_OPERAND;
             break;
         case T_IS_EOL:
+        case T_IS_COLON:
             symbol = PSA_END;
             break;
         default:
@@ -728,38 +779,8 @@ PSA_SYMBOL token_to_psa_symbol() {
     return symbol;
 }
 
-AST_node_type condition_to_node(TType token_type)
+int main(int argc, char const *argv[])
 {
-    AST_node_type type;
-
-    switch (token_type) {
-        case T_IS_SMALLER:
-           type = LESS;
-           break;
-        case T_IS_SMALLER_OR_EQUAL:
-            type = LEQ;
-            break;
-        case T_IS_GREATER:
-            type = GREATER;
-            break;
-        case T_IS_GREATER_OR_EQUAL:
-            type = GEQ;
-            break;
-        case T_IS_EQUAL:
-            type = COMP;
-            break;
-        case T_IS_NOT_EQUAL:
-            type = NEQ;
-            break;
-        default:
-            type = NO_NODE;
-            break;
-    }
-
-    return type;
-}
-
-int main(int argc, char const *argv[]) {
     /* global table init */
     global_hashtable = ht_init();
     IF_RETURN(!global_hashtable, ERR_INTERNAL)

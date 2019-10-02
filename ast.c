@@ -113,6 +113,9 @@ AST_node_type node_type(S_ELEM *stack_elem)
         case PSA_DIVISION:
             node = DIV;
             break;
+        case PSA_DIVISION_INT:
+            node = DIV_INT;
+            break;
         case PSA_ADDITION:
             node = ADD;
             break;

@@ -1,11 +1,10 @@
-- redefinicia + datovy typ argumentu funkcie
-- indenty vsade (def, if, else by mal byt spraveny)
+- redefinicia
+- datovy typ argumentu funkcie
+- indenty vsade (def, if, else, while by mal byt spraveny)
 - vstavane funkcie
 - volanie funkcie
-- PSA podla zadania
 - EOF
 - abstract syntax tree
-- while
 - return
 - pass
 - generator
@@ -14,4 +13,3 @@
 	- parser
 	- generator
 	- error kody
-- vela volneho casu ? optimalizacia : kaslat na to

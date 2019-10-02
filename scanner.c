@@ -26,7 +26,8 @@ int is_keyword(char *string)
 }
 
 
-void create_token(int character, char *string, struct TToken *new_token, TType type) {
+void create_token(int character, char *string, struct TToken *new_token, TType type)
+{
 
     TType keyword_type;
     /* return read character for another reading */
@@ -51,7 +52,8 @@ void create_token(int character, char *string, struct TToken *new_token, TType t
 }
 
 
-int get_token() {
+int get_token()
+{
 
     static int line_counter = 0; /* number of lines */
     int line_position = 0;       /* position */

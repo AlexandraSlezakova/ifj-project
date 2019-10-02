@@ -51,7 +51,6 @@ int stack_push(STACK *stack, struct TToken *current_token, AST_NODE *node, PSA_S
     S_ELEM *stack_elem = malloc(sizeof(S_ELEM));
     IF_RETURN(!stack_elem, ERR_INTERNAL)
 
-    /* deep copy of token*/
     if (current_token != NULL) {
         stack_elem->current_token = current_token;
     }
@@ -86,8 +85,8 @@ int stack_push_handle(STACK *stack, S_ELEM *elem, PSA_SYMBOL psa_symbol) {
 
         new_elem->next->psa_symbol = psa_symbol;
         new_elem->next->next = copy;
-        new_elem->next->next->psa_symbol = copy->psa_symbol;
-        new_elem->next->next->next = NULL;
+        //new_elem->next->next->psa_symbol = copy->psa_symbol;
+        //new_elem->next->next->next = copy->next;
     } else {
         new_elem->psa_symbol = psa_symbol;
         new_elem->next = elem;
