@@ -60,17 +60,11 @@ int ht_insert(HTable *symtable, HTItem *new_item) {
     /* rewrite value if key exists */
     HTItem *found = ht_search(symtable, new_item->key);
     if (found) {
-        if (((found->data_type != TYPE_UNKNOWN && new_item->data_type != TYPE_UNKNOWN) && (found->data_type == new_item->data_type))
-            || (found->data_type == TYPE_UNKNOWN)) {
-            *found = *new_item;
-        } else {
-            return SEM_ERR_UNDEF_VAR;
-        }
-    }
+        found->data_type = new_item->data_type; /* save new data type */
+    } /* save new item */
     else {
         if (symtable->first[hash] != NULL) {
             symtable->first[hash]->next = new_item;
-            symtable->first[hash] = new_item;
             new_item->next = NULL;
 
         } else {
@@ -101,7 +95,7 @@ HTItem *ht_search(HTable *symtable, char *key) {
 
 }
 
-int insert_function(HTable *symtable, char *key, int params_quantity, bool defined, tDLList *list) {
+int insert_function(HTable *symtable, HTable *function_table, char *key, int params_quantity, bool defined, tDLList *list) {
    HTItem *item = malloc(sizeof(HTItem));
    IF_RETURN(!item, ERR_INTERNAL)
 
@@ -109,7 +103,7 @@ int insert_function(HTable *symtable, char *key, int params_quantity, bool defin
    item->type = FUNCTION;
    item->defined = defined;
    item->params_quantity = params_quantity;
-   item->symtable = symtable;
+   item->symtable = function_table;
    item->list = list;
 
    return ht_insert(symtable, item);

@@ -559,3 +559,14 @@ int get_token()
         }
     }
 }
+
+int unget_token() {
+
+    int i = 0;
+    unsigned long length = strlen(buffer);
+
+    while (buffer[i] != '\0') {
+        ungetc(buffer[--length], stdin);
+        i++;
+    }
+}

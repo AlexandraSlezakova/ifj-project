@@ -40,6 +40,7 @@ typedef enum {
     ASSIGN,     /**< = */
     BODY_TO_PROCESS, /**< BODY PROCESSED WITH BUFFER */
     CONDITION,
+    RETURN,
     NO_NODE     =   100
 } AST_node_type;
 

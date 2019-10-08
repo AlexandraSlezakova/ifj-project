@@ -48,7 +48,7 @@ HTable *global_hashtable;
 int statement(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack);
 int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack);
 int reduce(int scope, STACK *stack, struct TToken *previous);
-int expression(int scope, STACK *stack, HTable *table, AST_NODE **ast, char *token_name, STACK *indent_stack);
+int expression(int scope, STACK *stack, HTable *table, AST_NODE **ast, char *token_name, STACK *indent_stack, TType previous_token);
 int function_call(HTItem *found, HTable *function_table, AST_NODE **ast, STACK *indent_stack);
 int function_call_arg(HTItem *found, HTable *function_table, AST_NODE **ast, STACK *indent_stack);
 int function_arguments(HTable *function_symtable, char *function_name);

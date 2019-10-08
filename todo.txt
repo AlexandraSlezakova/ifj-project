@@ -5,7 +5,6 @@
 - volanie funkcie
 - EOF
 - abstract syntax tree
-- return
 - pass
 - generator
 - skontrolovat 
@@ -13,3 +12,6 @@
 	- parser
 	- generator
 	- error kody
+
+
+- funkcia nemoze mat rovnake meno premenna, ale premenna moze mat rovnake meno, ako funkcia?
