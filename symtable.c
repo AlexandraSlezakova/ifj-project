@@ -95,13 +95,12 @@ HTItem *ht_search(HTable *symtable, char *key) {
 
 }
 
-int insert_function(HTable *symtable, HTable *function_table, char *key, int params_quantity, bool defined, tDLList *list) {
+int insert_function(HTable *symtable, HTable *function_table, char *key, int params_quantity, tDLList *list) {
    HTItem *item = malloc(sizeof(HTItem));
    IF_RETURN(!item, ERR_INTERNAL)
 
    item->key = key;
    item->type = FUNCTION;
-   item->defined = defined;
    item->params_quantity = params_quantity;
    item->symtable = function_table;
    item->list = list;

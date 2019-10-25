@@ -62,6 +62,7 @@ bool is_term(TType type)
     return type == T_STRING
            || type == T_FLOAT
            || type == T_INT
+           || type == T_NONE
            || type == T_VAR;
 }
 

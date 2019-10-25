@@ -48,7 +48,7 @@ typedef struct HTItem{
 
 int createHash(char *key);
 int ht_insert(HTable *table, HTItem *new_item);
-int insert_function(HTable *symtable, HTable *function_table, char *key, int params_quantity, bool defined, tDLList *list);
+int insert_function(HTable *symtable, HTable *function_table, char *key, int params_quantity, tDLList *list);
 int insert_variable(HTable *symtable, char *key, DATA_TYPE data_type);
 
 HTable * ht_init();
