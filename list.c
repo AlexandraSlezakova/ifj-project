@@ -11,7 +11,7 @@
 
 #include "list.h"
 
-tDLList * DLInitList () {
+tDLList *DLInitList () {
 
     tDLList *list = malloc(sizeof(tDLList));
 
@@ -43,6 +43,24 @@ bool DLInsertLast(tDLList *L,  char *ptr) {
     return true;
 }
 
+//bool DLSearch(tDLList *list, char *key) {
+//
+//    IF_RETURN(!list, false)
+//
+//    tDLElemPtr tmp = NULL;
+//    tmp = list->First;
+//
+//    while(tmp != NULL){
+//
+//        if (strcmp(tmp->data, key) == 0) {
+//            return true;
+//        }
+//        tmp = tmp->rptr;
+//
+//    }
+//
+//    return false;
+//}
 //bool DLInsertFirst (tDLList *L, char *ptr) {
 //    struct tDLElem *item = malloc(sizeof(struct tDLElem));
 //
@@ -127,24 +145,3 @@ bool DLInsertLast(tDLList *L,  char *ptr) {
 //
 //
 //
-////VYHLEDANI V SEZNAMU
-//bool DLSearch(tDLList * listPtr, char* key){
-//
-//    if(listPtr == NULL){
-//        return FALSE;
-//    }
-//
-//    tDLElemPtr tmp = NULL;
-//    tmp = listPtr->First;
-//
-//    while(tmp != NULL){
-//
-//        if(tmp->data == key){
-//            return  TRUE;
-//        }
-//        tmp = tmp->rptr;
-//
-//    }
-//
-//    return FALSE;
-//}

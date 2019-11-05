@@ -8,6 +8,7 @@
  * @author
  */
 #include "parser.h"
+#include "scanner.h"
 
 int function_arguments(HTable *function_symtable, char *function_name)
 {
@@ -74,7 +75,7 @@ int function_arguments(HTable *function_symtable, char *function_name)
 }
 
 
-int recursive_descent(AST_NODE **ast, STACK *indent_stack)
+int recursive_descent(AST_NODE **ast, STACK *indent_stack, tDLList *functions_list)
 {
 
     int result = 0;
@@ -151,23 +152,23 @@ int recursive_descent(AST_NODE **ast, STACK *indent_stack)
             IF_RETURN(!function_body, ERR_INTERNAL)
 
             /* statement list - body of function */
-            result = statement_list(SCOPE, function_table, &function_body, indent_stack);
+            result = statement_list(SCOPE, function_table, &function_body, indent_stack, functions_list);
 
         } /* variable */
         else if (token.type == T_VAR) {
-            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack);
+            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
 
         } /* if statement */
         else if (token.type == T_IF) {
-            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack);
+            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
 
         } /* while */
         else if (token.type == T_WHILE) {
-            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack);
+            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
 
         } /* pass */
         else if (token.type == T_PASS) {
-            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack);
+            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
 
         }
         else {
@@ -179,7 +180,7 @@ int recursive_descent(AST_NODE **ast, STACK *indent_stack)
 }
 
 
-int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack)
+int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack, tDLList *functions_list)
 {
     /* FUNCTION BODY */
     int result = 0;
@@ -192,7 +193,7 @@ int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack
     while (indent_stack->top->indent_counter != initial_indent) {
         if (token.type == T_IF || token.type == T_WHILE
             || token.type == T_VAR || token.type == T_RETURN || token.type == T_PASS)
-            result = statement(scope, table, ast, indent_stack);
+            result = statement(scope, table, ast, indent_stack, functions_list);
 
         IF_VALUE_RETURN(result)
 
@@ -228,7 +229,7 @@ int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack
 
 }
 
-int statement(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack)
+int statement(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack, tDLList *functions_list)
 {
     int result = 0;
 
@@ -254,6 +255,12 @@ int statement(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack)
             found = ht_search(global_hashtable, previous_tkn->value.is_char);
             /* function has to be defined if it is called in global scope */
             IF_RETURN(is_global_scope(scope) && !found, SYNTAX_ERR)
+
+            /* in local scope function does not have to defined */
+            if (!is_global_scope((scope)) && !found) {
+                /* insert function to list for check and suppose it will be defined later */
+                IF_RETURN(DLInsertLast(functions_list, previous_tkn->value.is_char), ERR_INTERNAL)
+            }
 
             /* call node to AST */
             struct AST_node *call_node = ast_add_node(ast, CALL, previous_tkn->value.is_char, is_global_scope(scope));
@@ -315,7 +322,7 @@ int statement(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack)
         IF_RETURN(indent_stack->top->indent_counter >= indent_counter, SYNTAX_ERR)
         IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
 
-        result = handle_indent(scope, table, &if_body, indent_stack);
+        result = handle_indent(scope, table, &if_body, indent_stack, functions_list);
         IF_VALUE_RETURN(result)
 
         /* else */
@@ -338,7 +345,7 @@ int statement(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack)
         IF_RETURN(indent_stack->top->indent_counter >= indent_counter, SYNTAX_ERR)
         IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
 
-        result = handle_indent(scope, table, &else_body, indent_stack);
+        result = handle_indent(scope, table, &else_body, indent_stack, functions_list);
 
     } /* while */
     else if (token.type == T_WHILE) {
@@ -362,7 +369,7 @@ int statement(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack)
         IF_RETURN(indent_stack->top->indent_counter >= indent_counter, SYNTAX_ERR)
         IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
 
-        result = handle_indent(scope, table, &while_body, indent_stack);
+        result = handle_indent(scope, table, &while_body, indent_stack, functions_list);
 
     } /* return */
     else if (token.type == T_RETURN) {
@@ -413,12 +420,12 @@ int statement(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack)
     return result;
 }
 
-int handle_indent(int scope, HTable *table, AST_NODE **node, STACK *indent_stack)
+int handle_indent(int scope, HTable *table, AST_NODE **node, STACK *indent_stack, tDLList *functions_list)
 {
     int result = 0;
 
     do {
-        result = statement(scope, table, node, indent_stack);
+        result = statement(scope, table, node, indent_stack, functions_list);
         /* indent */
         IF_RETURN(get_token(), TOKEN_ERR)
         if (indent_stack->top->indent_counter < indent_counter) {
@@ -443,7 +450,6 @@ int handle_indent(int scope, HTable *table, AST_NODE **node, STACK *indent_stack
 int expression(int scope, STACK *stack, HTable *table, AST_NODE **ast, char *token_name, STACK *indent_stack, TType previous_token)
 {
     if (previous_token != T_RETURN) IF_RETURN(!(is_assignment_correct(token.type)), SYNTAX_ERR)
-    /* function identifier */
 
     int result = SYNTAX_ERR;
 
@@ -526,12 +532,8 @@ int function_call_arg(HTItem *found, HTable *table, AST_NODE **ast, STACK *inden
 
     int countParams = 0;
 
-    /* first variable from list of function arguments */
-    HTItem *arg = ht_search(found->symtable, list_of_arguments->First->data);
-    IF_RETURN(!arg, ERR_INTERNAL)
-
     /* check first argument */
-    int result = check_function_arguments(table, arg);
+    int result = check_function_arguments(table);
     IF_VALUE_RETURN(result)
     countParams++;
 
@@ -542,7 +544,7 @@ int function_call_arg(HTItem *found, HTable *table, AST_NODE **ast, STACK *inden
         IF_RETURN(is_comma(get_token()), SYNTAX_ERR)
 
         IF_RETURN(get_token(), TOKEN_ERR)
-        ret = check_function_arguments(table, arg);
+        ret = check_function_arguments(table);
         IF_RETURN(ret != 0, ret)
         countParams++;
 
@@ -552,24 +554,13 @@ int function_call_arg(HTItem *found, HTable *table, AST_NODE **ast, STACK *inden
     return found->params_quantity != countParams ? SEM_ERR_PARAM_NUM : SEM_OK;
 }
 
-int check_function_arguments(HTable *table, HTItem *arg)
+int check_function_arguments(HTable *table)
 {
+    /* simple check if variable exists */
     if (token.type == T_VAR) {
         /* variable used in function call*/
         HTItem *item = ht_search(table, token.value.is_char);
         IF_RETURN(!item, SEM_ERR_UNDEF_VAR)
-
-        /* check data type of variables*/
-        IF_RETURN(item->data_type != arg->data_type, SEM_ERR_COMPAT)
-
-        // todo nejake spracovanie
-
-    } else {
-        /* check data type of variable*/
-        //DATA_TYPE type = token_to_data_type(token);
-        //IF_RETURN(type != arg->data_type, SEM_ERR_COMPAT)
-
-        // todo nejake spracovanie
     }
 
     return SEM_OK;
@@ -920,6 +911,8 @@ int main(int argc, char const *argv[])
     AST_NODE *ast = NULL;
     ast_init(&ast);
 
+    /* list of undefined functions */
+    tDLList *functions_list = DLInitList();
     int result = 0;
 
     /* BUILT-IN FUNCTIONS */
@@ -957,11 +950,22 @@ int main(int argc, char const *argv[])
     IF_RETURN((stack_push_indent(indent_stack, 0, T_UNKNOWN)), ERR_INTERNAL)
 
     previous_state = START;
-    printf("%d",  recursive_descent(&ast, indent_stack));
-//    while (1) {
-//        get_token();
-//    }
+    printf("%d",  recursive_descent(&ast, indent_stack, functions_list));
 
-    //return recursive_descent(&ast);
-    return 0;
+//    result = recursive_descent(&ast, indent_stack, functions_list);
+//    if (result == 0) {
+//        /* check if all undefined functions in list are defined */
+//        tDLElemPtr tmp = NULL;
+//        tmp = functions_list->First;
+//        HTItem *found;
+//
+//        while (tmp != NULL) {
+//            found = ht_search(global_hashtable, tmp->data);
+//            IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
+//
+//            tmp = tmp->rptr;
+//        }
+//    }
+//
+//    return result;
 }

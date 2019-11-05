@@ -8,10 +8,10 @@
  * @author
  * @author
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 #ifndef LIST
 #define LIST
@@ -46,6 +46,13 @@ tDLList * DLInitList ();
  */
 bool DLInsertLast(tDLList *L,  char *ptr);
 
+/**
+ * @param tDLList * list
+ * @param char* key
+ * @return true if found
+ */
+//bool DLSearch(tDLList *, char*);
+
 //bool DLInsertFirst (tDLList *,  char *);
 
 /**
@@ -58,12 +65,5 @@ bool DLInsertLast(tDLList *L,  char *ptr);
  * @return True pokud uspech, jinak FALSE
  */
 //bool DLDeleteFirst(tDLList *);
-/**
- * @param tDLList * ukazatel na list kde chceme vyhledavat
- * @param char* string s nazvem
- * @return True pokud uspech, jinak FALSE
- */
-//bool DLSearch(tDLList *, char*);
-
 
 #endif

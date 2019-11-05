@@ -45,17 +45,17 @@ PSA_SYMBOL psa_rules[3][4] =
 
 static int counter = 0;
 HTable *global_hashtable;
-int statement(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack);
-int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack);
+int statement(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack, tDLList *functions_list);
+int statement_list(int scope, HTable *table, AST_NODE **ast, STACK *indent_stack, tDLList *functions_list);
 int reduce(int scope, STACK *stack, struct TToken *previous);
 int expression(int scope, STACK *stack, HTable *table, AST_NODE **ast, char *token_name, STACK *indent_stack, TType previous_token);
 int function_call(HTItem *found, HTable *function_table, AST_NODE **ast, STACK *indent_stack);
 int function_call_arg(HTItem *found, HTable *function_table, AST_NODE **ast, STACK *indent_stack);
 int function_arguments(HTable *function_symtable, char *function_name);
-int check_function_arguments(HTable *table, HTItem *arg);
+int check_function_arguments(HTable *table);
 int psa(int scope, STACK *stack, AST_NODE *node, HTable *table, char *token_name, STACK *indent_stack);
-int recursive_descent(AST_NODE **ast, STACK *indent_stack);
-int handle_indent(int scope, HTable *table, AST_NODE **node, STACK *indent_stack);
+int recursive_descent(AST_NODE **ast, STACK *indent_stack, tDLList *functions_list);
+int handle_indent(int scope, HTable *table, AST_NODE **node, STACK *indent_stack, tDLList *functions_list);
 bool is_rule(PSA_SYMBOL *rule, int *rule_index);
 bool compare_rules(PSA_SYMBOL *rule1, PSA_SYMBOL *rule2);
 char *create_value(struct TToken *current_token);
