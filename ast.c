@@ -13,8 +13,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-int
-ast_resize(AST_NODE *tree_node)
+int ast_resize(AST_NODE *tree_node)
 {
     AST_NODE **tmp = NULL;
 
@@ -30,22 +29,22 @@ ast_resize(AST_NODE *tree_node)
     return OK;
 }
 
-bool
-ast_is_full(AST_NODE *tree_node)
+bool ast_is_full(AST_NODE *tree_node)
 {
     return tree_node->size == tree_node->child_count;
 }
 
-AST_NODE *
-ast_add_node(AST_NODE **tree_node, AST_node_type operation, char *data, bool in_main)
+AST_NODE *ast_add_node(AST_NODE **tree_node, AST_node_type operation, char *data, bool in_main)
 {
     AST_NODE *ret = NULL;
 
-    if (!(*tree_node)) {
+    if (!(*tree_node))
+    {
         *tree_node = calloc(1, sizeof(**tree_node));
         IF_RETURN(!(*tree_node), NULL);
         (*tree_node)->childs = calloc(2, sizeof(AST_NODE *));
-        if (!(*tree_node)->childs) {
+        if (!(*tree_node)->childs)
+        {
             free(*tree_node);
             *tree_node = NULL;
             return NULL;
@@ -56,7 +55,9 @@ ast_add_node(AST_NODE **tree_node, AST_node_type operation, char *data, bool in_
         (*tree_node)->data = data;
         (*tree_node)->in_main = in_main;
         ret = (*tree_node);
-    } else {
+    }
+    else
+    {
         if (ast_is_full(*tree_node)) {
             IF_RETURN(ast_resize(*tree_node) != OK, NULL);
         }
@@ -67,8 +68,7 @@ ast_add_node(AST_NODE **tree_node, AST_node_type operation, char *data, bool in_
     return ret;
 }
 
-AST_NODE *
-ast_add_node_at_start(AST_NODE **tree_node, AST_node_type operation, char *data, bool in_main)
+AST_NODE *ast_add_node_at_start(AST_NODE **tree_node, AST_node_type operation, char *data, bool in_main)
 {
     AST_NODE *ret = NULL;
     AST_NODE *new_first = NULL;
@@ -81,14 +81,12 @@ ast_add_node_at_start(AST_NODE **tree_node, AST_node_type operation, char *data,
     return new_first;
 }
 
-void
-ast_init(AST_NODE **tree_node)
+void ast_init(AST_NODE **tree_node)
 {
     (*tree_node) = NULL;
 }
 
-void
-ast_destroy(AST_NODE **tree)
+void ast_destroy(AST_NODE **tree)
 {
     if (!tree || !(*tree)) {
         return;
@@ -103,47 +101,3 @@ ast_destroy(AST_NODE **tree)
     (*tree) = NULL;
 }
 
-AST_node_type node_type(S_ELEM *stack_elem)
-{
-    AST_node_type node;
-    switch (stack_elem->psa_symbol) {
-        case PSA_MULTIPLICATION:
-            node = MUL;
-            break;
-        case PSA_DIVISION:
-            node = DIV;
-            break;
-        case PSA_DIVISION_INT:
-            node = DIV_INT;
-            break;
-        case PSA_ADDITION:
-            node = ADD;
-            break;
-        case PSA_SUBTRACTION:
-            node = SUB;
-            break;
-        case PSA_LESS:
-            node = LESS;
-            break;
-        case PSA_LESSEQUAL:
-            node = LEQ;
-            break;
-        case PSA_GREATER:
-            node = GREATER;
-            break;
-        case PSA_GREATEREQUAL:
-            node = GEQ;
-            break;
-        case PSA_EQUAL:
-            node = COMP;
-            break;
-        case PSA_NOTEQUAL:
-            node = NEQ;
-            break;
-        default:
-            node = NO_NODE;
-            break;
-    }
-
-    return node;
-}

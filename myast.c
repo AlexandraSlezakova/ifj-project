@@ -11,10 +11,11 @@
 
 #include "myast.h"
 
-Nnode myast_init(Nnode node)
+Nnode myast_init(Nnode *node)
 {
     root = NULL;
-    return node = NULL;
+    node = NULL;
+    return node;
 }
 
 
@@ -50,7 +51,7 @@ Nnode* find_node (Nnode node, int indent)
 
 //předělat neřešit indent vracet přidanou větvu
 
-Nnode* myast_add_node(Nnode node, Ntype type, char *data, int indent)
+Nnode* myast_add_node(Nnode *node, Ntype type, char *data,bool inmain, int indent)
 {
     Nnode new_node = malloc(sizeof(struct Node *));
     NData new_data = malloc(sizeof(struct Ndata *));
@@ -59,17 +60,20 @@ Nnode* myast_add_node(Nnode node, Ntype type, char *data, int indent)
     new_node->data->ntype = type;
     new_node->data->indent = indent;
     new_node->data->size=0;
+    new_data->inmain = inmain;
 
     if (node == NULL)
     {
-        node = malloc(sizeof(Nnode *));
-        node->nodes[0]= new_node;
-        node->data->size = 0;
+        node = (Nnode)malloc(sizeof(struct Node *));
+        (*node)->data = malloc(sizeof(struct Ndata*));
+        (*node)->nodes = malloc(sizeof(struct Node *)*10);
+        //node->nodes[0] = new_node;
+        (*node)->data->size = 0;
         root = node;
         return node;
     }
-     node->nodes[node->data->size++] = new_node;
-     return node->nodes[node->data->size++];
+    (*node)->nodes[(*node)->data->size] = new_node;
+     return (*node)->nodes[(*node)->data->size];
 }
 
 Ntype node_type(S_ELEM *stack_elem)
@@ -77,42 +81,42 @@ Ntype node_type(S_ELEM *stack_elem)
     Nnode node;
     switch (stack_elem->psa_symbol) {
         case PSA_MULTIPLICATION:
-            node = Mul;
+            node->data->ntype = MUL;
             break;
         case PSA_DIVISION:
-            node = Div;
+            node->data->ntype = DIV;
             break;
         case PSA_DIVISION_INT:
-            node = DivInit;
+            node->data->ntype= DIVINIT;
             break;
         case PSA_ADDITION:
-            node = Add;
+            node->data->ntype= ADD;
             break;
         case PSA_SUBTRACTION:
-            node = Sub;
+            node->data->ntype = SUB;
             break;
         case PSA_LESS:
-            node = Less;
+            node->data->ntype= LESS;
             break;
         case PSA_LESSEQUAL:
-            node = LessOrEq;
+            node->data->ntype = LOQ;
             break;
         case PSA_GREATER:
-            node = Greater;
+            node->data->ntype = GR;
             break;
         case PSA_GREATEREQUAL:
-            node = GreOrEq;
+            node->data->ntype = GEQ;
             break;
         case PSA_EQUAL:
-            node = Comp;
+            node->data->ntype = COMP;
             break;
         case PSA_NOTEQUAL:
-            node = NotComp;
+            node->data->ntype = NOTCOMP;
             break;
         default:
-            node = No_Node;
+            node->data->ntype = NO_NODE;
             break;
     }
 
-    return node;
+    return node->data->ntype;
 }

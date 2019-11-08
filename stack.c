@@ -45,7 +45,7 @@ bool is_terminal(S_ELEM *elem) {
     return elem->psa_symbol <= PSA_END;
 }
 
-int stack_push(STACK *stack, struct TToken *current_token, AST_NODE *node, PSA_SYMBOL psa_symbol, DATA_TYPE type) {
+int stack_push(STACK *stack, struct TToken *current_token, Nnode *node, PSA_SYMBOL psa_symbol, DATA_TYPE type) {
     IF_RETURN(!stack, ERR_INTERNAL)
 
     S_ELEM *stack_elem = malloc(sizeof(S_ELEM));

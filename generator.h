@@ -17,10 +17,10 @@
 #define IFJ_GENERATOR_H
 
 void create_header();
-void identify_header(AST_NODE *ast, HTable *table);
-int generate(AST_NODE *ast, HTable *table);
-int generate_vardef(int is_assign, AST_NODE *ast, HTable *table);
-int generate_assign(AST_NODE *ast, HTable *table);
+void identify_header(Nnode ast, HTable *table);
+int generate(Nnode ast, HTable *table);
+int generate_vardef(int is_assign, Nnode ast, HTable *table);
+int generate_assign(Nnode ast, HTable *table);
 char *get_data_type(HTItem *item);
 
 #endif

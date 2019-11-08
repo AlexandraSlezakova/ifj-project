@@ -14,35 +14,33 @@
 
 
 typedef enum Node_Type{
-    Prog,
-    Var,            //Var
-    Val,            //Value
-    If_Node,
-    If_Body,
-    If_Else,
-    While,
-    Body,
-    Call,
-    Cond,           // Condition
-    Ret,            // Return
-    Add,            // +
-    Sub,            // -
-    Mul,            // *
-    Div,            // /
-    DivInit,        // //
-    Greater,        // <>
-    GreOrEq,        // <= >=
-    Less,           // ><
-    LessOrEq,        // >= <=
-    Comp,            // ==
-    NotComp,        // !=
-    Assign,          // =
-    Func_Def,
-    Argv,
-    Var_Def,
-    Condition,
-    No_Node,
-    Return,
+    PROG,
+    VAR,            //Var
+    VAL,            //Value
+    IF_NODE,
+    IF_BODY,
+    IF_ELSE,
+    WHILE,
+    BODY,
+    CALL,
+    COND,           // Condition
+    RETURN,            // Return
+    ADD,            // +
+    SUB,            // -
+    MUL,            // *
+    DIV,            // /
+    DIVINIT,        // //
+    GR,        // <>
+    GEQ,        // <= >=
+    LESS,           // ><
+    LOQ,        // >= <=
+    COMP,            // ==
+    NOTCOMP,        // !=
+    ASSIGN,          // =
+    FUNC_DEF,
+    ARGV,
+    VAR_DEF,
+    NO_NODE,
 } Ntype;
 
 typedef struct NDATA{
@@ -59,12 +57,12 @@ typedef struct Node{
     struct Node *parent_node;
 }*Nnode;
 
-Nnode myast_init(Nnode node);
+Nnode myast_init(Nnode *node);
 void myast_destroy(Nnode node);
-Nnode* myast_add_node(Nnode node, Ntype type, char *data, int indent, bool inmain);
+Nnode* myast_add_node(Nnode *node, Ntype type, char *data, bool inmain ,int indent) ;
 
 
-Nnode *root;
+Nnode root;
 
 typedef enum {
     PSA_MULTIPLICATION      = 0,     /*  *  */
