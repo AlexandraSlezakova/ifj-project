@@ -22,5 +22,7 @@ int generate(Nnode ast, HTable *table);
 int generate_vardef(int is_assign, Nnode ast, HTable *table);
 int generate_assign(Nnode ast, HTable *table);
 char *get_data_type(HTItem *item);
-
+int generate_if(Nnode ast, HTable *table);
+int generate_while(Nnode ast,HTable *table);
+char* memory_model(Nnode ast);
 #endif

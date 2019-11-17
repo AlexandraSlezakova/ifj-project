@@ -11,7 +11,7 @@
 #define SCANNER_C_MYAST_H
 
 #endif //SCANNER_C_MYAST_H
-
+#define TAB_SIZE 101
 
 typedef enum Node_Type{
     PROG,
@@ -49,17 +49,21 @@ typedef struct NDATA{
     char  *data;
     bool inmain;
     int size;
-}*NData;
+    int child_count;
+}NData;
 
 typedef struct Node{
-    NData data;
-    struct Node **nodes;
+    NData *data;
+    struct Node *childs[TAB_SIZE];
     struct Node *parent_node;
-}*Nnode;
+} *Nnode;
 
-Nnode myast_init(Nnode *node);
+
+
+void myast_init(Nnode *node);
 void myast_destroy(Nnode node);
-Nnode* myast_add_node(Nnode *node, Ntype type, char *data, bool inmain ,int indent) ;
+void myast_resize(Nnode *node);
+Nnode myast_add_node(Nnode *node, Ntype type, char *data, bool inmain ,int indent) ;
 
 
 Nnode root;
