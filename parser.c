@@ -290,8 +290,8 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
             /* assignment */
             IF_RETURN(get_token(), TOKEN_ERR)
 
-            if (token.type == T_ASSIGNMENT) {
-                IF_RETURN(get_token(), TOKEN_ERR)
+            if (equals->data->ntype == T_ASSIGNMENT) {
+                //IF_RETURN(get_token(), TOKEN_ERR)
                 result = expression(scope, stack, table, equals, name, indent_stack, previous_token);
 
             } else {
