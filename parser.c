@@ -10,6 +10,7 @@
 #include <math.h>
 #include "parser.h"
 #include "scanner.h"
+//#include "myast.h"
 
 int function_arguments(HTable *function_symtable, char *function_name)
 {
@@ -81,8 +82,14 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
 
     int result = 0;
     IF_RETURN(!myast_add_node((&ast), PROG, NULL, true , indent_stack->top->indent_counter),ERR_INTERNAL);
+    nStack = malloc(sizeof(nStack));
+    //tmp zásobník do kterého si budeš ukládat nody, zde na začátku ho vždy vymažeš, všude nastavíš NULL ,tím pádem
+    // neztratíš node u COND
+
 
     while (1) {
+        //IF_RETURN(!myast_add_node((tmp), PROG, NULL, true , indent_stack->top->indent_counter),ERR_INTERNAL);
+        NstackPop();
         IF_RETURN(get_token(), TOKEN_ERR)
 
         int item = OK;
@@ -464,6 +471,7 @@ int expression(int scope, STACK *stack, HTable *table, Nnode ast, char *token_na
             /* save previous token */
             previous_tkn->type = token.type;
             previous_tkn->value = token.value;
+            //Nnode l_cond = myast_add_node( (&ast), token.type, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
 
             IF_RETURN(get_token(), TOKEN_ERR)
             HTItem *found;
@@ -675,6 +683,7 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
     PSA_SYMBOL rule[4] = {END_HANDLE, END_HANDLE, END_HANDLE, END_HANDLE};
     S_ELEM stack_elem[4];
 
+    int i = 0;
     int rule_index = 0;
     Nnode node = NULL;
     Ntype type_of_node;
@@ -694,7 +703,10 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                 original->value = stack_elem[0].current_token->value;
                 original->value.is_char = stack_elem[0].current_token->value.is_char;
                 node = myast_add_node(&node, original->type == T_VAR ? VAR : VAL, create_value(original), is_global_scope(scope),-1);
-                stack_elem[0].node = &node;
+
+                NstackPush(node);
+
+
                 break;
 
             case BRACKET_RULE:
@@ -719,9 +731,19 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                 type_of_node = node_type(&stack_elem[1]);
                 IF_RETURN(type_of_node == NO_NODE, ERR_INTERNAL)
                 node = myast_add_node( (&node), type_of_node, NULL, is_global_scope(scope),indent_counter);
-                node->childs[0]=(*stack_elem[0].node);
+                if(stack_elem[0].node != NULL)
+                {
+                    node->childs[0]=(*stack_elem[0].node);
+                    node->data->size=1;
+                }
+                if ( node->data->ntype == GR || node->data->ntype == GEQ || node->data->ntype == LESS|| node->data->ntype == LOQ|| node->data->ntype == COMP || node->data->ntype == NOTCOMP )
+                {
+                    node->childs[node->data->child_count] = nStack->nstack[0];
+                    node->data->child_count++;
+                    node->childs[node->data->child_count] = nStack->nstack[1];
+                    node->data->child_count++;
+                }
                 //node->childs[1]=(*stack_elem[2].node);
-                node->data->size=1;
                 break;
 
             default:

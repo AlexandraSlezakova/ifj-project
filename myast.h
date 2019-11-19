@@ -58,8 +58,15 @@ typedef struct Node{
     struct Node *parent_node;
 } *Nnode;
 
+typedef struct {
+    struct Node *nstack[15];
+    int top;
+} NStack;
 
+NStack* nStack;
 
+void NstackPop ();
+void NstackPush (Nnode node);
 void myast_init(Nnode *node);
 void myast_destroy(Nnode node);
 void myast_resize(Nnode *node);
