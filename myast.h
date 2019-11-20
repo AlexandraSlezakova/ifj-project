@@ -59,12 +59,13 @@ typedef struct Node{
 } *Nnode;
 
 typedef struct {
-    struct Node *nstack[15];
+    struct Node *nstack[TAB_SIZE];
     int top;
 } NStack;
 
 NStack* nStack;
 
+void NstackPopAll ();
 void NstackPop ();
 void NstackPush (Nnode node);
 void myast_init(Nnode *node);

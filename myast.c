@@ -49,8 +49,17 @@ Nnode* find_node (Nnode node, int indent)
 
 }*/
 
-//předělat neřešit indent vracet přidanou větvu
 void NstackPop ()
+{
+    if(nStack->top != -1)
+    {
+        nStack->nstack[nStack->top] = NULL;
+        nStack->top -= 1;
+    }
+    //solved = 0;                      /* V případě řešení, smažte tento řádek! */
+}
+//předělat neřešit indent vracet přidanou větvu
+void NstackPopAll ()
 {
     while(nStack->top != 0)
     {

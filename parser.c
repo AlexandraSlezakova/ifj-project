@@ -89,7 +89,7 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
 
     while (1) {
         //IF_RETURN(!myast_add_node((tmp), PROG, NULL, true , indent_stack->top->indent_counter),ERR_INTERNAL);
-        NstackPop();
+        NstackPopAll();
         IF_RETURN(get_token(), TOKEN_ERR)
 
         int item = OK;
@@ -360,6 +360,7 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
     } /* while */
     else if (token.type == T_WHILE) {
         Nnode while_node = myast_add_node(&ast, WHILE, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
+        //while_node->data->child_count++;
 
         IF_RETURN(get_token(), TOKEN_ERR)
         int condition = expression(scope, stack, table, while_node, NULL, indent_stack, previous_token);
@@ -671,7 +672,7 @@ int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name, ST
        IF_VALUE_RETURN(result)
     }
     node->childs[node->data->child_count] = (*stack->top->node);
-    node->data->size++;
+    node->data->child_count++;
     stack_destroy(stack);
 
     return SYNTAX_OK;
@@ -736,12 +737,20 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                     node->childs[0]=(*stack_elem[0].node);
                     node->data->size=1;
                 }
-                if ( node->data->ntype == GR || node->data->ntype == GEQ || node->data->ntype == LESS|| node->data->ntype == LOQ|| node->data->ntype == COMP || node->data->ntype == NOTCOMP )
+                if ( node->data->ntype == GR || node->data->ntype == GEQ || node->data->ntype == LESS|| node->data->ntype == LOQ|| node->data->ntype == COMP || node->data->ntype == NOTCOMP || node->data->ntype == ADD || node->data->ntype == SUB || node->data->ntype == MUL || node->data->ntype == DIV || node->data->ntype == DIVINIT )
                 {
-                    node->childs[node->data->child_count] = nStack->nstack[0];
-                    node->data->child_count++;
-                    node->childs[node->data->child_count] = nStack->nstack[1];
-                    node->data->child_count++;
+                    for(int tmp = 0;nStack->top != -1; tmp++)
+                    {
+                        node->childs[node->data->child_count] = nStack->nstack[tmp];
+                        node->data->child_count++;
+                        NstackPop();
+                    }
+                    NstackPush(NULL);
+                    NstackPush(node);
+//                    node->childs[node->data->child_count] = nStack->nstack[0];
+//                    node->data->child_count++;
+//                    NstackPop();
+
                 }
                 //node->childs[1]=(*stack_elem[2].node);
                 break;
