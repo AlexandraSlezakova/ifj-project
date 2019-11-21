@@ -53,7 +53,7 @@ int function_call(HTItem *found, HTable *function_table, Nnode ast, STACK *inden
 int function_call_arg(HTItem *found, HTable *function_table, Nnode ast, STACK *indent_stack);
 int function_arguments(HTable *function_symtable, char *function_name);
 int check_function_arguments(HTable *table);
-int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name, STACK *indent_stack);
+int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name);
 int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list);
 int handle_indent(int scope, HTable *table, Nnode node, STACK *indent_stack, tDLList *functions_list);
 bool is_rule(PSA_SYMBOL *rule, int *rule_index);

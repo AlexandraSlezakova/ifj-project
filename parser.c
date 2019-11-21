@@ -26,8 +26,8 @@ int function_arguments(HTable *function_symtable, char *function_name)
     /* function has arguments */
     if (token.type == T_VAR) {
 
-        char *name = malloc(sizeof(char));
-        strcpy(name, token.value.is_char);
+        char *name = token.value.is_char;
+
         /* insert variable name into function table */
         int inserted = insert_variable(function_symtable, name, TYPE_UNKNOWN);
         IF_VALUE_RETURN(inserted)
@@ -46,8 +46,7 @@ int function_arguments(HTable *function_symtable, char *function_name)
 
             IF_RETURN(!(token.type == T_VAR), SYNTAX_ERR)
 
-            name = malloc(sizeof(char));
-            strcpy(name, token.value.is_char);
+            name = token.value.is_char;
             /* insert variable name into function table */
             inserted = insert_variable(function_symtable, name, TYPE_UNKNOWN);
             IF_RETURN(inserted, SYNTAX_ERR)
@@ -83,7 +82,7 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
     int result = 0;
     IF_RETURN(!myast_add_node((&ast), PROG, NULL, true , indent_stack->top->indent_counter),ERR_INTERNAL);
     nStack = malloc(sizeof(nStack));
-    //tmp zásobník do kterého si budeš ukládat nody, zde na začátku ho vždy vymažeš, všude nastavíš NULL ,tím pádem
+    // tmp zásobník do kterého si budeš ukládat nody, zde na začátku ho vždy vymažeš, všude nastavíš NULL ,tím pádem
     // neztratíš node u COND
 
 
@@ -94,8 +93,6 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
 
         int item = OK;
         HTable *function_table = NULL;
-
-
 
         /* end of file */
         if (token.type == T_IS_EOF) {
@@ -109,9 +106,8 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
             /* check if token is identifier */
             IF_RETURN(!is_identifier(token.type), SYNTAX_ERR)
 
-            char *name = malloc(sizeof(char));
             /* save name */
-            strcpy(name, token.value.is_char);
+            char *name = token.value.is_char;
 
             HTItem *found = ht_search(global_hashtable, name);
 
@@ -282,8 +278,7 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
             Nnode equals = myast_add_node((&ast), ASSIGN, NULL, is_global_scope(scope),-1);
             IF_RETURN(!equals, ERR_INTERNAL)
 
-            char *name = malloc(sizeof(name));
-            strcpy(name, token.value.is_char);
+            char *name = token.value.is_char;
 
             /* variable definition if it does not exist */
             found = ht_search(table, name);
@@ -291,13 +286,11 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
                                 ? myast_add_node((&equals), VAR, name, is_global_scope(scope),-1)
                                 : myast_add_node((&equals), VAR_DEF, name, is_global_scope(scope),-1);
             IF_RETURN(!l_value, ERR_INTERNAL)
-            /* save name for later */
-            l_value->data->data = name;
 
             /* assignment */
             IF_RETURN(get_token(), TOKEN_ERR)
 
-            if (equals->data->ntype == T_ASSIGNMENT) {
+            if (equals->data->ntype == ASSIGN) {
                 //IF_RETURN(get_token(), TOKEN_ERR)
                 result = expression(scope, stack, table, equals, name, indent_stack, previous_token);
 
@@ -427,6 +420,9 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
         }
 
     }
+
+    free(stack);
+    free(previous_tkn);
 
     return result;
 }
@@ -579,7 +575,7 @@ int check_function_arguments(HTable *table)
 }
 
 
-int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name, STACK *indent_stack)
+int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name)
 {
 
     S_ELEM *top;
@@ -706,7 +702,6 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                 node = myast_add_node(&node, original->type == T_VAR ? VAR : VAL, create_value(original), is_global_scope(scope),-1);
 
                 NstackPush(node);
-
 
                 break;
 
