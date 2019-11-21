@@ -85,8 +85,6 @@ int stack_push_handle(STACK *stack, S_ELEM *elem, PSA_SYMBOL psa_symbol) {
 
         new_elem->next->psa_symbol = psa_symbol;
         new_elem->next->next = copy;
-        //new_elem->next->next->psa_symbol = copy->psa_symbol;
-        //new_elem->next->next->next = copy->next;
     } else {
         new_elem->psa_symbol = psa_symbol;
         new_elem->next = elem;
