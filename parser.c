@@ -733,20 +733,21 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                 type_of_node = node_type(&stack_elem[1]);
                 IF_RETURN(type_of_node == NO_NODE, ERR_INTERNAL)
                 node = myast_add_node( (&node), type_of_node, NULL, is_global_scope(scope),indent_counter);
-                if(stack_elem[0].node != NULL)
+                if(nStack->top != -1)
                 {
-                    node->childs[0]=(*stack_elem[0].node);
-                    node->data->size=1;
+                    node->childs[0] = nStack->nstack[0];
+                    node->data->child_count++;
+                    NstackPopGround();
+
                 }
                 if ( node->data->ntype == GR || node->data->ntype == GEQ || node->data->ntype == LESS|| node->data->ntype == LOQ|| node->data->ntype == COMP || node->data->ntype == NOTCOMP || node->data->ntype == ADD || node->data->ntype == SUB || node->data->ntype == MUL || node->data->ntype == DIV || node->data->ntype == DIVINIT )
                 {
-                    for(int tmp = 0;nStack->top != -1; tmp++)
+                    for(int tmp = 0;nStack->top != 0; tmp++)
                     {
                         node->childs[node->data->child_count] = nStack->nstack[tmp];
                         node->data->child_count++;
                         NstackPopGround();
                     }
-                    NstackPush(NULL);
                     NstackPush(node);
 //                    node->childs[node->data->child_count] = nStack->nstack[0];
 //                    node->data->child_count++;

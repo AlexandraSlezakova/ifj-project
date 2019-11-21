@@ -51,11 +51,13 @@ Nnode* find_node (Nnode node, int indent)
 
 void NstackPopGround ()
 {
-    for(int i = 1; i == nStack->top; i++)
+    for(int i = 1; i != nStack->top; i++)
     {
         nStack->nstack[i-1]=nStack->nstack[i];
     }
     nStack->top--;
+    nStack->nstack[nStack->top] = NULL;
+
     //solved = 0;                      /* V případě řešení, smažte tento řádek! */
 }
 
@@ -119,7 +121,7 @@ Nnode myast_add_node(Nnode *node, Ntype type, char *data ,bool inmain, int inden
 
 }
 
-Ntype node_type2(S_ELEM *stack_elem)
+Ntype node_type(S_ELEM *stack_elem)
 {
     Nnode node = malloc(sizeof(struct Node));
     NData *data = malloc(sizeof(struct NDATA));
