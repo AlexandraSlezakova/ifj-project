@@ -671,8 +671,9 @@ int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name, ST
        result = insert_variable(table, token_name, stack->top->type);
        IF_VALUE_RETURN(result)
     }
-    node->childs[node->data->child_count] = (*stack->top->node);
+    node->childs[node->data->child_count] = nStack->nstack[0];
     node->data->child_count++;
+    NstackPop();
     stack_destroy(stack);
 
     return SYNTAX_OK;
@@ -743,7 +744,7 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                     {
                         node->childs[node->data->child_count] = nStack->nstack[tmp];
                         node->data->child_count++;
-                        NstackPop();
+                        NstackPopGround();
                     }
                     NstackPush(NULL);
                     NstackPush(node);
