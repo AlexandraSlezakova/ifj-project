@@ -221,6 +221,7 @@ int statement_list(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDL
                         IF_RETURN((indent_stack->top->indent_counter != indent_counter)
                                   && (indent_stack->top->indent_counter == 0), SYNTAX_ERR)
                     }
+                    unget_token();
                 } else if (indent_counter > indent_stack->top->indent_counter) {
                     /* indent is not possible here */
                     return SYNTAX_ERR;
@@ -282,6 +283,7 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
 
             /* variable definition if it does not exist */
             found = ht_search(table, name);
+            IF_RETURN(found && found->type != IDENTIFIER, SEM_ERR_UNDEF_VAR)
             Nnode l_value = found
                                 ? myast_add_node((&equals), VAR, name, is_global_scope(scope),-1)
                                 : myast_add_node((&equals), VAR_DEF, name, is_global_scope(scope),-1);
@@ -662,6 +664,9 @@ int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name)
                 previous->value = token.value;
 
                 IF_RETURN(get_token(), TOKEN_ERR)
+                IF_RETURN((previous->type == T_DIV || previous->type == T_DIV_INT) && (token.value.is_int == 0 || token.value.is_float == 0),
+                          ERR_ZERO_DIV)
+
                 if (token.type == T_IS_COLON && (node->data->ntype == COND || node->data->ntype == WHILE)) {
                     colon_counter++;
                     IF_RETURN(colon_counter > 1, SYNTAX_ERR)
