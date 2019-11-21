@@ -119,7 +119,7 @@ Nnode myast_add_node(Nnode *node, Ntype type, char *data ,bool inmain, int inden
 
 }
 
-Ntype node_type(S_ELEM *stack_elem)
+Ntype node_type2(S_ELEM *stack_elem)
 {
     Nnode node = malloc(sizeof(struct Node));
     NData *data = malloc(sizeof(struct NDATA));
