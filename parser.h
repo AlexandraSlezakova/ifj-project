@@ -39,7 +39,7 @@ typedef enum
 PSA_SYMBOL psa_rules[3][4] =
 {
     {PSA_OPERAND, END_HANDLE, END_HANDLE, END_HANDLE},                  /* E -> i      */
-    {PSA_LBRACKET, NON_TERMINAL, PSA_RBRACKET, END_HANDLE},             /* E -> (E)    */
+    {PSA_RBRACKET, NON_TERMINAL, PSA_LBRACKET, END_HANDLE},             /* E -> (E)    */
     {NON_TERMINAL, MATHEMATICAL_OPERATION, NON_TERMINAL, END_HANDLE}    /* E -> E op E */
 };
 

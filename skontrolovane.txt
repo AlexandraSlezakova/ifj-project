@@ -1,0 +1,55 @@
+i = 1 + 2 * 3
+i = 'a' - 2             - chyba
+i = 'a' (hocijaky znak) 2 - chyba
+i = a / 3               (chyba, ak -a- nie je definovane alebo rovnaky datovy typ, rovnaka chyba vsade, kde je pouzita premenna)
+if i < 2:
+  - nic tu nie je -     - chyba
+
+if (2 == 2):
+if (( 2 > 2)):
+if (( 2 > 2 ):          - chyba
+if ((2 == 2)) 2:        - chyba
+if ((2 == 2)) * 2:
+
+-- este sa kontroluje
+i = a <= 2
+i = a >= 2
+i = 2 == 3
+i <= 2
+i = 'a' / 3             - chyba
+i = 3 / 0               - chyba
+i = None
+i = None + 'a'          - chyba
+i = None / 2            - chyba
+i = 'a' / 0             - chyba
+i = 0 / 7
+i = i + i / i
+print("""ahoj, ako sa mas?""")
+print('ahoj, ako sa mas?')
+def a():
+  print(a)              - chyba
+def a():
+  print(d)              - chyba
+while i >= 2:
+  - nic tu nie je -     - chyba
+def a(a):
+  i = 2                 - chyba???
+def a(i):
+  a = 2                 - chyba
+a = '"""ahoj, ako sa mas'
+a = """dnes je pekne"   - chyba
+a = """aj toto je retazec"""
+"""
+    komentar
+"""
+#komentar
+print('Ahoj\n"Sve\'te \\\x27')
+def a():
+  i = 2
+  return pass           - chyba
+def a():
+  i = 2
+  return None
+i = 'Ahoj               - chyba (lexikalna)
+
+

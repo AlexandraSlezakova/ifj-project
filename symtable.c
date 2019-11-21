@@ -64,8 +64,8 @@ int ht_insert(HTable *symtable, HTItem *new_item) {
     } /* save new item */
     else {
         if (symtable->first[hash] != NULL) {
-            symtable->first[hash]->next = new_item;
-            new_item->next = NULL;
+            new_item->next = symtable->first[hash];
+            symtable->first[hash] = new_item;
 
         } else {
             symtable->first[hash] = new_item;
@@ -104,6 +104,7 @@ int insert_function(HTable *symtable, HTable *function_table, char *key, int par
    item->params_quantity = params_quantity;
    item->symtable = function_table;
    item->list = list;
+   item->defined = true;
 
    return ht_insert(symtable, item);
 }

@@ -80,7 +80,7 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
 {
 
     int result = 0;
-    IF_RETURN(!myast_add_node((&ast), PROG, NULL, true , indent_stack->top->indent_counter),ERR_INTERNAL);
+    IF_RETURN(!myast_add_node((&ast), PROG, NULL, true , indent_stack->top->indent_counter),ERR_INTERNAL)
     nStack = malloc(sizeof(nStack));
     // tmp zásobník do kterého si budeš ukládat nody, zde na začátku ho vždy vymažeš, všude nastavíš NULL ,tím pádem
     // neztratíš node u COND
@@ -370,7 +370,11 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
 
         /* INDENT */
         /* indent has to be greater */
-        IF_RETURN(indent_stack->top->indent_counter >= indent_counter, SYNTAX_ERR)
+        if (indent_stack->top->indent_counter == indent_counter) {
+            return SYNTAX_ERR;
+        } else if (indent_stack->top->indent_counter > indent_counter) {
+            return LEX_ERR;
+        }
         IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
 
         result = handle_indent(scope, table, while_body, indent_stack, functions_list);
@@ -432,12 +436,15 @@ int handle_indent(int scope, HTable *table, Nnode node, STACK *indent_stack, tDL
 
     do {
         result = statement(scope, table, node, indent_stack, functions_list);
+        IF_VALUE_RETURN(result)
         /* indent */
         IF_RETURN(get_token(), TOKEN_ERR)
         if (indent_stack->top->indent_counter < indent_counter) {
             /* greater indent only in IF or WHILE */
-            IF_RETURN(token.type != T_IF && token.type != T_WHILE, TOKEN_ERR)
+            IF_RETURN(token.type != T_IF && token.type != T_WHILE, SYNTAX_ERR)
             IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
+        } else if (indent_stack->top->indent_counter > indent_counter) {
+            return TOKEN_ERR;
         }
     } while (indent_counter >= indent_stack->top->indent_counter);
 
@@ -462,7 +469,7 @@ int expression(int scope, STACK *stack, HTable *table, Nnode ast, char *token_na
     bool fce_call = false;
     struct TToken *previous_tkn = malloc(sizeof(struct TToken));
 
-    if (is_term(token.type)) {
+    if (is_term(token.type) || is_left_bracket(token.type)) {
         if (token.type == T_VAR) {
             /* save previous token */
             previous_tkn->type = token.type;
@@ -581,13 +588,25 @@ int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name)
     PSA_SYMBOL input;
     HTItem *found;
     struct TToken *previous = malloc(sizeof(struct TToken));
-    int result = 0;
     int colon_counter = 0;
+    int left_bracket = 0;
+    int right_bracket = 0;
+    int result = 0;
 
     IF_RETURN(stack_push(stack, NULL, NULL, PSA_END, TYPE_UNKNOWN) != OK, ERR_INTERNAL)
 
     top = top_terminal(stack);
     IF_RETURN(!top, ERR_INTERNAL)
+
+    if (token.type == T_LEFT_BRACKET) {
+        while (token.type == T_LEFT_BRACKET) {
+            left_bracket++;
+            IF_RETURN(get_token(), TOKEN_ERR)
+        }
+        unget_token();
+        ungetc('(', stdin); /* we need left bracket to find rule */
+        IF_RETURN(get_token(), TOKEN_ERR)
+    }
 
     /* current token from input*/
     input = token_to_psa_symbol();
@@ -607,14 +626,18 @@ int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name)
                 previous->value.is_char = token.value.is_char;
                 previous->value = token.value;
 
-                IF_RETURN(get_token(), TOKEN_ERR)
-
-                /* find identifier */
-                if (token.type == T_VAR) {
-                    found = ht_search(table, token.value.is_char);
-                    if (!found) found = ht_search(table, token.value.is_char);
-                    IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
+                if (token.type == T_RIGHT_BRACKET) {
+                    while (token.type == T_RIGHT_BRACKET) {
+                        right_bracket++;
+                        IF_RETURN(get_token(), TOKEN_ERR)
+                    }
+                    IF_RETURN(left_bracket != right_bracket, SYNTAX_ERR)
+                } else {
+                    IF_RETURN(get_token(), TOKEN_ERR)
                 }
+
+                /* any operator must follow after right bracket or color in if/while*/
+                IF_RETURN(!is_operator(token.type) && token.type != T_IS_COLON, SYNTAX_ERR)
 
                 input = token_to_psa_symbol();
                 IF_RETURN(!(input <= PSA_END), ERR_INTERNAL)
@@ -662,10 +685,12 @@ int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name)
         input = token_to_psa_symbol();
     }
 
+    /* update data type of variable */
     if (token_name) {
        result = insert_variable(table, token_name, stack->top->type);
        IF_VALUE_RETURN(result)
     }
+
     node->childs[node->data->child_count] = nStack->nstack[0];
     node->data->child_count++;
     NstackPop();

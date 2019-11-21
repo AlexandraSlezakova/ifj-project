@@ -71,12 +71,17 @@ bool is_global_scope(int scope)
     return scope == GLOBAL_SCOPE;
 }
 
-bool is_condition(TType type)
+bool is_operator(TType type)
 {
     return type == T_IS_SMALLER
         || type == T_IS_GREATER
         || type == T_IS_SMALLER_OR_EQUAL
         || type == T_IS_GREATER_OR_EQUAL
         || type == T_IS_NOT_EQUAL
-        || type == T_IS_EQUAL;
+        || type == T_IS_EQUAL
+        || type == T_MUL
+        || type == T_DIV
+        || type == T_DIV_INT
+        || type == T_ADD
+        || type == T_SUB;
 }

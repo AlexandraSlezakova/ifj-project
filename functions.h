@@ -27,7 +27,7 @@ bool is_comma(TType type);
 bool is_function_call(struct TToken current_token, char *name);
 bool is_term(TType type);
 bool is_global_scope(int scope);
-bool is_condition(TType type);
+bool is_operator(TType type);
 bool is_tab (TType type);
 char *copy_name(char *name);
 

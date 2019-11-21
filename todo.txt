@@ -1,4 +1,5 @@
-- redefinicia
+- volanie nedefinovanej funkcie
+- redefinicia - funkcii nie je mozna, premenne sa mozu
 - datovy typ argumentu funkcie
 - indenty vsade (def, if, else, while by mal byt spraveny)
 - vstavane funkcie
