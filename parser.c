@@ -421,7 +421,6 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
 
     }
 
-    free(stack);
     free(previous_tkn);
 
     return result;
@@ -505,7 +504,7 @@ int expression(int scope, STACK *stack, HTable *table, Nnode ast, char *token_na
             }
         }
 
-        if (!fce_call) result = psa(scope, stack, ast, table, token_name, indent_stack);
+        if (!fce_call) result = psa(scope, stack, ast, table, token_name);
 
     } else if (is_eol(token.type)) {
 
@@ -598,7 +597,7 @@ int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name)
         /* EOL is PSA_END but colon has to be in IF or WHILE */
         IF_RETURN((node->data->ntype == COND || node->data->ntype == WHILE) && token.type == T_IS_EOL, SYNTAX_ERR)
 
-        IF_RETURN(!(input <= PSA_END), ERR_INTERNAL)
+        IF_RETURN(!(input <= PSA_END), SYNTAX_ERR)
 
         switch (psa_table[top->psa_symbol][input]) {
             case '=':
@@ -919,6 +918,7 @@ PSA_SYMBOL token_to_psa_symbol()
         case T_INT:
         case T_FLOAT:
         case T_STRING:
+        case T_NONE:
             symbol = PSA_OPERAND;
             break;
         case T_IS_EOL:
@@ -939,7 +939,12 @@ int main(int argc, char const *argv[])
     global_hashtable = ht_init();
     IF_RETURN(!global_hashtable, ERR_INTERNAL)
 
-    Nnode ast=NULL;
+    /* number of lines */
+    line_counter = 0;
+    /* position of character */
+    line_position = 0;
+
+    Nnode ast = NULL;
     myast_init(&ast);
 
     /* list of undefined functions */

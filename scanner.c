@@ -51,12 +51,8 @@ void create_token(int character, char *string, struct TToken *new_token, TType t
     }
 }
 
-
 int get_token()
 {
-
-    static int line_counter = 0; /* number of lines */
-    int line_position = 0;       /* position */
     int allocated = 0;
 
     iterator = 0;
@@ -75,8 +71,6 @@ int get_token()
                 return TOKEN_OK;
             }
 
-            line_position++;
-
             /* write to buffer without comments */
             if (((c != 34) && state != S_DOC_CONTENT) && (c != 35 && state != S_LINE_COMMENT)) {
                 buffer[iterator++] = c;
@@ -84,6 +78,8 @@ int get_token()
 
         } else {
             token.type = T_IS_ERR;
+            line_position++;
+            line_counter++;
             fprintf(stderr, "Wrong token - line:%d (character:%d)!\n", line_counter, line_position);
             return TOKEN_ERR;
         }
@@ -112,6 +108,7 @@ int get_token()
                     line_counter++;
                     token.type = T_IS_EOL; /* end of line */
                     previous_state = S_IS_EOL;
+                    line_position = 0;
                     return 0;
                 } /* beginning of string */
                 else if (c == 39) {
@@ -191,12 +188,14 @@ int get_token()
                 }
                 else {
                     previous_state =  S_ZERO;
+                    line_position++;
                     create_token(c, buffer, &token, T_INT);
                     return 0;
                 }
 
             case S_COLON:
                 previous_state = S_COLON;
+                line_position++;
                 create_token(c, buffer, &token, T_IS_COLON);
                 return 0;
 
@@ -216,6 +215,7 @@ int get_token()
                 }
                 else {
                     previous_state = S_INT;
+                    line_position++;
                     create_token(c, buffer, &token, T_INT);
                     return 0;
                 }
@@ -242,6 +242,7 @@ int get_token()
                 }
                 else {
                     previous_state = S_FLOAT;
+                    line_position++;
                     create_token(c, buffer, &token, T_FLOAT);
                     return 0;
                 }
@@ -258,6 +259,7 @@ int get_token()
                 }
                 else {
                     previous_state = S_EXP;
+                    line_position++;
                     create_token(c, buffer, &token, T_FLOAT);
                     return 0;
                 }
@@ -280,6 +282,7 @@ int get_token()
                 }
                 else {
                     previous_state = S_NUMBER;
+                    line_position++;
                     create_token(c, buffer, &token, T_FLOAT);
                     return 0;
                 }
@@ -292,6 +295,7 @@ int get_token()
                 }
                 else {
                     previous_state = S_VAR;
+                    line_position++;
                     create_token(c, buffer, &token, T_VAR);
                     return 0;
                 }
@@ -379,6 +383,7 @@ int get_token()
 
             case S_STRING:
                 previous_state = S_STRING;
+                line_position++;
                 create_token(c, buffer, &token, T_STRING);
                 return 0;
 
@@ -389,12 +394,14 @@ int get_token()
                 }
                 else {
                     previous_state = S_SMALLER;
+                    line_position++;
                     create_token(c, buffer, &token, T_IS_SMALLER);
                     return 0;
                 }
 
             case S_IS_SMALLER_OR_EQUAL:
                 previous_state = S_IS_SMALLER_OR_EQUAL;
+                line_position++;
                 create_token(c, buffer, &token, T_IS_SMALLER_OR_EQUAL);
                 return 0;
 
@@ -405,12 +412,14 @@ int get_token()
                 }
                 else {
                     previous_state = S_GREATER;
+                    line_position++;
                     create_token(c, buffer, &token, T_IS_GREATER);
                     return 0;
                 }
 
             case S_IS_GREATER_OR_EQUAL:
                 previous_state = S_IS_GREATER_OR_EQUAL;
+                line_position++;
                 create_token(c, buffer, &token, T_IS_GREATER_OR_EQUAL);
                 return 0;
 
@@ -420,12 +429,14 @@ int get_token()
                     break;
                 } else {
                     previous_state = S_ASSIGN;
+                    line_position++;
                     create_token(c, buffer, &token, T_ASSIGNMENT);
                     return 0;
                 }
 
             case S_IS_EQUAL:
                 previous_state = S_IS_EQUAL;
+                line_position++;
                 create_token(c, buffer, &token, T_IS_EQUAL);
                 return 0;
 
@@ -433,16 +444,19 @@ int get_token()
             case S_MATH_OP:
                 if (buffer[iterator - 2] == '+') {
                     previous_state = S_MATH_OP;
+                    line_position++;
                     create_token(c, buffer, &token, T_ADD);
                     return 0;
                 }
                 else if (buffer[iterator - 2] == '-') {
                     previous_state = S_MATH_OP;
+                    line_position++;
                     create_token(c, buffer, &token, T_SUB);
                     return 0;
                 }
                 else if (buffer[iterator - 2] == '*') {
                     previous_state = S_MATH_OP;
+                    line_position++;
                     create_token(c, buffer, &token, T_MUL);
                     return 0;
                 }
@@ -452,6 +466,7 @@ int get_token()
                         break;
                     } else {
                         previous_state = S_MATH_OP;
+                        line_position++;
                         create_token(c, buffer, &token, T_DIV);
                         return 0;
                     }
@@ -464,6 +479,7 @@ int get_token()
 
             case S_DIV_INT:
                 previous_state = S_DIV_INT;
+                line_position++;
                 create_token(c, buffer, &token, T_DIV_INT);
                 return 0;
 
@@ -521,6 +537,7 @@ int get_token()
                     c = getchar();
                     buffer[iterator++] = c;
                     previous_state = S_IS_NOT_EQUAL;
+                    line_position++;
                     create_token(c, buffer, &token, T_IS_NOT_EQUAL);
                     return 0;
                 } else {
@@ -539,16 +556,19 @@ int get_token()
 
             case S_IS_COMMA:
                 previous_state = S_IS_COMMA;
+                line_position++;
                 create_token(c, buffer, &token, T_IS_COMMA);
                 return 0;
 
             case S_LEFT_BRACKET:
                 previous_state = S_LEFT_BRACKET;
+                line_position++;
                 create_token(c, buffer, &token, T_LEFT_BRACKET);
                 return 0;
 
             case S_RIGHT_BRACKET:
                 previous_state = S_RIGHT_BRACKET;
+                line_position++;
                 create_token(c, buffer, &token, T_RIGHT_BRACKET);
                 return 0;
 

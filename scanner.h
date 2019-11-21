@@ -117,9 +117,11 @@ int is_keyword(char *string);
 int unget_token();
 void create_token(int character, char *string,  struct TToken *new_token, TType type);
 char *buffer;
-int iterator;
 int c;
+int iterator;
 int indent_counter;
+int line_counter;        /* number of lines */
+int line_position;       /* position */
 TState previous_state;
 
 #endif
