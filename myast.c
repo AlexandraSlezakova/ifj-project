@@ -49,6 +49,18 @@ Nnode* find_node (Nnode node, int indent)
 
 }*/
 
+void NstackPopGround ()
+{
+    for(int i = 1; i != nStack->top; i++)
+    {
+        nStack->nstack[i-1]=nStack->nstack[i];
+    }
+    nStack->top--;
+    nStack->nstack[nStack->top] = NULL;
+
+    //solved = 0;                      /* V případě řešení, smažte tento řádek! */
+}
+
 void NstackPop ()
 {
     if(nStack->top != -1)

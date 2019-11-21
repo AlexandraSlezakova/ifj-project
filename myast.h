@@ -65,6 +65,7 @@ typedef struct {
 
 NStack* nStack;
 
+void NstackPopGround ();
 void NstackPopAll ();
 void NstackPop ();
 void NstackPush (Nnode node);
