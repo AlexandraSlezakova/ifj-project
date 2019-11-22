@@ -59,6 +59,7 @@ typedef enum {
     S_HEX_ESCAPE2,
     S_ERROR,
     S_IS_EOL,
+    S_DOC_STRING,
 } TState;
 
 typedef enum {

@@ -26,27 +26,34 @@ while i >= 2:
   - nic tu nie je -     - chyba
 pass
 redefinicia funkcie
+len = '"a'
+len("""a""")
+len = 'a"a"             - chyba
+len = ""a               - chyba
+len = """ \" """
+print("""ahoj, ako sa mas?""")
+print('ahoj, ako sa mas?')
+len('al")               - chyba
+"""
+    komentar
+"""
+i = 1 """komentar"""    - chyba, kontrola v parseri
+print('Ahoj\n"Sve\'te \\\x27')
+i = 'Ahoj               - chyba (lexikalna)
+#komentar
+i = 1 #komentar
+#komentar i = 1
+i = 1#komentar
 
 
 -- este sa kontroluje
-print("""ahoj, ako sa mas?""")
-print('ahoj, ako sa mas?')
 def a(i):
   a = 2                 - chyba - redefinicia?
 def a(a):
   i = 2                 - chyba???
-a = '"""ahoj, ako sa mas'
-a = """dnes je pekne"   - chyba
-a = """aj toto je retazec"""
-"""
-    komentar
-"""
-#komentar
-print('Ahoj\n"Sve\'te \\\x27')
 def a():
   i = 2
   return pass           - chyba
-i = 'Ahoj               - chyba (lexikalna)
 def a():
   i = 2
   return None

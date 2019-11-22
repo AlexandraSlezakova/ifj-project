@@ -1015,6 +1015,9 @@ int main(int argc, char const *argv[])
     stack_init(indent_stack);
     IF_RETURN((stack_push_indent(indent_stack, 0, T_UNKNOWN)), ERR_INTERNAL)
 
+//    while(1) {
+//        get_token();
+//    }
     previous_state = START;
     printf("%d",  recursive_descent(ast, indent_stack, functions_list));
 
