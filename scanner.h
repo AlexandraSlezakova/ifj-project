@@ -119,6 +119,7 @@ int unget_token();
 void create_token(int character, char *string,  struct TToken *new_token, TType type);
 char *buffer;
 int c;
+int eol_flag;
 int iterator;
 int indent_counter;
 int line_counter;        /* number of lines */

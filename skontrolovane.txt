@@ -44,19 +44,22 @@ i = 'Ahoj               - chyba (lexikalna)
 i = 1 #komentar
 #komentar i = 1
 i = 1#komentar
-
-
--- este sa kontroluje
-def a(i):
-  a = 2                 - chyba - redefinicia?
-def a(a):
-  i = 2                 - chyba???
 def a():
   i = 2
   return pass           - chyba
 def a():
   i = 2
   return None
-redefinacia premennej
+def a(i):
+   a = 2                - chyba, redefinicia, keby bola rekurzia vo funkcii, tak sa by sa volala ta premenna, ale ta nie je callable
+def a(a):
+  i = 2                 - chyba
+redefinicia premennej
+print('Test
+')                      -chyba
+tabulator zakazany, len medzery ako indent
+
+-- este sa kontroluje
+eof
 
 

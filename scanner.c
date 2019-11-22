@@ -71,7 +71,7 @@ int get_token()
                 return TOKEN_OK;
             }
 
-            /* write to buffer without comments */ //if (((c != 34) && state != S_DOC_CONTENT) && (c != 35 && state != S_LINE_COMMENT)) {
+            /* write to buffer without comments */
             if (state != S_DOC_CONTENT && state != S_LINE_COMMENT) {
                 buffer[iterator++] = c;
             } else if (c == 34 && previous_state != START) {
@@ -82,7 +82,7 @@ int get_token()
             token.type = T_IS_ERR;
             line_position++;
             line_counter++;
-            fprintf(stderr, "Wrong token - line:%d (position:%d)!\n", line_counter, line_position);
+            //fprintf(stderr, "Wrong token - line:%d (position:%d)!\n", line_counter, line_position);
             return TOKEN_ERR;
         }
 
@@ -101,16 +101,21 @@ int get_token()
                     break;
                 } /* white-space character */ // todo
                 else if (c == '\v' || c == '\f' || c == '\r' || c == '\t') {
-                    state = START;
-                    iterator = 0;
-                    allocated = 0;
-                    break;
+                    if (c == '\t' && previous_state == START) {
+                        return LEX_ERR;
+                    } else {
+                        state = START;
+                        iterator = 0;
+                        allocated = 0;
+                        break;
+                    }
                 } /* new line */
                 else if (c == '\n') {
                     line_counter++;
                     token.type = T_IS_EOL; /* end of line */
                     previous_state = START;
                     line_position = 0;
+                    eol_flag = 1;
                     return 0;
                 } /* beginning of string */
                 else if (c == 39) {
@@ -163,7 +168,7 @@ int get_token()
                     break;
                 }
                 else if (c == ' ') {
-                    if (previous_state == S_IS_EOL) {
+                    if (eol_flag) {
                         do {
                             c = getchar();
                             indent_counter++;
