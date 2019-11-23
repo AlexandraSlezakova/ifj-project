@@ -27,6 +27,8 @@ int function_arguments(HTable *function_symtable, char *function_name)
     if (token.type == T_VAR) {
 
         char *name = token.value.is_char;
+        /* argument of function cannot have same name as function */
+        IF_RETURN(strcmp(name, function_name) == 0, SEM_ERR_UNDEF_VAR)
 
         /* insert variable name into function table */
         int inserted = insert_variable(function_symtable, name, TYPE_UNKNOWN);
@@ -47,6 +49,8 @@ int function_arguments(HTable *function_symtable, char *function_name)
             IF_RETURN(!(token.type == T_VAR), SYNTAX_ERR)
 
             name = token.value.is_char;
+            /* argument of function cannot have same name as function */
+            IF_RETURN(strcmp(name, function_name) == 0, SEM_ERR_UNDEF_VAR)
             /* insert variable name into function table */
             inserted = insert_variable(function_symtable, name, TYPE_UNKNOWN);
             IF_RETURN(inserted, SYNTAX_ERR)
@@ -81,25 +85,24 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
 
     int result = 0;
     IF_RETURN(!myast_add_node((&ast), PROG, NULL, true , indent_stack->top->indent_counter),ERR_INTERNAL)
+    /* temporary stack for saving nodes */
     nStack = malloc(sizeof(nStack));
     Arr_Nstack = malloc(sizeof(nStack));
 
-
+    int item = OK;
 
     while (1) {
         //IF_RETURN(!myast_add_node((tmp), PROG, NULL, true , indent_stack->top->indent_counter),ERR_INTERNAL);
         NstackPopAll(nStack);
         NstackPopAll(Arr_Nstack);
         IF_RETURN(get_token(), TOKEN_ERR)
-
-        int item = OK;
         HTable *function_table = NULL;
 
         /* end of file */
         if (token.type == T_IS_EOF) {
-
-            // ================================= todo  ================================
-
+            /* empty file */
+            IF_RETURN(iterator == 0, SYNTAX_ERR)
+            return result;
         } /* function definition */
         else if (token.type == T_DEF) {
             IF_RETURN(get_token(), TOKEN_ERR)
@@ -136,7 +139,7 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
 
             /* arguments with right bracket */
             int arg = function_arguments(function_table, name);
-            IF_RETURN(arg != SYNTAX_OK, SYNTAX_ERR)
+            IF_VALUE_RETURN(arg)
 
             /* colon */
             IF_RETURN(get_token(), TOKEN_ERR)
@@ -220,7 +223,7 @@ int statement_list(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDL
                         stack_pop(indent_stack);
                         /* wrong indent */
                         IF_RETURN((indent_stack->top->indent_counter != indent_counter)
-                                  && (indent_stack->top->indent_counter == 0), SYNTAX_ERR)
+                                  && (indent_stack->top->indent_counter == 0), LEX_ERR)
                     }
                     unget_token();
                 } else if (indent_counter > indent_stack->top->indent_counter) {
@@ -239,7 +242,7 @@ int statement_list(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDL
 
 int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList *functions_list)
 {
-    int result = 0;
+    int result = SYNTAX_ERR;
 
     /* stack init */
     STACK *stack = malloc(sizeof(STACK));
@@ -284,7 +287,12 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
 
             /* variable definition if it does not exist */
             found = ht_search(table, name);
+            /* variable cannot have same name as function */
             IF_RETURN(found && found->type != IDENTIFIER, SEM_ERR_UNDEF_VAR)
+            if (!found && !is_global_scope(scope)) {
+                found = ht_search(global_hashtable, name);
+                IF_RETURN(found && found->type != IDENTIFIER, SEM_ERR_UNDEF_VAR)
+            }
             Nnode l_value = found
                                 ? myast_add_node((&equals), VAR, name, is_global_scope(scope),-1)
                                 : myast_add_node((&equals), VAR_DEF, name, is_global_scope(scope),-1);
@@ -443,21 +451,29 @@ int handle_indent(int scope, HTable *table, Nnode node, STACK *indent_stack, tDL
         /* indent */
         IF_RETURN(get_token(), TOKEN_ERR)
         if (indent_stack->top->indent_counter < indent_counter) {
-            /* greater indent only in IF or WHILE */
-            IF_RETURN(token.type != T_IF && token.type != T_WHILE, SYNTAX_ERR)
-            IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
+            return SYNTAX_ERR;
         } else if (indent_stack->top->indent_counter > indent_counter) {
-            return TOKEN_ERR;
+            //IF_RETURN(token.type != T_ELSE, TOKEN_ERR)
+            while (indent_stack->top->indent_counter != indent_counter) {
+                stack_pop(indent_stack);
+                /* wrong indent */
+                /* if and else has to be on the same level */
+                if (indent_stack->top->indent_counter > indent_counter && token.type == T_ELSE) {
+                    return LEX_ERR;
+                } else if (indent_stack->top->indent_counter < indent_counter && token.type == T_ELSE) {
+                    return SYNTAX_ERR;
+                } else if (token.type != T_ELSE) {
+                    unget_token();
+                    for (int i = 0; i < indent_counter; i++) {
+                        ungetc(32, stdin);
+                    }
+                }
+                IF_RETURN((indent_stack->top->indent_counter != indent_counter)
+                          && (indent_stack->top->indent_counter == 0), SYNTAX_ERR)
+            }
+            break;
         }
     } while (indent_counter >= indent_stack->top->indent_counter);
-
-    /* indent counter is always smaller here */
-    while (indent_stack->top->indent_counter != indent_counter) {
-        stack_pop(indent_stack);
-        /* wrong indent */
-        IF_RETURN((indent_stack->top->indent_counter != indent_counter)
-                  && (indent_stack->top->indent_counter == 0), SYNTAX_ERR)
-    }
 
     return result;
 }
@@ -535,7 +551,6 @@ int function_call(HTItem *found, HTable *function_table, Nnode ast, STACK *inden
         return found->params_quantity != 0 ? SEM_ERR_PARAM_NUM : SYNTAX_OK;
 
     } else {
-        // todo pravidlo k function call
         IF_RETURN(!is_term(token.type), SYNTAX_ERR)
         result = function_call_arg(found, function_table, ast, indent_stack);
 
@@ -1011,6 +1026,8 @@ int main(int argc, char const *argv[])
     line_counter = 0;
     /* position of character */
     line_position = 0;
+    /* end of line flag */
+    eol_flag = 0;
 
     Nnode ast = NULL;
     myast_init(&ast);
@@ -1054,25 +1071,22 @@ int main(int argc, char const *argv[])
     IF_RETURN((stack_push_indent(indent_stack, 0, T_UNKNOWN)), ERR_INTERNAL)
 
     previous_state = START;
-    printf("%d",  recursive_descent(ast, indent_stack, functions_list));
+    //printf("%d",  recursive_descent(ast, indent_stack, functions_list));
 
+    result = recursive_descent(ast, indent_stack, functions_list);
+    if (result == 0) {
+        /* check if all undefined functions in list are defined */
+        tDLElemPtr tmp = NULL;
+        tmp = functions_list->First;
+        HTItem *found;
 
+        while (tmp != NULL) {
+            found = ht_search(global_hashtable, tmp->data);
+            IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
 
+            tmp = tmp->rptr;
+        }
+    }
 
-//    result = recursive_descent(&ast, indent_stack, functions_list);
-//    if (result == 0) {
-//        /* check if all undefined functions in list are defined */
-//        tDLElemPtr tmp = NULL;
-//        tmp = functions_list->First;
-//        HTItem *found;
-//
-//        while (tmp != NULL) {
-//            found = ht_search(global_hashtable, tmp->data);
-//            IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
-//
-//            tmp = tmp->rptr;
-//        }
-//    }
-//
-//    return result;
+    return result;
 }
