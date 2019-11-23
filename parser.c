@@ -82,13 +82,14 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
     int result = 0;
     IF_RETURN(!myast_add_node((&ast), PROG, NULL, true , indent_stack->top->indent_counter),ERR_INTERNAL)
     nStack = malloc(sizeof(nStack));
-    // tmp zásobník do kterého si budeš ukládat nody, zde na začátku ho vždy vymažeš, všude nastavíš NULL ,tím pádem
-    // neztratíš node u COND
+    Arr_Nstack = malloc(sizeof(nStack));
+
 
 
     while (1) {
         //IF_RETURN(!myast_add_node((tmp), PROG, NULL, true , indent_stack->top->indent_counter),ERR_INTERNAL);
-        NstackPopAll();
+        NstackPopAll(nStack);
+        NstackPopAll(Arr_Nstack);
         IF_RETURN(get_token(), TOKEN_ERR)
 
         int item = OK;
@@ -695,10 +696,12 @@ int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name)
        result = insert_variable(table, token_name, stack->top->type);
        IF_VALUE_RETURN(result)
     }
-
-    node->childs[node->data->child_count] = nStack->nstack[0];
+    if(nStack->nstack[0]!= NULL)
+        node->childs[node->data->child_count] = nStack->nstack[0];
+    else
+        node->childs[node->data->child_count] = Arr_Nstack->nstack[0];
     node->data->child_count++;
-    NstackPop();
+    NstackPop(nStack);
     stack_destroy(stack);
 
     return SYNTAX_OK;
@@ -731,7 +734,7 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                 original->value.is_char = stack_elem[0].current_token->value.is_char;
                 node = myast_add_node(&node, original->type == T_VAR ? VAR : VAL, create_value(original), is_global_scope(scope),-1);
 
-                NstackPush(node);
+                NstackPush(nStack,node);
 
                 break;
 
@@ -757,28 +760,63 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                 type_of_node = node_type(&stack_elem[1]);
                 IF_RETURN(type_of_node == NO_NODE, ERR_INTERNAL)
                 node = myast_add_node( (&node), type_of_node, NULL, is_global_scope(scope),indent_counter);
-                if(nStack->top != -1)
+                if(nStack->top != -1 && nStack->nstack[0] != NULL)
                 {
                     node->childs[0] = nStack->nstack[0];
                     node->data->child_count++;
-                    NstackPopGround();
+                    NstackPopGround(nStack);
 
                 }
                 if ( node->data->ntype == GR || node->data->ntype == GEQ || node->data->ntype == LESS|| node->data->ntype == LOQ|| node->data->ntype == COMP || node->data->ntype == NOTCOMP || node->data->ntype == ADD || node->data->ntype == SUB || node->data->ntype == MUL || node->data->ntype == DIV || node->data->ntype == DIVINIT )
                 {
-                    for(int tmp = 0;nStack->top != 0; tmp++)
+                    /*for(int tmp = 0;nStack->top != 0; tmp++)
                     {
                         node->childs[node->data->child_count] = nStack->nstack[tmp];
                         node->data->child_count++;
-                        NstackPopGround();
+                        NstackPopGround(nStack);
                     }
-                    NstackPush(node);
+                    NstackPush(nStack,node);*/
 //                    node->childs[node->data->child_count] = nStack->nstack[0];
 //                    node->data->child_count++;
 //                    NstackPop();
-
+                    if(nStack->nstack[0] != NULL)
+                    {
+                        node->childs[node->data->child_count] = nStack->nstack[0];
+                        node->data->child_count++;
+                        NstackPopGround(nStack);
+                        NstackPush(Arr_Nstack,node);
+                    }
+                    else if(node->childs[0] != NULL )
+                    {
+                        Arr_Nstack->top--;
+                        node->childs[node->data->child_count] = Arr_Nstack->nstack[Arr_Nstack->top];
+                        node->data->child_count++;
+                        NstackPop(Arr_Nstack);
+                        Arr_Nstack->top++;
+                        NstackPush(Arr_Nstack,node);
+                    }
+                    else
+                    {
+                        node->childs[node->data->child_count] = Arr_Nstack->nstack[0];
+                        node->data->child_count++;
+                        NstackPopGround(Arr_Nstack);
+                        node->childs[node->data->child_count] = Arr_Nstack->nstack[0];
+                        node->data->child_count++;
+                        NstackPopGround(Arr_Nstack);
+                        NstackPush(Arr_Nstack,node);
+                    }
                 }
-                //node->childs[1]=(*stack_elem[2].node);
+                if(
+                        (node->data->ntype == DIV || node->data->ntype == DIVINIT) &&
+                        ((node->childs[node->data->child_count - 1]->data->ntype >= 12 && node->childs[node->data->child_count -1 ]->data->ntype <= 16)||
+                        ((node->childs[node->data->child_count - 2]->data->ntype) >= 12 && node->childs[node->data->child_count - 2]->data->ntype <= 16))
+                  )
+                {
+                    node->childs[node->data->child_count]= node->childs[node->data->child_count - 2];
+                    node->childs[node->data->child_count - 2]= node->childs[node->data->child_count - 1];
+                    node->childs[node->data->child_count - 1]= node->childs[node->data->child_count];
+                    node->childs[node->data->child_count]= NULL;
+                }
                 break;
 
             default:

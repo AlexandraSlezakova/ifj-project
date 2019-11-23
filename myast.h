@@ -14,33 +14,33 @@
 #define TAB_SIZE 101
 
 typedef enum Node_Type{
-    PROG,
-    VAR,            //Var
-    VAL,            //Value
-    IF_NODE,
-    IF_BODY,
-    IF_ELSE,
-    WHILE,
-    BODY,
-    CALL,
-    COND,           // Condition
-    RETURN,            // Return
-    ADD,            // +
-    SUB,            // -
-    MUL,            // *
-    DIV,            // /
-    DIVINIT,        // //
-    GR,        // <>
-    GEQ,        // <= >=
-    LESS,           // ><
-    LOQ,        // >= <=
-    COMP,            // ==
-    NOTCOMP,        // !=
-    ASSIGN,          // =
-    FUNC_DEF,
-    ARGV,
-    VAR_DEF,
-    NO_NODE,
+    PROG        = 1,
+    VAR         = 2,        //Var
+    VAL         = 3,        //Value
+    IF_NODE     = 4,
+    IF_BODY     = 5,
+    IF_ELSE     = 6,
+    WHILE       = 7,
+    BODY        = 8,
+    CALL        = 9,
+    COND        = 10,       // Condition
+    RETURN      = 11,       // Return
+ADD         = 12,           // +
+SUB         = 13,           // -
+MUL         = 14,           // *
+DIV         = 15,           // /
+    DIVINIT     = 16,       // //
+    GR          = 17,       // <>
+    GEQ         = 18,       // <= >=
+    LESS        = 19,       // ><
+    LOQ         = 20,       // >= <=
+    COMP        = 21,       // ==
+    NOTCOMP     = 22,       // !=
+    ASSIGN      = 23,       // =
+    FUNC_DEF    = 24,
+    ARGV        = 25,
+    VAR_DEF     = 26,
+    NO_NODE     = 27,
 } Ntype;
 
 typedef struct NDATA{
@@ -64,11 +64,12 @@ typedef struct {
 } NStack;
 
 NStack* nStack;
+NStack* Arr_Nstack;
 
-void NstackPopGround ();
-void NstackPopAll ();
-void NstackPop ();
-void NstackPush (Nnode node);
+void NstackPopGround (NStack *s);
+void NstackPopAll (NStack *s);
+void NstackPop (NStack *s);
+void NstackPush (NStack *s,Nnode node);
 void myast_init(Nnode *node);
 void myast_destroy(Nnode node);
 void myast_resize(Nnode *node);
