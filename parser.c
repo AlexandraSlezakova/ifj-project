@@ -712,11 +712,18 @@ int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name)
        IF_VALUE_RETURN(result)
     }
     if(nStack->nstack[0]!= NULL)
-        node->childs[node->data->child_count] = nStack->nstack[0];
+    {
+        nStack->nstack[0]->parent_node = node->children[node->data->child_count];
+        node->children[node->data->child_count] = nStack->nstack[0];
+        NstackPopGround(nStack);
+    }
     else
-        node->childs[node->data->child_count] = Arr_Nstack->nstack[0];
+    {
+        Arr_Nstack->nstack[0]->parent_node = node->children[node->data->child_count];
+        node->children[node->data->child_count] = Arr_Nstack->nstack[0];
+        NstackPopGround(Arr_Nstack);
+    }
     node->data->child_count++;
-    NstackPop(nStack);
     stack_destroy(stack);
 
     return SYNTAX_OK;
@@ -777,34 +784,27 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                 node = myast_add_node( (&node), type_of_node, NULL, is_global_scope(scope),indent_counter);
                 if(nStack->top != -1 && nStack->nstack[0] != NULL)
                 {
-                    node->childs[0] = nStack->nstack[0];
+                    nStack->nstack[0]->parent_node = node->children[0];
+                    node->children[0] = nStack->nstack[0];
                     node->data->child_count++;
                     NstackPopGround(nStack);
 
                 }
                 if ( node->data->ntype == GR || node->data->ntype == GEQ || node->data->ntype == LESS|| node->data->ntype == LOQ|| node->data->ntype == COMP || node->data->ntype == NOTCOMP || node->data->ntype == ADD || node->data->ntype == SUB || node->data->ntype == MUL || node->data->ntype == DIV || node->data->ntype == DIVINIT )
                 {
-                    /*for(int tmp = 0;nStack->top != 0; tmp++)
-                    {
-                        node->childs[node->data->child_count] = nStack->nstack[tmp];
-                        node->data->child_count++;
-                        NstackPopGround(nStack);
-                    }
-                    NstackPush(nStack,node);*/
-//                    node->childs[node->data->child_count] = nStack->nstack[0];
-//                    node->data->child_count++;
-//                    NstackPop();
                     if(nStack->nstack[0] != NULL)
                     {
-                        node->childs[node->data->child_count] = nStack->nstack[0];
+                        nStack->nstack[0]->parent_node = node->children[node->data->child_count];
+                        node->children[node->data->child_count] = nStack->nstack[0];
                         node->data->child_count++;
                         NstackPopGround(nStack);
                         NstackPush(Arr_Nstack,node);
                     }
-                    else if(node->childs[0] != NULL )
+                    else if(node->children[0] != NULL )
                     {
                         Arr_Nstack->top--;
-                        node->childs[node->data->child_count] = Arr_Nstack->nstack[Arr_Nstack->top];
+                        Arr_Nstack->nstack[Arr_Nstack->top]->parent_node = node->children[node->data->child_count];
+                        node->children[node->data->child_count] = Arr_Nstack->nstack[Arr_Nstack->top];
                         node->data->child_count++;
                         NstackPop(Arr_Nstack);
                         Arr_Nstack->top++;
@@ -812,10 +812,12 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                     }
                     else
                     {
-                        node->childs[node->data->child_count] = Arr_Nstack->nstack[0];
+                        Arr_Nstack->nstack[0]->parent_node = node->children[node->data->child_count];
+                        node->children[node->data->child_count] = Arr_Nstack->nstack[0];
                         node->data->child_count++;
                         NstackPopGround(Arr_Nstack);
-                        node->childs[node->data->child_count] = Arr_Nstack->nstack[0];
+                        Arr_Nstack->nstack[0]->parent_node = node->children[node->data->child_count];
+                        node->children[node->data->child_count] = Arr_Nstack->nstack[0];
                         node->data->child_count++;
                         NstackPopGround(Arr_Nstack);
                         NstackPush(Arr_Nstack,node);
@@ -823,14 +825,14 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                 }
                 if(
                         (node->data->ntype == DIV || node->data->ntype == DIVINIT) &&
-                        ((node->childs[node->data->child_count - 1]->data->ntype >= 12 && node->childs[node->data->child_count -1 ]->data->ntype <= 16)||
-                        ((node->childs[node->data->child_count - 2]->data->ntype) >= 12 && node->childs[node->data->child_count - 2]->data->ntype <= 16))
+                        ((node->children[node->data->child_count - 1]->data->ntype >= 12 && node->children[node->data->child_count -1 ]->data->ntype <= 16)||
+                        ((node->children[node->data->child_count - 2]->data->ntype) >= 12 && node->children[node->data->child_count - 2]->data->ntype <= 16))
                   )
                 {
-                    node->childs[node->data->child_count]= node->childs[node->data->child_count - 2];
-                    node->childs[node->data->child_count - 2]= node->childs[node->data->child_count - 1];
-                    node->childs[node->data->child_count - 1]= node->childs[node->data->child_count];
-                    node->childs[node->data->child_count]= NULL;
+                    node->children[node->data->child_count]= node->children[node->data->child_count - 2];
+                    node->children[node->data->child_count - 2]= node->children[node->data->child_count - 1];
+                    node->children[node->data->child_count - 1]= node->children[node->data->child_count];
+                    node->children[node->data->child_count]= NULL;
                 }
                 break;
 

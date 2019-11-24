@@ -25,10 +25,10 @@ typedef enum Node_Type{
     CALL        = 9,
     COND        = 10,       // Condition
     RETURN      = 11,       // Return
-ADD         = 12,           // +
-SUB         = 13,           // -
-MUL         = 14,           // *
-DIV         = 15,           // /
+    ADD         = 12,       // +
+    SUB         = 13,       // -
+    MUL         = 14,       // *
+    DIV         = 15,       // /
     DIVINIT     = 16,       // //
     GR          = 17,       // <>
     GEQ         = 18,       // <= >=
@@ -54,7 +54,7 @@ typedef struct NDATA{
 
 typedef struct Node{
     NData *data;
-    struct Node *childs[TAB_SIZE];
+    struct Node *children[TAB_SIZE];
     struct Node *parent_node;
 } *Nnode;
 

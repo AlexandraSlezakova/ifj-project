@@ -116,7 +116,7 @@ Nnode myast_add_node(Nnode *node, Ntype type, char *data ,bool inmain, int inden
     {
         return new_node;
     }
-    (*node)->childs[(*node)->data->child_count++] = new_node;
+    (*node)->children[(*node)->data->child_count++] = new_node;
     return new_node;
 
 }
