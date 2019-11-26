@@ -35,7 +35,7 @@ char * generate_unique_label()
 
 char * generate_unique_identifier()
 {
-    char prefix = '*';
+    char prefix = '%';
     static unsigned long long int i = 0;
     int lenght = lenHelper(i);
     char *ident = malloc((lenght + 2) * sizeof(char));
@@ -44,10 +44,20 @@ char * generate_unique_identifier()
     return ident;
 }
 
+void create_local_frame()
+{
+    fprintf(stdout, "CREATEFRAME\n");
+    fprintf(stdout, "PUSHFRAME\n");
+}
+void end_frame()
+{
+    fprintf(stdout, "POPFRAME\n");
+}
 void create_header()
 {
     fprintf(stdout, ".IFJcode19\n");
 }
+
 
 void identify_header(Nnode ast, HTable *table)
 {
@@ -72,7 +82,18 @@ void identify_header(Nnode ast, HTable *table)
             break;
         case LESS:
             generate_aritmetic(ast, table);
+        case DIV:
             break;
+        case LOQ:
+            generate_aritmetic(ast, table);
+            break;
+        case NOTCOMP:
+            generate_aritmetic(ast, table);
+            break;
+        case DIVINIT:
+            break;
+        case COND:
+            identify_header(ast->children[0], table);
         default:
             break;
     }
@@ -109,16 +130,23 @@ int generate_vardef(int is_assign, Nnode ast, HTable *table)
     HTItem *found = is_assign
                     ? ht_search(table, ast->children[0]->data->data)
                     : ht_search(table, ast->data->data);
-    IF_RETURN(!found, ERR_INTERNAL)
-    char *type = get_data_type(found);
+    //IF_RETURN(!found, ERR_INTERNAL)
+
+    char *type = malloc(sizeof(DATA_TYPE));
+    if (found != NULL)
+        *type = get_data_type(found);
 
     if(ast->data->inmain)
     {
-        fprintf(stdout, "DEFVAR %s%s\n",memory_model(ast),found->key);
+        if (found != NULL) {
+            fprintf(stdout, "DEFVAR %s@%s\n", memory_model(ast), found->key);
 
-        if(is_assign)
-        {
-            fprintf(stdout,"MOVE %s%s %s",memory_model(ast),found->key,type);
+            if (is_assign) {
+                //generate_assign(ast, table);
+                fprintf(stdout, "MOVE %s@%s %s\n", memory_model(ast), found->key, ast->children[1]->data->data);
+            }
+        } else {
+            fprintf(stdout, "DEFVAR %s@%s\n", memory_model(ast), ast->children[0]->data->data);
         }
     }
 
@@ -216,113 +244,113 @@ void aritmetic_operation(Nnode ast, HTable *table)
             break;
         case LOQ:
             fprintf(stdout, "LT");
+            break;
+        case DIVINIT:
+            fprintf(stdout, "IDIV");
+            break;
         default:
             break;
     }
 }
-void type_control(Nnode ast, HTable *table, char *contr_type_name) //typová kontrola == !=
+
+generate_type_control_cmp(Nnode ast, HTable *table)
 {
-    char *cmp1 = generate_unique_identifier();
-    char *cmp2 = generate_unique_identifier();
-    char *label_true = generate_unique_label();
-    char *label_false = generate_unique_label();
-    char *label_end = generate_unique_label();
+fprintf(stdout, "CREATEFRAME\n");
+fprintf(stdout, "DEFVAR TF@%%1\n");
+fprintf(stdout, "DEFVAR TF@%%2\n");
 
+if (ast->data->inmain) {
+fprintf(stdout, "MOVE TF@%%1 GF@%s\n", ast->children[0]->data->data);
+fprintf(stdout, "MOVE TF@%%2 GF@%s\n", ast->children[1]->data->data);
+} else {
+fprintf(stdout, "MOVE TF@%%1 LF@%s\n", ast->children[0]->data->data);
+fprintf(stdout, "MOVE TF@%%2 LF@%s\n", ast->children[1]->data->data);
+}
 
-    if (ast->data->inmain){
-       fprintf(stdout, "DEFVAR GF@%s\n", cmp1);
-       fprintf(stdout, "DEFVAR GF@%s\n", cmp2);
-       fprintf(stdout, "DEFVAR GF@%s\n", contr_type_name);
-       fprintf(stdout, "TYPE GF@%s GF@%s\n", cmp1, ast->children[0]->data->data);
-       fprintf(stdout, "TYPE GF@%s GF@%s\n", cmp2, ast->children[1]->data->data);
-       fprintf(stdout, "JUMPIFEQ %s GF@%s GF@%s\n", label_true, cmp1, cmp2);
-       fprintf(stdout, "MOVE GF%s bool@true\n", contr_type_name);
-       fprintf(stdout, "LABEL %s\n", label_true);
-       fprintf(stdout, "MOVE GF@%s bool@true\n", contr_type_name);
-       fprintf(stdout, "LABEL %s\n", label_end);
+fprintf(stdout, "CALL $contr_cmp\n");
+
+}
+
+void type_control() //type control of  == !=
+{
+    fprintf(stdout, "LABEL $contr_cmp\n");
+    fprintf(stdout, "PUSHFRAME\n");
+    fprintf(stdout, "DEFVAR LF@cmp1\n");
+    fprintf(stdout, "DEFVAR LF@cmp2\n");
+    fprintf(stdout, "DEFVAR LF@%%retval\n");
+
+    fprintf(stdout, "TYPE LF@cmp1 LF@%%1\n");
+    fprintf(stdout, "TYPE LF@cmp2 LF@%%2\n");
+
+    fprintf(stdout, "JUMPIFEQ same_type LF@cmp1 GF@cmp2\n");
+    fprintf(stdout, "MOVE LF@%%retval bool@false\n");
+    fprintf(stdout, "JUMP contr_end\n");
+    fprintf(stdout, "LABEL same_type\n");
+
+    fprintf(stdout, "MOVE LF@%%retval bool@true\n");
+    fprintf(stdout, "LABEL contr_end\n");
+    fprintf(stdout, "POPFRAME\n");
+    fprintf(stdout, "RETURN\n");
+
+}
+
+void generate_type_control_exit(Nnode ast, HTable *table)
+{
+    fprintf(stdout, "CREATEFRAME\n");
+    fprintf(stdout, "DEFVAR TF@%%1\n");
+    fprintf(stdout, "DEFVAR TF@%%2\n");
+
+    if (ast->data->inmain) {
+        fprintf(stdout, "MOVE TF@%%1 GF@%s\n", ast->children[0]->data->data);
+        fprintf(stdout, "MOVE TF@%%2 GF@%s\n", ast->children[1]->data->data);
     } else {
-        fprintf(stdout, "DEFVAR LF@%s\n", cmp1);
-        fprintf(stdout, "DEFVAR LF@%s\n", cmp2);
-        fprintf(stdout, "DEFVAR LF@%s\n", contr_type_name);
-        fprintf(stdout, "TYPE LF@%s GF@%s\n", cmp1, ast->children[0]->data->data);
-        fprintf(stdout, "TYPE LF@%s GF@%s\n", cmp2, ast->children[1]->data->data);
-        fprintf(stdout, "JUMPIFEQ %s LF@%s GF@%s\n", label_true, cmp1, cmp2);
-        fprintf(stdout, "MOVE GF%s bool@true\n", contr_type_name);
-        fprintf(stdout, "LABEL %s\n", label_true);
-        fprintf(stdout, "MOVE LF@%s bool@true\n", contr_type_name);
-        fprintf(stdout, "LABEL %s\n", label_end);
+        fprintf(stdout, "MOVE TF@%%1 LF@%s\n", ast->children[0]->data->data);
+        fprintf(stdout, "MOVE TF@%%2 LF@%s\n", ast->children[1]->data->data);
+    }
+
+    fprintf(stdout, "CALL $contr_exit\n");
+
+    if (ast->data->inmain) {
+        fprintf(stdout, "MOVE GF@%s TF@%%1\n", ast->children[0]->data->data);
+        fprintf(stdout, "MOVE GF@%s TF@%%2\n", ast->children[1]->data->data);
+    } else {
+        fprintf(stdout, "MOVE LF@%s TF@%%1\n", ast->children[0]->data->data);
+        fprintf(stdout, "MOVE LF@%s TF@%%2\n", ast->children[1]->data->data);
     }
 }
 
-void generate_type_control_exit(Nnode ast, HTable *table, char *contr_type_name) //typová kontrola =<>=
+void type_control_exit(Nnode ast, HTable *table) //typová kontrola =<>=
 {
-    char *cmp1 = generate_unique_identifier();
-    char *cmp2 = generate_unique_identifier();
-    char *convert = generate_unique_identifier();
 
-    char *same_type = generate_unique_label();
-    char *wrong_type = generate_unique_label();
-    char *label_end = generate_unique_label();
-    char *convert_first = generate_unique_label();
+    fprintf(stdout, "LABEL $contr_exit\n");
+    fprintf(stdout, "PUSHFRAME\n");
+    fprintf(stdout, "DEFVAR LF@cmp1\n");
+    fprintf(stdout, "DEFVAR LF@cmp2\n");
+    fprintf(stdout, "DEFVAR LF@%%retval\n");
+    fprintf(stdout, "DEFVAR LF@convert\n");
+    fprintf(stdout, "TYPE LF@cmp1 LF@%%1\n");
+    fprintf(stdout, "TYPE LF@cmp2 LF@%%2\n");
+    fprintf(stdout, "JUMPIFEQ same_type LF@cmp1 LF@cmp2\n");
+    fprintf(stdout, "JUMPIFEQ wrong_type LF@cmp1 string@string\n");
+    fprintf(stdout, "JUMPIFEQ wrong_type LF@cmp2 string@string\n");
+    fprintf(stdout, "JUMPIFEQ convert_first LF@cmp1 string@int\n");
+    fprintf(stdout, "MOVE LF@convert LF@cmp2\n");
+    fprintf(stdout, "INT2FLOAT LF@%%2 LF@convert\n");
+    fprintf(stdout, "JUMP end_control_exit\n");
 
-    if (ast->data->inmain){
-        fprintf(stdout, "DEFVAR GF@%s\n", cmp1); //chyba s nil nil chybí asi
-        fprintf(stdout, "DEFVAR GF@%s\n", cmp2);
-        fprintf(stdout, "DEFVAR GF@%s\n", contr_type_name);
-        fprintf(stdout, "TYPE GF@%s GF@%s\n", cmp1, ast->children[0]->data->data);
-        fprintf(stdout, "TYPE GF@%s GF@%s\n", cmp2, ast->children[1]->data->data);
-        fprintf(stdout, "JUMPIFEQ %s GF@%s GF@%s\n", same_type, cmp1, cmp2);
-        fprintf(stdout, "JUMPIFEQ %s GF@%s string@string\n",  wrong_type, cmp1);
-        fprintf(stdout, "JUMPIFEQ %s GF@%s string@string\n",  wrong_type, cmp2);
-        fprintf(stdout, "JUMPIFEQ %s GF@%s string@int\n", convert_first, cmp1);
-        fprintf(stdout, "DEFVAR GF@%s\n", convert);
-        fprintf(stdout, "MOVE GF@%s\n GF@%s", convert, ast->children[1]->data->data);
-        fprintf(stdout, "INT2FLOAT GF@%s GF@%s\n", ast->children[1]->data->data, convert);
-        fprintf(stdout, "JUMP %s\n", label_end);
+    fprintf(stdout, "LABEL convert_first\n");
+    fprintf(stdout, "MOVE LF@convert LF@%%1\n");
+    fprintf(stdout, "INT2FLOAT LF@%%1 LF@convert\n");
+    fprintf(stdout, "JUMP end_control_exit");
 
-        fprintf(stdout, "LABEL %s", convert_first);
-        fprintf(stdout, "DEFVAR GF@%s\n", convert);
-        fprintf(stdout, "MOVE GF@%s\n GF@%s", convert, ast->children[0]->data->data);
-        fprintf(stdout, "INT2FLOAT GF@%s GF@%s\n", ast->children[0]->data->data, convert);
-        fprintf(stdout, "JUMP %s\n", label_end);
-
-        fprintf(stdout, "LABEL %s\n", wrong_type);
-        fprintf(stdout, "EXIT int@4\n");
-        fprintf(stdout, "LABEL %s\n", same_type);
-        fprintf(stdout, "MOVE GF@%s bool@true\n", contr_type_name);
-        fprintf(stdout, "LABEL %s\n", label_end);
-
-        fprintf(stdout, "MOVE GF%s bool@true\n", contr_type_name);
-    } else {
-        fprintf(stdout, "DEFVAR LF@%s\n", cmp1); //chyba s nil nil chybí asi
-        fprintf(stdout, "DEFVAR LF@%s\n", cmp2);
-        fprintf(stdout, "DEFVAR LF@%s\n", contr_type_name);
-        fprintf(stdout, "TYPE LF@%s LF@%s\n", cmp1, ast->children[0]->data->data);
-        fprintf(stdout, "TYPE LF@%s LF@%s\n", cmp2, ast->children[1]->data->data);
-        fprintf(stdout, "JUMPIFEQ %s LF@%s LF@%s\n", same_type, cmp1, cmp2);
-        fprintf(stdout, "JUMPIFEQ %s LF@%s string@string\n",  wrong_type, cmp1);
-        fprintf(stdout, "JUMPIFEQ %s LF@%s string@string\n",  wrong_type, cmp2);
-        fprintf(stdout, "JUMPIFEQ %s LF@%s string@int\n", convert_first, cmp1);
-        fprintf(stdout, "DEFVAR LF@%s\n", convert);
-        fprintf(stdout, "MOVE LF@%s\n LF@%s", convert, ast->children[1]->data->data);
-        fprintf(stdout, "INT2FLOAT LF@%s LF@%s\n", ast->children[1]->data->data, convert);
-        fprintf(stdout, "JUMP %s\n", label_end);
-
-        fprintf(stdout, "LABEL %s", convert_first);
-        fprintf(stdout, "DEFVAR LF@%s\n", convert);
-        fprintf(stdout, "MOVE LF@%s\n LF@%s", convert, ast->children[0]->data->data);
-        fprintf(stdout, "INT2FLOAT LF@%s LF@%s\n", ast->children[0]->data->data, convert);
-        fprintf(stdout, "JUMP %s\n", label_end);
-
-        fprintf(stdout, "LABEL %s\n", wrong_type);
-        fprintf(stdout, "EXIT int@4\n");
-        fprintf(stdout, "LABEL %s\n", same_type);
-        fprintf(stdout, "MOVE LF@%s bool@true\n", contr_type_name);
-        fprintf(stdout, "LABEL %s\n", label_end);
-
-        fprintf(stdout, "MOVE LF%s bool@true\n", contr_type_name);
-    }
-
+    fprintf(stdout, "LABEL wrong_type\n");
+    fprintf(stdout, "MOVE LF@%%retval bool@false\n");
+    fprintf(stdout, "EXIT int@4\n");
+    fprintf(stdout, "LABEL same_type\n");
+    fprintf(stdout, "MOVE LF@%%retval bool@true\n");
+    fprintf(stdout, "LABEL end_control_exit\n");
+    fprintf(stdout, "POPFRAME\n");
+    fprintf(stdout, "RETURN\n");
 }
 
 
@@ -331,55 +359,88 @@ int generate_aritmetic(Nnode ast, HTable *table)
 {
     char *new = generate_unique_identifier();
     char *contr_type_name = generate_unique_identifier();
+    char *div_not_0 = generate_unique_label();
+    char *div_not_0_0 = generate_unique_label();
+    char *not_int =  generate_unique_label();
+    char *not_flout = generate_unique_label();
+
     free(ast->data->data);
     ast->data->data = new;
-    if (ast->data->inmain) {
-        fprintf(stdout, "DEFVAR GF@%s\n", ast->data->data);
-        fprintf(stdout, "MOVE GF@%s nil@nil\n", ast->data->data);
+    if (ast->data->inmain){
+        fprintf(stdout, "DEFVAR GF@%s\n", new);
     } else {
-        fprintf(stdout, "DEFVAR LF@%s\n", ast->data->data);
-        fprintf(stdout, "MOVE LF@%s nil@nil\n", ast->data->data);
+        fprintf(stdout, "DEFVAR LF@%s\n", new);
+    }
+
+    if (ast->data->ntype != COMP && ast->data->ntype != NOTCOMP) {
+        // generate_type_control_exit(ast, table, contr_type_name);
+    }
+
+    if (ast->data->ntype == DIVINIT) {
+        fprintf(stdout, "JUMPIFNEQ %s %s@%s string@int\n", not_int, memory_model(ast), ast->children[0]->data->data);
+        fprintf(stdout, "JUMPIFNEQ %s %s@%s string@int\n", not_int, memory_model(ast), ast->children[1]->data->data);
+        fprintf(stdout, "JUMPIFNEQ %s  %s@%s int@0\n", div_not_0, memory_model(ast), ast->children[1]->data->data);
+        fprintf(stdout, "EXIT int@57\n");
+
+        fprintf(stdout, "JUMP %s\n", div_not_0);
+        fprintf(stdout, "LABEL %s\n", not_int);
+        fprintf(stdout, "EXIT int@4\n");
+        fprintf(stdout, "LABEL %s\n", div_not_0);
+
+    } else if (ast->data->ntype == DIV) {
+        fprintf(stdout, "JUMPIFNEQ %s %s@%s string@flout\n", not_flout, memory_model(ast), ast->children[0]->data->data);
+        fprintf(stdout, "JUMPIFNEQ %s %s@%s string@flout\n", not_flout, memory_model(ast), ast->children[1]->data->data);
+        fprintf(stdout, "JUMPIFNEQ %s  %s@%s int@0\n", div_not_0_0, memory_model(ast), ast->children[1]->data->data);
+        fprintf(stdout, "EXIT int@57\n");
+
+        fprintf(stdout, "JUMP %s\n", div_not_0_0);
+        fprintf(stdout, "LABEL %s\n", not_flout);
+        fprintf(stdout, "EXIT int@4\n");
+        fprintf(stdout, "LABEL %s\n", div_not_0_0);
+
+    } else if (ast->data->ntype == ADD || ast->data->ntype == MUL || ast->data->ntype == SUB){
+
+
     }
 
     if (ast->data->ntype == COMP || ast->data->ntype == NOTCOMP) {
-        type_control(ast, table, contr_type_name);
-        //aritmetic_operation(ast, table);
+        generate_type_control_cmp(ast, table);
 
         if (ast->data->inmain){
-            fprintf(stdout, "EQ GF@%s GF@%s GF@%s\n", ast->data->data, ast->children[0]->data->data, ast->children[1]->data->data);
-            fprintf(stdout, "AND GF@%s GF@%s GF@%s", ast->data->data, ast->data->data, contr_type_name);
+            fprintf(stdout, "EQ GF@%s GF@%s GF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
+            fprintf(stdout, "AND GF@%s GF@%%retval GF@%s", new, new);
             if (ast->data->ntype == NOTCOMP)
-                fprintf(stdout, "NOT GF@%s GF@%s", ast->data->data, ast->data->data);
+                fprintf(stdout, "NOT GF@%s GF@%s", new, new);
         } else {
-            fprintf(stdout, "EQ LF@%s LF@%s GF@%s\n", ast->data->data, ast->children[0]->data->data, ast->children[1]->data->data);
-            fprintf(stdout, "AND LF@%s LF@%s LF@%s", ast->data->data, ast->data->data, contr_type_name);
+            fprintf(stdout, "EQ LF@%s LF@%s LF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
+            fprintf(stdout, "AND LF@%s TF@%%retval LF@%s\n",  new, new);
             if (ast->data->ntype == NOTCOMP)
-                fprintf(stdout, "NOT LF@%s LF@%s", ast->data->data, ast->data->data);
+                fprintf(stdout, "NOT GF@%s GF@%s", new, new);
         }
     }
     else {
-        type_control(ast, table, contr_type_name);
+        generate_type_control_exit(ast, table);
         aritmetic_operation(ast, table);
 
         if (ast->data->inmain){
-            fprintf(stdout, " GF@%s GF@%s GF@%s\n", ast->data->data, ast->children[0]->data->data, ast->children[1]->data->data);
-            fprintf(stdout, "AND GF@%s GF@%s GF@%s\n", ast->data->data, ast->data->data, contr_type_name);
+            fprintf(stdout, " GF@%s GF@%s GF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
+            fprintf(stdout, "AND GF@%s GF@%%retval GF@%s\n", new, new);
             if (ast->data->ntype == LOQ){
-                fprintf(stdout, "EQ GF@%s GF@%s GF%s\n", contr_type_name, ast->children[0]->data->data, ast->children[1]->data->data);
-                fprintf(stdout, "OR GF@%s GF@%s GF%s\n", ast->data->data, ast->data->data, contr_type_name);
+                fprintf(stdout, "EQ TF@%%retval GF@%s GF%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
+                fprintf(stdout, "OR GF@%s TF@%%retval GF%s\n", new, new);
             } else if (ast->data->ntype == GEQ) {
-                fprintf(stdout, "EQ GF@%s GF@%s GF%s\n", contr_type_name, ast->children[0]->data->data, ast->children[1]->data->data);
-                fprintf(stdout, "OR GF@%s GF@%s GF%s\n", ast->data->data, ast->data->data, contr_type_name);
+                fprintf(stdout, "EQ TF@%%retval GF@%s GF%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
+                fprintf(stdout, "OR GF@%s TF@%%retval GF%s\n", new, new);
             }
         } else {
             fprintf(stdout, " LF@%s LF@%s LF@%s\n", ast->data->data, ast->children[0]->data->data, ast->children[1]->data->data);
             fprintf(stdout, "AND LF@%s LF@%s LF@%s\n", ast->data->data, ast->data->data, contr_type_name);
             if (ast->data->ntype == LOQ){
-                fprintf(stdout, "EQ LF@%s LF@%s LF%s\n", contr_type_name, ast->children[0]->data->data, ast->children[1]->data->data);
-                fprintf(stdout, "OR LF@%s LF@%s LF%s\n", ast->data->data, ast->data->data, contr_type_name);
+                fprintf(stdout, "EQ TF@%%retval LF@%s LF%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
+                fprintf(stdout, "OR LF@%s TF@%%retval LF%s\n", new, new);
             } else if (ast->data->ntype == GEQ) {
-                fprintf(stdout, "EQ LF@%s LF@%s LF%s\n", contr_type_name, ast->children[0]->data->data, ast->children[1]->data->data);
-                fprintf(stdout, "OR LF@%s LF@%s LF%s\n", ast->data->data, ast->data->data, contr_type_name);
+                fprintf(stdout, "EQ TF@%%retval GF@%s LF%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
+                fprintf(stdout, "OR LF@%s TF@%%retval LF%s\n", new, new);
             }
         }
     }
@@ -394,18 +455,17 @@ int generate_if(Nnode ast, HTable *table)
 
     generate(ast->children[0], table);
     if(ast->data->inmain){
-        fprintf(stdout, "JUMPIFNEQ %s GF@%s bool@true\n", label_else, ast->children[0]->data);
+        fprintf(stdout, "JUMPIFNEQ %s TF@%%retval bool@true\n", label_else);
     } else {
-        fprintf(stdout, "JUMPIFNEQ %s LF@%s bool@true\n", label_else, ast->children[0]->data);
+        fprintf(stdout, "JUMPIFNEQ %s LF@%%retval bool@true\n", label_else);
 
     }
     generate(ast->children[1], table);
-    fprintf(stdout, "JUMP %s", label_end);
-    fprintf("LABEL %s", label_else);
+    fprintf(stdout, "JUMP %s\n", label_end);
+    fprintf(stdout, "LABEL %s\n", label_else);
     if (ast->children[2] != NULL)
-        generate( ast->children[2], table);
-    fprintf("LABEL %s", label_end);
-
+        generate(ast->children[2], table);
+    fprintf(stdout, "LABEL %s\n", label_end);
 
     return 0;
 }
@@ -432,12 +492,21 @@ int generate(Nnode ast, HTable *table)
     if(&ast) {
         if (ast->data->ntype == PROG) {
             create_header();
+            create_local_frame();
+            type_control();
+            //identify_header(ast, table);
+        }
+        if (ast->data->ntype == PROG || ast->data->ntype == BODY || ast->data->ntype == IF_BODY || ast->data->ntype == IF_ELSE) {
+            for (int i = 0; i < ast->data->child_count; i++) {
+                generate(ast->children[i], table);
+            }
+        } else if (ast->data->ntype != PROG) {
             identify_header(ast, table);
         }
-        if (ast->data->ntype == COND)
-        {
-            identify_header(ast->children[0], table);
+        if (ast->data->ntype == PROG) {
+            end_frame();
         }
+
     }
     return 0;
 }
