@@ -149,6 +149,7 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
             IF_RETURN(get_token(), TOKEN_ERR)
             IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
 
+
             while (is_eol(token.type)) {
                 IF_RETURN(get_token(), TOKEN_ERR)
             }
@@ -158,7 +159,7 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
             IF_RETURN(indent_stack->top->indent_counter >= indent_counter, SYNTAX_ERR )
 
             /* add body of function to ast*/
-            Nnode function_body = myast_add_node(&function_node, BODY, NULL, SCOPE,indent_counter);
+            Nnode function_body = myast_add_node(&function_node, BODY, NULL, SCOPE,indent_stack->top->indent_counter);
             IF_RETURN(!function_body, ERR_INTERNAL)
 
             /* statement list - body of function */
@@ -274,13 +275,13 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
             }
 
             /* call node to AST */
-            Nnode call_node = myast_add_node( &ast, CALL, previous_tkn->value.is_char, is_global_scope(scope),indent_counter);
+            Nnode call_node = myast_add_node( &ast, CALL, previous_tkn->value.is_char, is_global_scope(scope),indent_stack->top->indent_counter);
             IF_RETURN(!call_node, ERR_INTERNAL)
 
-            result = function_call(found, table, ast, indent_stack);
+            result = function_call(found, table, call_node, indent_stack);
 
         } else {
-            Nnode equals = myast_add_node((&ast), ASSIGN, NULL, is_global_scope(scope),-1);
+            Nnode equals = myast_add_node((&ast), ASSIGN, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
             IF_RETURN(!equals, ERR_INTERNAL)
 
             char *name = token.value.is_char;
@@ -294,8 +295,8 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
                 IF_RETURN(found && found->type != IDENTIFIER, SEM_ERR_UNDEF_VAR)
             }
             Nnode l_value = found
-                                ? myast_add_node((&equals), VAR, name, is_global_scope(scope),-1)
-                                : myast_add_node((&equals), VAR_DEF, name, is_global_scope(scope),-1);
+                                ? myast_add_node((&equals), VAR, name, is_global_scope(scope),indent_stack->top->indent_counter)
+                                : myast_add_node((&equals), VAR_DEF, name, is_global_scope(scope),indent_stack->top->indent_counter);
             IF_RETURN(!l_value, ERR_INTERNAL)
 
             /* assignment */
@@ -341,7 +342,7 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
 
         /* else */
         IF_RETURN(token.type != T_ELSE, LEX_ERR) /* lex error because of wrong indent */
-        Nnode else_body = myast_add_node(&if_node,IF_ELSE, NULL, is_global_scope(scope),indent_counter);
+        Nnode else_body = myast_add_node(&if_node,IF_ELSE, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
 
         /* colon */
         IF_RETURN(get_token(), TOKEN_ERR)
@@ -569,21 +570,28 @@ int function_call_arg(HTItem *found, HTable *table, Nnode ast, STACK *indent_sta
     IF_VALUE_RETURN(result)
     countParams++;
 
+    Nnode argv = myast_add_node( &ast, ARGV, NULL, NULL,indent_stack->top->indent_counter);
+    myast_add_node(&argv,token.type,token.value.is_char,NULL,indent_stack->top->indent_counter);
+
+
     int ret;
     IF_RETURN(get_token(), TOKEN_ERR)
 
-    while (token.type != T_RIGHT_BRACKET && list_of_arguments->First != NULL) {
+    while (token.type != T_RIGHT_BRACKET && list_of_arguments->First != NULL) { // TODO proč podmínka list_of_agument
         IF_RETURN(is_comma(get_token()), SYNTAX_ERR)
 
         IF_RETURN(get_token(), TOKEN_ERR)
         ret = check_function_arguments(table);
         IF_RETURN(ret != 0, ret)
         countParams++;
-
+        myast_add_node(&argv,token.type,token.value.is_char,NULL,indent_stack->top->indent_counter);
         list_of_arguments->First = list_of_arguments->First->rptr;
     }
 
-    return found->params_quantity != countParams ? SEM_ERR_PARAM_NUM : SEM_OK;
+    if(found->params_quantity != -1)
+        return found->params_quantity != countParams ? SEM_ERR_PARAM_NUM : SEM_OK;
+    else
+        return SEM_OK;
 }
 
 int check_function_arguments(HTable *table)
@@ -781,7 +789,7 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                 original = NULL;
                 type_of_node = node_type(&stack_elem[1]);
                 IF_RETURN(type_of_node == NO_NODE, ERR_INTERNAL)
-                node = myast_add_node( (&node), type_of_node, NULL, is_global_scope(scope),indent_counter);
+                node = myast_add_node( (&node), type_of_node, NULL, is_global_scope(scope), -1);
                 if(nStack->top != -1 && nStack->nstack[0] != NULL)
                 {
                     nStack->nstack[0]->parent_node = node->children[0];

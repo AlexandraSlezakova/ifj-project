@@ -100,7 +100,7 @@ int get_token()
                         state = S_INT;
                     break;
                 } /* white-space character */ // todo
-                else if (c == '\v' || c == '\f' || c == '\r' || c == '\t') {
+                else if (c == '\v' || c == '\f' || c == '\r') {
                     if (c == '\t' && previous_state == START) {
                         return LEX_ERR;
                     } else {
@@ -173,6 +173,23 @@ int get_token()
                             c = getchar();
                             indent_counter++;
                         } while (c == 32);  /* 32 - space */
+                        ungetc(c, stdin);
+                    } else if (previous_state == START) {
+                        state = S_ERROR;
+                        break;
+                    }
+                    state = START;
+                    iterator = 0;
+                    allocated = 0;
+                    break;
+                }
+                else if (c == '\t')
+                {
+                    if (eol_flag) {
+                        do {
+                            c = getchar();
+                            indent_counter+=4;
+                        } while (c == 9);  /* 9 - TAB */
                         ungetc(c, stdin);
                     } else if (previous_state == START) {
                         state = S_ERROR;
