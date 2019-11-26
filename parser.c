@@ -7,10 +7,9 @@
  * @author
  * @author
  */
-#include <math.h>
+
 #include "parser.h"
-#include "scanner.h"
-//#include "myast.h"
+
 
 int function_arguments(HTable *function_symtable, char *function_name)
 {
@@ -102,6 +101,7 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
         if (token.type == T_IS_EOF) {
             /* empty file */
             IF_RETURN(iterator == 0, SYNTAX_ERR)
+            printf("result eof %d\n", result);
             return result;
         } /* function definition */
         else if (token.type == T_DEF) {
@@ -279,12 +279,13 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
             IF_RETURN(!call_node, ERR_INTERNAL)
 
             result = function_call(found, table, call_node, indent_stack);
+            result = function_call(found, table);
 
         } else {
             Nnode equals = myast_add_node((&ast), ASSIGN, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
             IF_RETURN(!equals, ERR_INTERNAL)
 
-            char *name = token.value.is_char;
+            char *name = previous_tkn->value.is_char;
 
             /* variable definition if it does not exist */
             found = ht_search(table, name);
@@ -299,14 +300,13 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
                                 : myast_add_node((&equals), VAR_DEF, name, is_global_scope(scope),indent_stack->top->indent_counter);
             IF_RETURN(!l_value, ERR_INTERNAL)
 
-            /* assignment */
-            IF_RETURN(get_token(), TOKEN_ERR)
-
-            if (equals->data->ntype == ASSIGN) {
-                //IF_RETURN(get_token(), TOKEN_ERR)
+            if (token.type == T_ASSIGNMENT) {
+                /* start of expression */
+                IF_RETURN(get_token(), TOKEN_ERR)
                 result = expression(scope, stack, table, equals, name, indent_stack, previous_token);
 
             } else {
+                IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
                 /* undefined variable */
                 result = insert_variable(table, name, UNDEFINED);
             }
@@ -510,7 +510,7 @@ int expression(int scope, STACK *stack, HTable *table, Nnode ast, char *token_na
                 Nnode call_node = myast_add_node(&ast, CALL, previous_tkn->value.is_char, is_global_scope(scope),indent_stack->top->indent_counter);
                 IF_RETURN(!call_node, ERR_INTERNAL)
 
-                result = function_call(found, table, ast, indent_stack);
+                result = function_call(found, table);
 
             } else {
                 unget_token();
@@ -542,7 +542,7 @@ int expression(int scope, STACK *stack, HTable *table, Nnode ast, char *token_na
 
 }
 
-int function_call(HTItem *found, HTable *function_table, Nnode ast, STACK *indent_stack)
+int function_call(HTItem *found, HTable *function_table)
 {
     int result = 0;
 
@@ -553,13 +553,13 @@ int function_call(HTItem *found, HTable *function_table, Nnode ast, STACK *inden
 
     } else {
         IF_RETURN(!is_term(token.type), SYNTAX_ERR)
-        result = function_call_arg(found, function_table, ast, indent_stack);
+        result = function_call_arg(found, function_table);
 
         return result;
     }
 }
 
-int function_call_arg(HTItem *found, HTable *table, Nnode ast, STACK *indent_stack)
+int function_call_arg(HTItem *found, HTable *table)
 {
     tDLList *list_of_arguments = found->list;
 
@@ -676,6 +676,10 @@ int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name)
                 if (token.type == T_VAR) {
                     found = ht_search(table, token.value.is_char);
                     IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
+
+                    /* check if variable is defined*/
+                    IF_RETURN(found->data_type == UNDEFINED, SEM_ERR_UNDEF_VAR)
+
                     /* push to stack */
                     IF_RETURN(!(stack_push(stack, &token, NULL, input, found->data_type) == OK), ERR_INTERNAL)
 
@@ -743,7 +747,6 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
     PSA_SYMBOL rule[4] = {END_HANDLE, END_HANDLE, END_HANDLE, END_HANDLE};
     S_ELEM stack_elem[4];
 
-    int i = 0;
     int rule_index = 0;
     Nnode node = NULL;
     Ntype type_of_node;
@@ -1026,7 +1029,7 @@ PSA_SYMBOL token_to_psa_symbol()
     return symbol;
 }
 
-int main(int argc, char const *argv[])
+int main()
 {
     /* global table init */
     global_hashtable = ht_init();

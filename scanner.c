@@ -642,7 +642,7 @@ int get_token()
     }
 }
 
-int unget_token() {
+void unget_token() {
 
     int i = 0;
     unsigned long length = strlen(buffer);
