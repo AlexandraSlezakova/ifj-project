@@ -7,10 +7,9 @@
  * @author
  * @author
  */
-#include <math.h>
+
 #include "parser.h"
-#include "scanner.h"
-//#include "myast.h"
+
 
 int function_arguments(HTable *function_symtable, char *function_name)
 {
@@ -278,7 +277,7 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
             Nnode call_node = myast_add_node( &ast, CALL, previous_tkn->value.is_char, is_global_scope(scope),indent_counter);
             IF_RETURN(!call_node, ERR_INTERNAL)
 
-            result = function_call(found, table, ast, indent_stack);
+            result = function_call(found, table);
 
         } else {
             Nnode equals = myast_add_node((&ast), ASSIGN, NULL, is_global_scope(scope),-1);
@@ -509,7 +508,7 @@ int expression(int scope, STACK *stack, HTable *table, Nnode ast, char *token_na
                 Nnode call_node = myast_add_node(&ast, CALL, previous_tkn->value.is_char, is_global_scope(scope),indent_stack->top->indent_counter);
                 IF_RETURN(!call_node, ERR_INTERNAL)
 
-                result = function_call(found, table, ast, indent_stack);
+                result = function_call(found, table);
 
             } else {
                 unget_token();
@@ -541,7 +540,7 @@ int expression(int scope, STACK *stack, HTable *table, Nnode ast, char *token_na
 
 }
 
-int function_call(HTItem *found, HTable *function_table, Nnode ast, STACK *indent_stack)
+int function_call(HTItem *found, HTable *function_table)
 {
     int result = 0;
 
@@ -552,13 +551,13 @@ int function_call(HTItem *found, HTable *function_table, Nnode ast, STACK *inden
 
     } else {
         IF_RETURN(!is_term(token.type), SYNTAX_ERR)
-        result = function_call_arg(found, function_table, ast, indent_stack);
+        result = function_call_arg(found, function_table);
 
         return result;
     }
 }
 
-int function_call_arg(HTItem *found, HTable *table, Nnode ast, STACK *indent_stack)
+int function_call_arg(HTItem *found, HTable *table)
 {
     tDLList *list_of_arguments = found->list;
 
@@ -739,7 +738,6 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
     PSA_SYMBOL rule[4] = {END_HANDLE, END_HANDLE, END_HANDLE, END_HANDLE};
     S_ELEM stack_elem[4];
 
-    int i = 0;
     int rule_index = 0;
     Nnode node = NULL;
     Ntype type_of_node;
@@ -1022,7 +1020,7 @@ PSA_SYMBOL token_to_psa_symbol()
     return symbol;
 }
 
-int main(int argc, char const *argv[])
+int main()
 {
     /* global table init */
     global_hashtable = ht_init();

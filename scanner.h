@@ -115,7 +115,7 @@ struct TToken {
 
 int get_token();
 int is_keyword(char *string);
-int unget_token();
+void unget_token();
 void create_token(int character, char *string,  struct TToken *new_token, TType type);
 char *buffer;
 int c;
