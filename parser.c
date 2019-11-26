@@ -100,6 +100,7 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
         if (token.type == T_IS_EOF) {
             /* empty file */
             IF_RETURN(iterator == 0, SYNTAX_ERR)
+            printf("result eof %d\n", result);
             return result;
         } /* function definition */
         else if (token.type == T_DEF) {
@@ -281,7 +282,7 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
             Nnode equals = myast_add_node((&ast), ASSIGN, NULL, is_global_scope(scope),-1);
             IF_RETURN(!equals, ERR_INTERNAL)
 
-            char *name = token.value.is_char;
+            char *name = previous_tkn->value.is_char;
 
             /* variable definition if it does not exist */
             found = ht_search(table, name);
@@ -296,14 +297,13 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
                                 : myast_add_node((&equals), VAR_DEF, name, is_global_scope(scope),-1);
             IF_RETURN(!l_value, ERR_INTERNAL)
 
-            /* assignment */
-            IF_RETURN(get_token(), TOKEN_ERR)
-
-            if (equals->data->ntype == ASSIGN) {
-                //IF_RETURN(get_token(), TOKEN_ERR)
+            if (token.type == T_ASSIGNMENT) {
+                /* start of expression */
+                IF_RETURN(get_token(), TOKEN_ERR)
                 result = expression(scope, stack, table, equals, name, indent_stack, previous_token);
 
             } else {
+                IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
                 /* undefined variable */
                 result = insert_variable(table, name, UNDEFINED);
             }
@@ -666,6 +666,10 @@ int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name)
                 if (token.type == T_VAR) {
                     found = ht_search(table, token.value.is_char);
                     IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
+
+                    /* check if variable is defined*/
+                    IF_RETURN(found->data_type == UNDEFINED, SEM_ERR_UNDEF_VAR)
+
                     /* push to stack */
                     IF_RETURN(!(stack_push(stack, &token, NULL, input, found->data_type) == OK), ERR_INTERNAL)
 
