@@ -49,47 +49,47 @@ Nnode* find_node (Nnode node, int indent)
 
 }*/
 
-void NstackPopGround ()
+void NstackPopGround (NStack *s)
 {
-    for(int i = 1; i != nStack->top; i++)
+    for(int i = 1; i != s->top && s->top != 0 ; i++)
     {
-        nStack->nstack[i-1]=nStack->nstack[i];
+        s->nstack[i-1]=s->nstack[i];
     }
-    nStack->top--;
-    nStack->nstack[nStack->top] = NULL;
+    s->top--;
+    s->nstack[s->top] = NULL;
 
     //solved = 0;                      /* V případě řešení, smažte tento řádek! */
 }
 
-void NstackPop ()
+void NstackPop (NStack *s)
 {
-    if(nStack->top != -1)
+    if(s->top != -1)
     {
-        nStack->nstack[nStack->top] = NULL;
-        nStack->top -= 1;
+        s->nstack[s->top] = NULL;
+        s->top -= 1;
     }
     //solved = 0;                      /* V případě řešení, smažte tento řádek! */
 }
 //předělat neřešit indent vracet přidanou větvu
-void NstackPopAll ()
+void NstackPopAll (NStack *s)
 {
-    while(nStack->top != 0)
+    while(s->top != 0 && s->top > -1)
     {
-        nStack->nstack[nStack->top] = NULL;
-        nStack->top -= 1;
+        s->nstack[s->top] = NULL;
+        s->top -= 1;
     }
-    nStack->nstack[nStack->top] = NULL;
+    s->nstack[s->top] = NULL;
     //solved = 0;                      /* V případě řešení, smažte tento řádek! */
 }
 
 
-void NstackPush (Nnode node)
+void NstackPush (NStack *s,Nnode node )
 {
 
-    if((nStack->top == 14) == 0 )
+    if((s->top == 14) == 0 )
     {
-        nStack->nstack[nStack->top] = node;
-        nStack->top +=1;
+        s->nstack[s->top] = node;
+        s->top +=1;
     }
 }
 
@@ -116,7 +116,7 @@ Nnode myast_add_node(Nnode *node, Ntype type, char *data ,bool inmain, int inden
     {
         return new_node;
     }
-    (*node)->childs[(*node)->data->child_count++] = new_node;
+    (*node)->children[(*node)->data->child_count++] = new_node;
     return new_node;
 
 }
