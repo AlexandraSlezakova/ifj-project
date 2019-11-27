@@ -101,7 +101,6 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
         if (token.type == T_IS_EOF) {
             /* empty file */
             IF_RETURN(iterator == 0, SYNTAX_ERR)
-            printf("result eof %d\n", result);
             return result;
         } /* function definition */
         else if (token.type == T_DEF) {
@@ -559,8 +558,6 @@ int function_call(HTItem *found, HTable *function_table)
 
 int function_call_arg(HTItem *found, HTable *table)
 {
-    tDLList *list_of_arguments = found->list;
-
     int countParams = 0;
 
     /* check first argument */
@@ -571,15 +568,13 @@ int function_call_arg(HTItem *found, HTable *table)
     int ret;
     IF_RETURN(get_token(), TOKEN_ERR)
 
-    while (token.type != T_RIGHT_BRACKET && list_of_arguments->First != NULL) {
+    while (token.type != T_RIGHT_BRACKET) {
         IF_RETURN(is_comma(get_token()), SYNTAX_ERR)
 
         IF_RETURN(get_token(), TOKEN_ERR)
         ret = check_function_arguments(table);
         IF_RETURN(ret != 0, ret)
         countParams++;
-
-        list_of_arguments->First = list_of_arguments->First->rptr;
     }
 
     return found->params_quantity != countParams ? SEM_ERR_PARAM_NUM : SEM_OK;
