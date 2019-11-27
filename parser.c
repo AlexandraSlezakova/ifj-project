@@ -93,7 +93,7 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
     while (1) {
         //IF_RETURN(!myast_add_node((tmp), PROG, NULL, true , indent_stack->top->indent_counter),ERR_INTERNAL);
         NstackPopAll(nStack);
-        NstackPopAll(Arr_Nstack);
+        NstackPopAll(Arr_Nstack);;
         IF_RETURN(get_token(), TOKEN_ERR)
         HTable *function_table = NULL;
 
@@ -278,8 +278,8 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
             Nnode call_node = myast_add_node( &ast, CALL, previous_tkn->value.is_char, is_global_scope(scope),indent_stack->top->indent_counter);
             IF_RETURN(!call_node, ERR_INTERNAL)
 
-            result = function_call(found, table, call_node, indent_stack);
-            result = function_call(found, table);
+
+            result = function_call(found, table,call_node);
 
         } else {
             Nnode equals = myast_add_node((&ast), ASSIGN, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
@@ -510,7 +510,7 @@ int expression(int scope, STACK *stack, HTable *table, Nnode ast, char *token_na
                 Nnode call_node = myast_add_node(&ast, CALL, previous_tkn->value.is_char, is_global_scope(scope),indent_stack->top->indent_counter);
                 IF_RETURN(!call_node, ERR_INTERNAL)
 
-                result = function_call(found, table);
+                result = function_call(found, table,call_node);
 
             } else {
                 unget_token();
@@ -542,7 +542,7 @@ int expression(int scope, STACK *stack, HTable *table, Nnode ast, char *token_na
 
 }
 
-int function_call(HTItem *found, HTable *function_table)
+int function_call(HTItem *found, HTable *function_table,Nnode ast)
 {
     int result = 0;
 
@@ -553,15 +553,14 @@ int function_call(HTItem *found, HTable *function_table)
 
     } else {
         IF_RETURN(!is_term(token.type), SYNTAX_ERR)
-        result = function_call_arg(found, function_table);
+        result = function_call_arg(found, function_table,ast);
 
         return result;
     }
 }
 
-int function_call_arg(HTItem *found, HTable *table)
+int function_call_arg(HTItem *found, HTable *table,Nnode ast)
 {
-    tDLList *list_of_arguments = found->list;
 
     int countParams = 0;
 
@@ -570,22 +569,24 @@ int function_call_arg(HTItem *found, HTable *table)
     IF_VALUE_RETURN(result)
     countParams++;
 
-    Nnode argv = myast_add_node( &ast, ARGV, NULL, NULL,indent_stack->top->indent_counter);
-    myast_add_node(&argv,token.type,token.value.is_char,NULL,indent_stack->top->indent_counter);
+    Nnode argv = myast_add_node( &ast, ARGV, NULL, NULL,-1);
+    myast_add_node(&argv,token.type,create_value(&token),NULL,-1);
 
 
     int ret;
-    IF_RETURN(get_token(), TOKEN_ERR)
+    IF_RETURN(is_comma(get_token()), SYNTAX_ERR)
+  //  IF_RETURN(get_token(), TOKEN_ERR)
 
-    while (token.type != T_RIGHT_BRACKET && list_of_arguments->First != NULL) { // TODO proč podmínka list_of_agument
-        IF_RETURN(is_comma(get_token()), SYNTAX_ERR)
+    while (token.type != T_RIGHT_BRACKET ) {
 
         IF_RETURN(get_token(), TOKEN_ERR)
         ret = check_function_arguments(table);
         IF_RETURN(ret != 0, ret)
         countParams++;
-        myast_add_node(&argv,token.type,token.value.is_char,NULL,indent_stack->top->indent_counter);
-        list_of_arguments->First = list_of_arguments->First->rptr;
+        myast_add_node(&argv,token.type,create_value(&token),NULL,-1);
+
+        IF_RETURN(is_comma(get_token()), SYNTAX_ERR)
+
     }
 
     if(found->params_quantity != -1)
