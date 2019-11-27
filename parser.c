@@ -1089,6 +1089,6 @@ int main(int argc, char const *argv[])
             tmp = tmp->rptr;
         }
     }
-
+    generate(root, global_hashtable);
     return result;
 }
