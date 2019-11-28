@@ -1098,7 +1098,9 @@ int main()
 
             tmp = tmp->rptr;
         }
+
+        generate(root, global_hashtable);
     }
-    generate(root, global_hashtable);
+
     return result;
 }
