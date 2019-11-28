@@ -66,7 +66,7 @@ int get_token()
         buffer = realloc(buffer, (size_t) ++allocated);
 
         if (state != S_ERROR) {
-            if ((c = getchar()) == EOF && state == START) {
+            if ((c = getchar()) == 'Q' && state == START) {
                 token.type = T_IS_EOF;
                 return TOKEN_OK;
             }
