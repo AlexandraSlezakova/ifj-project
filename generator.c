@@ -64,7 +64,7 @@ void create_header()
     fprintf(stdout, ".IFJcode19\n");
     fprintf(stdout, "JUMP $$main\n");
 }
-void gerate_math_aritmetic(Nnode ast, HTable *table)
+void generate_math_aritmetic(Nnode ast, HTable *table)
 {
     char *new = generate_unique_identifier();
     char *not_int = generate_unique_label();
@@ -152,6 +152,12 @@ void identify_header(Nnode ast, HTable *table)
         case COND:
             identify_header(ast->children[0], table);
             break;
+        case CALL:
+            generate_call(ast,table);
+            break;
+        case FUNC_DEF:
+            generate_func_def(ast,table);
+            break;
         default:
             break;
     }
@@ -192,7 +198,7 @@ int generate_vardef(int is_assign, Nnode ast, HTable *table)
 
     char *type = malloc(sizeof(DATA_TYPE));
     if (found != NULL)
-        *type = get_data_type(found);
+        type = get_data_type(found);
 
     if(ast->data->inmain)
     {
@@ -266,13 +272,14 @@ int generate_assign(Nnode ast, HTable *table)
             IF_RETURN(value != OK, ERR_INTERNAL)
         } else {
            
-            if (ast->children[1]->children[0] != NULL || ast->children[1]->children[0] != NULL) {
+            if (ast->children[1]->children[0] != NULL || ast->children[1]->children[1] != NULL) {
                fprintf(stdout, "CREATEFRAME\n");
                fprintf(stdout, "PUSHFRAME\n");
                 Tree:
                 tmp = top;
-                while ((tmp->children[0]->data->ntype != VAL || tmp->children[1]->data->ntype != VAL) &&
-                (tmp->children[0]->data->ntype != VAL || tmp->children[1]->data->ntype != VAL)) {
+                while ((tmp->children[0]->data->ntype == VAL || tmp->children[0]->data->ntype == VAR) &&
+                       (tmp->children[1]->data->ntype == VAL || tmp->children[1]->data->ntype == VAR))
+                {
                     if (tmp->children[0]->data->ntype == VAL || tmp->children[0]->data->ntype == VAR) {
                         tmp = tmp->children[1];
                     } else if (tmp->children[1]->data->ntype == VAL || tmp->children[1]->data->ntype == VAR) {
@@ -442,7 +449,7 @@ void save_val_to_variable(Nnode ast)
         fprintf(stdout, "MOVE GF@%s %s\n", newvar, ast->data->data);
     }
     else {
-        fprintf(stdout, "DEFVAR LF@%s\n");
+        fprintf(stdout, "DEFVAR LF@%s\n",newvar);
         fprintf(stdout, "MOVE LF@%s %s\n", newvar, ast->data->data);
     }
 
@@ -600,6 +607,24 @@ int generate_while(Nnode ast,HTable *table)
     return 0;
 }
 
+void generate_call(Nnode ast,HTable *table)
+{
+    for(int i = 0; ast->children[0]->children[i] != NULL; i++)
+    {
+        char *newvar = generate_unique_identifier();
+        fprintf(stdout, "DEFVAR LF@%s\n", newvar);
+        fprintf(stdout, "MOVE LF@%s %s\n", newvar, ast->children[0]->children[i]->data->data);
+        free(ast->children[0]->children[i]->data->data);
+        ast->children[0]->children[i]->data->data=newvar;
+    }
+    fprintf(stdout,"CALL %s\n", ast->data->data);
+}
+
+void generate_func_def(Nnode ast,HTable *table)
+{
+    fprintf(stdout,"YEP\n");
+}
+
 int generate(Nnode ast, HTable *table)
 {
     if(ast) {
@@ -608,6 +633,12 @@ int generate(Nnode ast, HTable *table)
             
             type_control();
             type_control_exit();
+
+            // Vygenerování funkcí
+            for(int i = 0;ast->children[i] != NULL; i++)
+                if(ast->children[i]->data->ntype == FUNC_DEF)
+                    identify_header(ast->children[i],table);
+
             fprintf(stdout, "LABEL $$main\n");
             create_local_frame();
 
@@ -617,7 +648,7 @@ int generate(Nnode ast, HTable *table)
             for (int i = 0; i < ast->data->child_count; i++) {
                 generate(ast->children[i], table);
             }
-        } else if (ast->data->ntype != PROG) {
+        } else if (ast->data->ntype != PROG && ast->data->ntype !=FUNC_DEF) {
             identify_header(ast, table);
         }
         if (ast->data->ntype == PROG) {

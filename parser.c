@@ -100,7 +100,8 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
         /* end of file */
         if (token.type == T_IS_EOF) {
             /* empty file */
-            IF_RETURN(iterator == 0, SYNTAX_ERR)
+            IF_RETURN(iterator != 0, SYNTAX_ERR)
+            printf("result eof %d\n", result);
             return result;
         } /* function definition */
         else if (token.type == T_DEF) {
@@ -560,6 +561,7 @@ int function_call(HTItem *found, HTable *function_table,Nnode ast)
 
 int function_call_arg(HTItem *found, HTable *table,Nnode ast)
 {
+
     int countParams = 0;
 
     /* check first argument */
@@ -568,11 +570,12 @@ int function_call_arg(HTItem *found, HTable *table,Nnode ast)
     countParams++;
 
     Nnode argv = myast_add_node( &ast, ARGV, NULL, NULL,-1);
-    myast_add_node(&argv,ARGV,create_value(&token),NULL,-1);
+    myast_add_node(&argv,ARGV,create_value(&token),NULL,-1); //TODO DODĚLAT TYP
 
 
     int ret;
     IF_RETURN(is_comma(get_token()), SYNTAX_ERR)
+  //  IF_RETURN(get_token(), TOKEN_ERR)
 
     while (token.type != T_RIGHT_BRACKET ) {
 
@@ -580,8 +583,7 @@ int function_call_arg(HTItem *found, HTable *table,Nnode ast)
         ret = check_function_arguments(table);
         IF_RETURN(ret != 0, ret)
         countParams++;
-
-        myast_add_node(&argv,ARGV,create_value(&token),NULL,-1);
+        myast_add_node(&argv,ARGV,create_value(&token),NULL,-1); //TODO Dodělat typ
 
         IF_RETURN(is_comma(get_token()), SYNTAX_ERR)
 
@@ -1101,6 +1103,5 @@ int main()
 
         generate(root, global_hashtable);
     }
-
     return result;
 }

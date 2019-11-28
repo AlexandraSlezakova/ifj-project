@@ -25,4 +25,14 @@ char *get_data_type(HTItem *item);
 int generate_if(Nnode ast, HTable *table);
 int generate_while(Nnode ast,HTable *table);
 char* memory_model(Nnode ast);
+int generate_aritmetic(Nnode ast, HTable *table);
+void generate_math_aritmetic(Nnode ast, HTable *table);
+void aritmetic_operation(Nnode ast, HTable *table);
+void generate_type_control_cmp(Nnode ast, HTable *table);
+void type_control();
+void generate_type_control_exit(Nnode ast, HTable *table);
+void type_control_exit();
+void save_val_to_variable(Nnode ast);
+void generate_call(Nnode ast,HTable *table);
+void generate_func_def(Nnode ast,HTable *table);
 #endif
