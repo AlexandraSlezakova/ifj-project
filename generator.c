@@ -12,6 +12,7 @@
 #include "generator.h"
 
 char *token_while = NULL;
+ FrameVars glob = NULL;
 
 int lenHelper(unsigned long long x) {
     if (x >= 1000000000) return 10;
@@ -89,6 +90,7 @@ void save_val_to_variable(Nnode ast)
 {
     char *newvar = generate_unique_identifier();
     if (ast->data->inmain) {
+
         fprintf(stdout, "DEFVAR GF@%s\n", newvar);
         fprintf(stdout, "MOVE GF@%s %s\n", newvar, ast->data->data);
     }
@@ -301,6 +303,9 @@ int generate_vardef(int is_assign, Nnode ast, HTable *table)
     char *type = malloc(sizeof(DATA_TYPE));
     if (found != NULL)
         type = get_data_type(found);
+    FrameVars new = malloc(sizeof(struct FrameVar));
+    FrameVars tmp = glob;
+    new->var = ast->children[0]->data->data;
 
     //if(ast->data->inmain)
     //{
@@ -314,8 +319,21 @@ int generate_vardef(int is_assign, Nnode ast, HTable *table)
         //         //fprintf(stdout, "MOVE %s@%s %s\n", memory_model(ast), found->key, ast->children[1]->data->data);
         //    // }
         // } else {
-
-            fprintf(stdout, "DEFVAR %s@%s\n", memory_model(ast), ast->children[0]->data->data);
+        if (ast->data->inmain){ 
+            if (glob == NULL) {
+                glob = new;
+            } else {
+                while (tmp->next != NULL){
+                    tmp = tmp->next;
+                }
+                tmp->next = new;
+            }
+            
+            fprintf(stdout, "DEFVAR GF@%s\n",  ast->children[0]->data->data);
+        } else {
+            fprintf(stdout, "DEFVAR LF@%s\n",  ast->children[0]->data->data);
+        }
+            
  
         //}
     //}
@@ -371,6 +389,9 @@ void math_operation(Nnode ast, HTable *table)
 {   
     Nnode tmp; //= ast->children[1];
     Nnode top = ast->children[1];
+    HTItem *found = ht_search(table, ast->children[0]->data->data);
+    FrameVars ptr = glob;    
+    int a = 0;        
     fprintf(stdout, "CREATEFRAME\n");
     fprintf(stdout, "PUSHFRAME\n");
     Tree:
@@ -394,7 +415,25 @@ void math_operation(Nnode ast, HTable *table)
     identify_header(tmp, table);
     if (tmp != top)
         goto Tree;
-    fprintf(stdout, "MOVE %s@%s LF@%s\n", memory_model(ast), ast->children[0]->data->data, ast->children[1]->data->data);
+    
+    if (ast->children[0]->data->ntype == VAR_DEF) 
+    {
+        fprintf(stdout, "MOVE %s@%s LF@%s\n", memory_model(ast), ast->children[0]->data->data, ast->children[1]->data->data);
+    } else {
+        while (ptr != NULL) {
+            if (ptr->var == ast->children[0]->data->data) {
+                a = 1;
+                fprintf(stdout, "adfasdf\n");
+                break;
+            }
+            ptr = ptr->next;
+        }
+        if (a == 1) {
+            fprintf(stdout, "MOVE GF@%s LF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
+        } else {
+            fprintf(stdout, "MOVE LF@%s LF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
+        }
+    }   
     fprintf(stdout, "POPFRAME\n");
 }
 
