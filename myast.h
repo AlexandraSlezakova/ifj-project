@@ -47,6 +47,7 @@ typedef enum Node_Type{
     ARGV        = 25,
     VAR_DEF     = 26,
     NO_NODE     = 27,
+    PARAM       = 28,
 } Ntype;
 
 typedef struct NDATA{

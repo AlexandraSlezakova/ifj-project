@@ -213,6 +213,11 @@ int get_token()
                 }
                 else {
                     previous_state =  S_ZERO;
+                    if(c == '.')
+                    {
+                        state = S_DEC_SEP;
+                        break;
+                    }
                     line_position++;
                     create_token(c, buffer, &token, T_INT);
                     return 0;
