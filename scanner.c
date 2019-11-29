@@ -66,7 +66,10 @@ int get_token()
         buffer = realloc(buffer, (size_t) ++allocated);
 
         if (state != S_ERROR) {
-            c = getchar();
+            if ((c = getchar()) == 'Q' && state == START) {
+                token.type = T_IS_EOF;
+                return TOKEN_OK;
+            }
 
             /* write to buffer without comments */
             if (state != S_DOC_CONTENT && state != S_LINE_COMMENT) {
@@ -79,6 +82,7 @@ int get_token()
             token.type = T_IS_ERR;
             line_position++;
             line_counter++;
+            //fprintf(stderr, "Wrong token - line:%d (position:%d)!\n", line_counter, line_position);
             return TOKEN_ERR;
         }
 
@@ -195,10 +199,6 @@ int get_token()
                     iterator = 0;
                     allocated = 0;
                     break;
-                }
-                else if (c == EOF) {
-                    token.type = T_IS_EOF;
-                    return TOKEN_OK;
                 }
                 else {
                     state = S_ERROR;
