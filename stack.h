@@ -3,12 +3,12 @@
  * Implementation of the imperative language interpreter
  * @file stack.h
  * @brief header file of stack.c
- * @author
- * @author
- * @author
- * @author
+ * @author xhladi23 Martin Hladis
+ * @author xprasi06 Matej Prasil
+ * @author xvadur04 Martin Vadura
+ * @author xsleza20 Alexandra Slezakova
  */
-///#include "ast.h"
+
 #include "myast.h"
 #ifndef IFJ_STACK_H
 #define IFJ_STACK_H

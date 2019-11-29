@@ -1,7 +1,13 @@
-//
-// Created by god on 13.10.19.
-//
-
+/**
+ * Formal Languages and Compilers
+ * Implementation of the imperative language interpreter
+ * @file myast.h
+ * @brief header file of myast.c
+ * @author xhladi23 Martin Hladis
+ * @author xprasi06 Matej Prasil
+ * @author xvadur04 Martin Vadura
+ * @author xsleza20 Alexandra Slezakova
+ */
 
 #include <stdbool.h>
 #include "functions.h"

@@ -3,10 +3,10 @@
  * Implementation of the imperative language interpreter
  * @file list.c
  * @brief list for arguments of function
- * @author
- * @author
- * @author
- * @author
+ * @author xhladi23 Martin Hladis
+ * @author xprasi06 Matej Prasil
+ * @author xvadur04 Martin Vadura
+ * @author xsleza20 Alexandra Slezakova
  */
 
 #include "list.h"

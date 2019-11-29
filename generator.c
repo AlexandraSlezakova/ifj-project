@@ -3,10 +3,10 @@
  * Implementation of the imperative language interpreter
  * @file generator.c
  * @brief code generator
- * @author
- * @author
- * @author
- * @author
+ * @author xhladi23 Martin Hladis
+ * @author xprasi06 Matej Prasil
+ * @author xvadur04 Martin Vadura
+ * @author xsleza20 Alexandra Slezakova
  */
 
 #include "generator.h"
@@ -435,17 +435,18 @@ int generate_assign(Nnode ast, HTable *table)
         fprintf(stdout, "MOVE GF@%s %s\n", ast->children[0]->data->data, ast->children[1]->data->data);
         
     } else {
+
+		if (ast->children[1]->data->ntype == CALL)
+		{
+			indetify_call_function(ast->children[1], table);
+			return 0;
+		}
+
         if (ast->children[0]->data->ntype == VAR_DEF) {
             value = generate_vardef(true, ast, table);
         }
         if (ast->children[1] == NULL)
             return 0;
-
-        if(ast->children[1]->data->ntype == CALL)
-        {
-            indetify_call_function(ast->children[1],table);
-            return 0;
-        }
 
         if (ast->children[1]->children[0] != NULL && ast->children[1]->children[1] != NULL) {
             math_operation(ast, table);

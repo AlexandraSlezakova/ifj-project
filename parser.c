@@ -2,10 +2,10 @@
  * Formal Languages and Compilers
  * Implementation of the imperative language interpreter
  * @file parser.c
- * @author
- * @author
- * @author
- * @author
+ * @author xhladi23 Martin Hladis
+ * @author xprasi06 Matej Prasil
+ * @author xvadur04 Martin Vadura
+ * @author xsleza20 Alexandra Slezakova
  */
 
 #include "parser.h"
@@ -103,7 +103,6 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
         if (token.type == T_IS_EOF) {
             /* empty file */
             IF_RETURN(iterator != 0, SYNTAX_ERR)
-            printf("result eof %d\n", result);
             return result;
         } /* function definition */
         else if (token.type == T_DEF) {
@@ -476,7 +475,7 @@ int handle_indent(int scope, HTable *table, Nnode node, STACK *indent_stack, tDL
                     }
                 }
                 IF_RETURN((indent_stack->top->indent_counter != indent_counter)
-                          && (indent_stack->top->indent_counter == 0), SYNTAX_ERR)
+                          && (indent_stack->top->indent_counter == 0), LEX_ERR)
             }
             if(token.type == T_IS_EOF)
                 ungetc(c,stdin);
@@ -563,8 +562,12 @@ int function_call(HTItem *found, HTable *function_table,Nnode ast,STACK *indent_
         IF_RETURN(!is_term(token.type), SYNTAX_ERR)
         result = function_call_arg(found, function_table,ast, indent_stack);
 
-        if(token.type != T_IS_EOL)
+        if (token.type != T_IS_EOL)
             IF_RETURN(get_token(), TOKEN_ERR)
+
+        /* return token if function call is used for example in sum*/
+        if (token.type != T_IS_EOL)
+            unget_token();
 
         return result;
     }
@@ -1096,7 +1099,6 @@ int main()
     IF_RETURN((stack_push_indent(indent_stack, 0, T_UNKNOWN)), ERR_INTERNAL)
 
     previous_state = START;
-    //printf("%d",  recursive_descent(ast, indent_stack, functions_list));
 
     result = recursive_descent(ast, indent_stack, functions_list);
     if (result == 0) {

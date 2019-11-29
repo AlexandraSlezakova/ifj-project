@@ -3,10 +3,10 @@
  * Implementation of the imperative language interpreter
  * @file stack.c
  * @brief implementation of stack
- * @author
- * @author
- * @author
- * @author
+ * @author xhladi23 Martin Hladis
+ * @author xprasi06 Matej Prasil
+ * @author xvadur04 Martin Vadura
+ * @author xsleza20 Alexandra Slezakova
  */
 #include "stack.h"
 #include <stdlib.h>
