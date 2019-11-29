@@ -48,6 +48,25 @@ char * generate_unique_identifier()
     return ident;
 }
 
+char * generate_unique_func_identifier( int a)
+{
+    static unsigned long long int i = 0;
+    if (a == 0)
+    {
+        i=0;
+        return NULL;
+    }
+    char prefix = '%';
+
+    int lenght = lenHelper(i);
+    char *ident = malloc((lenght + 4) * sizeof(char));
+    ident[0] = prefix;
+    sprintf(&ident[1], "F");
+    sprintf(&ident[2], "_");
+    sprintf(&ident[3], "%llu", i++);
+    return ident;
+}
+
 void create_local_frame()
 {
     fprintf(stdout, "CREATEFRAME\n");
@@ -611,18 +630,23 @@ void generate_call(Nnode ast,HTable *table)
 {
     for(int i = 0; ast->children[0]->children[i] != NULL; i++)
     {
-        char *newvar = generate_unique_identifier();
+        char *newvar = generate_unique_func_identifier(1);
         fprintf(stdout, "DEFVAR LF@%s\n", newvar);
         fprintf(stdout, "MOVE LF@%s %s\n", newvar, ast->children[0]->children[i]->data->data);
         free(ast->children[0]->children[i]->data->data);
         ast->children[0]->children[i]->data->data=newvar;
     }
+    generate_unique_func_identifier(0);
     fprintf(stdout,"CALL %s\n", ast->data->data);
 }
 
 void generate_func_def(Nnode ast,HTable *table)
 {
-    fprintf(stdout,"YEP\n");
+    fprintf(stdout,"\n FUNCTIOOOOOOOON \n");
+
+//    for (int i = 0; i < ast->data->child_count; i++) {
+//        generate(ast->children[i], table);
+//    }
 }
 
 int generate(Nnode ast, HTable *table)
