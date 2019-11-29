@@ -426,7 +426,7 @@ int generate_assign(Nnode ast, HTable *table)
             value = generate_vardef(true, ast, table);
         }
         if (ast->children[1] == NULL)
-            return0;
+            return 0;
 
         if (ast->children[1]->children[0] != NULL && ast->children[1]->children[1] != NULL) {
             math_operation(ast, table);
