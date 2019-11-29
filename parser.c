@@ -11,7 +11,7 @@
 #include "parser.h"
 
 
-int function_arguments(HTable *function_symtable, char *function_name)
+int function_arguments(HTable *function_symtable, char *function_name, Nnode ast,STACK *indent_stack)
 {
 
     tDLList *arg_list = NULL;
@@ -38,6 +38,8 @@ int function_arguments(HTable *function_symtable, char *function_name)
 
         /* quantity of params */
         countParams++;
+        Nnode argv = ast_add_node( &ast, ARGV, NULL, NULL,indent_stack->top->indent_counter);
+        ast_add_node(&argv,PARAM,create_value(&token),NULL,indent_stack->top->indent_counter);
 
         IF_RETURN(get_token(), TOKEN_ERR)
 
@@ -46,7 +48,7 @@ int function_arguments(HTable *function_symtable, char *function_name)
             IF_RETURN(get_token(), TOKEN_ERR)
 
             IF_RETURN(!(token.type == T_VAR), SYNTAX_ERR)
-
+            ast_add_node(&argv,PARAM,create_value(&token),NULL,indent_stack->top->indent_counter);
             name = token.value.is_char;
             /* argument of function cannot have same name as function */
             IF_RETURN(strcmp(name, function_name) == 0, SEM_ERR_UNDEF_VAR)
@@ -83,7 +85,7 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
 {
 
     int result = 0;
-    IF_RETURN(!myast_add_node((&ast), PROG, NULL, true , indent_stack->top->indent_counter),ERR_INTERNAL)
+    IF_RETURN(!ast_add_node((&ast), PROG, NULL, true , indent_stack->top->indent_counter),ERR_INTERNAL)
     /* temporary stack for saving nodes */
     nStack = malloc(sizeof(nStack));
     Arr_Nstack = malloc(sizeof(nStack));
@@ -127,7 +129,7 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
             IF_VALUE_RETURN(item)
 
             /* add node to AST*/
-            Nnode function_node = myast_add_node(&ast, FUNC_DEF, name, SCOPE,indent_stack->top->indent_counter);
+            Nnode function_node = ast_add_node(&ast, FUNC_DEF, name, SCOPE,indent_stack->top->indent_counter);
             IF_RETURN(!function_node, ERR_INTERNAL)
 
             /* left bracket*/
@@ -138,7 +140,7 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
             IF_RETURN(get_token(), TOKEN_ERR)
 
             /* arguments with right bracket */
-            int arg = function_arguments(function_table, name);
+            int arg = function_arguments(function_table, name,function_node,indent_stack);
             IF_VALUE_RETURN(arg)
 
             /* colon */
@@ -159,7 +161,7 @@ int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list)
             IF_RETURN(indent_stack->top->indent_counter >= indent_counter, SYNTAX_ERR )
 
             /* add body of function to ast*/
-            Nnode function_body = myast_add_node(&function_node, BODY, NULL, SCOPE,indent_stack->top->indent_counter);
+            Nnode function_body = ast_add_node(&function_node, BODY, NULL, SCOPE,indent_stack->top->indent_counter);
             IF_RETURN(!function_body, ERR_INTERNAL)
 
             /* statement list - body of function */
@@ -275,14 +277,14 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
             }
 
             /* call node to AST */
-            Nnode call_node = myast_add_node( &ast, CALL, previous_tkn->value.is_char, is_global_scope(scope),indent_stack->top->indent_counter);
+            Nnode call_node = ast_add_node( &ast, CALL, previous_tkn->value.is_char, is_global_scope(scope),indent_stack->top->indent_counter);
             IF_RETURN(!call_node, ERR_INTERNAL)
 
 
             result = function_call(found, table,call_node,indent_stack);
 
         } else {
-            Nnode equals = myast_add_node((&ast), ASSIGN, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
+            Nnode equals = ast_add_node((&ast), ASSIGN, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
             IF_RETURN(!equals, ERR_INTERNAL)
 
             char *name = previous_tkn->value.is_char;
@@ -297,14 +299,15 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
             }
 
             Nnode l_value = found
-                                ? myast_add_node((&equals), VAR, name, is_global_scope(scope),indent_stack->top->indent_counter)
-                                : myast_add_node((&equals), VAR_DEF, name, is_global_scope(scope),indent_stack->top->indent_counter);
+                                ? ast_add_node((&equals), VAR, name, is_global_scope(scope),indent_stack->top->indent_counter)
+                                : ast_add_node((&equals), VAR_DEF, name, is_global_scope(scope),indent_stack->top->indent_counter);
             IF_RETURN(!l_value, ERR_INTERNAL)
 
             if (token.type == T_ASSIGNMENT) {
                 /* start of expression */
                 IF_RETURN(get_token(), TOKEN_ERR)
                 result = expression(scope, stack, table, equals, name, indent_stack, previous_token);
+                found = ht_search(table, name);
                 if(found == NULL)
                     insert_variable(table, name, TYPE_UNKNOWN);
             } else {
@@ -318,8 +321,8 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
     else if (token.type == T_IF) {
         /* condition -> expression */
         IF_RETURN(get_token(), TOKEN_ERR)
-        Nnode if_node = myast_add_node((&ast), IF_NODE, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
-        Nnode condition_node = myast_add_node(&if_node, COND, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
+        Nnode if_node = ast_add_node((&ast), IF_NODE, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
+        Nnode condition_node = ast_add_node(&if_node, COND, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
 
         int condition = expression(scope, stack, table, condition_node, NULL, indent_stack, previous_token);
         IF_VALUE_RETURN(condition)
@@ -332,7 +335,7 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
             IF_RETURN(get_token(), TOKEN_ERR)
         }
 
-        Nnode if_body = myast_add_node( (&if_node) ,IF_BODY, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
+        Nnode if_body = ast_add_node( (&if_node) ,IF_BODY, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
 
         /* INDENT */
         /* indent has to be greater */
@@ -344,7 +347,7 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
 
         /* else */
         IF_RETURN(token.type != T_ELSE, LEX_ERR) /* lex error because of wrong indent */
-        Nnode else_body = myast_add_node(&if_node,IF_ELSE, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
+        Nnode else_body = ast_add_node(&if_node,IF_ELSE, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
 
         /* colon */
         IF_RETURN(get_token(), TOKEN_ERR)
@@ -366,7 +369,7 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
 
     } /* while */
     else if (token.type == T_WHILE) {
-        Nnode while_node = myast_add_node(&ast, WHILE, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
+        Nnode while_node = ast_add_node(&ast, WHILE, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
         //while_node->data->child_count++;
 
         IF_RETURN(get_token(), TOKEN_ERR)
@@ -380,7 +383,7 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
             IF_RETURN(get_token(), TOKEN_ERR)
         }
 
-        Nnode while_body = myast_add_node((&while_node), BODY, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
+        Nnode while_body = ast_add_node((&while_node), BODY, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
 
         /* INDENT */
         /* indent has to be greater */
@@ -397,7 +400,7 @@ int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList 
     else if (token.type == T_RETURN) {
         /* return used only in functions */
         IF_RETURN(is_global_scope(scope), SYNTAX_ERR)
-        Nnode return_node = myast_add_node( (&ast), RETURN, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
+        Nnode return_node = ast_add_node( (&ast), RETURN, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
         previous_token = T_RETURN;
 
         IF_RETURN(get_token(), TOKEN_ERR)
@@ -475,6 +478,8 @@ int handle_indent(int scope, HTable *table, Nnode node, STACK *indent_stack, tDL
                 IF_RETURN((indent_stack->top->indent_counter != indent_counter)
                           && (indent_stack->top->indent_counter == 0), SYNTAX_ERR)
             }
+            if(token.type == T_IS_EOF)
+                ungetc(c,stdin);
             break;
         }
     } while (indent_counter >= indent_stack->top->indent_counter);
@@ -497,7 +502,7 @@ int expression(int scope, STACK *stack, HTable *table, Nnode ast, char *token_na
             /* save previous token */
             previous_tkn->type = token.type;
             previous_tkn->value = token.value;
-            //Nnode l_cond = myast_add_node( (&ast), token.type, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
+            //Nnode l_cond = ast_add_node( (&ast), token.type, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
 
             IF_RETURN(get_token(), TOKEN_ERR)
             HTItem *found;
@@ -510,7 +515,7 @@ int expression(int scope, STACK *stack, HTable *table, Nnode ast, char *token_na
                 IF_RETURN(is_global_scope(scope) && !found, SYNTAX_ERR)
 
                 /* call node to AST */
-                Nnode call_node = myast_add_node(&ast, CALL, previous_tkn->value.is_char, is_global_scope(scope),indent_stack->top->indent_counter);
+                Nnode call_node = ast_add_node(&ast, CALL, previous_tkn->value.is_char, is_global_scope(scope),indent_stack->top->indent_counter);
                 IF_RETURN(!call_node, ERR_INTERNAL)
 
                 result = function_call(found, table,call_node,indent_stack);
@@ -575,8 +580,8 @@ int function_call_arg(HTItem *found, HTable *table,Nnode ast,STACK *indent_stack
     IF_VALUE_RETURN(result)
     countParams++;
 
-    Nnode argv = myast_add_node( &ast, ARGV, NULL, NULL,indent_stack->top->indent_counter);
-    myast_add_node(&argv,PARAM,create_value(&token),NULL,indent_stack->top->indent_counter); //TODO DODĚLAT TYP
+    Nnode argv = ast_add_node( &ast, ARGV, NULL, NULL,indent_stack->top->indent_counter);
+    ast_add_node(&argv,PARAM,create_value(&token),NULL,indent_stack->top->indent_counter);
 
 
     int ret;
@@ -589,7 +594,7 @@ int function_call_arg(HTItem *found, HTable *table,Nnode ast,STACK *indent_stack
         ret = check_function_arguments(table);
         IF_RETURN(ret != 0, ret)
         countParams++;
-        myast_add_node(&argv,ARGV,create_value(&token),NULL,-1); //TODO Dodělat typ
+        ast_add_node(&argv,PARAM,create_value(&token),NULL,indent_stack->top->indent_counter);
 
         IF_RETURN(is_comma(get_token()), SYNTAX_ERR)
 
@@ -772,7 +777,7 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                 original->type = stack_elem[0].current_token->type;
                 original->value = stack_elem[0].current_token->value;
                 original->value.is_char = stack_elem[0].current_token->value.is_char;
-                node = myast_add_node(&node, original->type == T_VAR ? VAR : VAL, create_value(original), is_global_scope(scope),-1);
+                node = ast_add_node(&node, original->type == T_VAR ? VAR : VAL, create_value(original), is_global_scope(scope),-1);
 
                 NstackPush(nStack,node);
 
@@ -799,7 +804,7 @@ int reduce(int scope, STACK *stack, struct TToken *previous)
                 original = NULL;
                 type_of_node = node_type(&stack_elem[1]);
                 IF_RETURN(type_of_node == NO_NODE, ERR_INTERNAL)
-                node = myast_add_node( (&node), type_of_node, NULL, is_global_scope(scope), -1);
+                node = ast_add_node( (&node), type_of_node, NULL, is_global_scope(scope), -1);
                 if(nStack->top != -1 && nStack->nstack[0] != NULL)
                 {
                     nStack->nstack[0]->parent_node = node->children[0];
@@ -1050,7 +1055,7 @@ int main()
     eol_flag = 0;
 
     Nnode ast = NULL;
-    myast_init(&ast);
+    ast_init(&ast);
 
     /* list of undefined functions */
     tDLList *functions_list = DLInitList();

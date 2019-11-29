@@ -53,7 +53,7 @@ int reduce(int scope, STACK *stack, struct TToken *previous);
 int expression(int scope, STACK *stack, HTable *table, Nnode ast, char *token_name, STACK *indent_stack, TType previous_token);
 int function_call(HTItem *found, HTable *function_table,Nnode ast,STACK *indent_stack);
 int function_call_arg(HTItem *found, HTable *function_table,Nnode ast,STACK *indent_stack);
-int function_arguments(HTable *function_symtable, char *function_name);
+int function_arguments(HTable *function_symtable, char *function_name,Nnode ast,STACK *indent_stack);
 int check_function_arguments(HTable *table);
 int psa(int scope, STACK *stack, Nnode node, HTable *table, char *token_name);
 int recursive_descent(Nnode ast, STACK *indent_stack, tDLList *functions_list);

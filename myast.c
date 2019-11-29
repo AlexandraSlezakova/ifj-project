@@ -11,7 +11,7 @@
 
 #include "myast.h"
 
-void myast_init(Nnode *node)
+void ast_init(Nnode *node)
 {
     //*root = NULL;
     *node = NULL;
@@ -39,26 +39,29 @@ void myast_init(Nnode *node)
 //    }
 //}
 
-/*
-Nnode* find_node (Nnode node, int indent)
+
+
+void ast_rename_value(char *com, Nnode ast, char *new_c)
 {
-    while(node[node->data->size].data->indent != indent )
-        node = node->parent_node;
+    int a = 5;
 
-    return node;
+    if(ast->data->data != NULL)
+        if(!strcmp(com,ast->data->data))
+            ast->data->data = new_c;
 
-}*/
-
-void NstackPopGround (NStack *s)
-{
-    for(int i = 1; i != s->top && s->top != 0 ; i++)
+    for(int i = 0; ast->data->child_count > i; i++)
     {
-        s->nstack[i-1]=s->nstack[i];
+        if (ast->children[i]!=NULL)
+            ast_rename_value(com,ast->children[i],new_c);
+    }
+}
+
+void NstackPopGround (NStack *s) {
+    for (int i = 1; i != s->top && s->top != 0; i++) {
+        s->nstack[i - 1] = s->nstack[i];
     }
     s->top--;
     s->nstack[s->top] = NULL;
-
-    //solved = 0;                      /* V případě řešení, smažte tento řádek! */
 }
 
 void NstackPop (NStack *s)
@@ -79,7 +82,6 @@ void NstackPopAll (NStack *s)
         s->top -= 1;
     }
     s->nstack[s->top] = NULL;
-    //solved = 0;                      /* V případě řešení, smažte tento řádek! */
 }
 
 
@@ -93,7 +95,7 @@ void NstackPush (NStack *s,Nnode node )
     }
 }
 
-Nnode myast_add_node(Nnode *node, Ntype type, char *data ,bool inmain, int indent)
+Nnode ast_add_node(Nnode *node, Ntype type, char *data ,bool inmain, int indent)
 {
     Nnode new_node =  malloc(sizeof(struct Node));
     NData *new_data = malloc(sizeof(struct NDATA));

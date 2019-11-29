@@ -71,11 +71,9 @@ void NstackPopGround (NStack *s);
 void NstackPopAll (NStack *s);
 void NstackPop (NStack *s);
 void NstackPush (NStack *s,Nnode node);
-void myast_init(Nnode *node);
-void myast_destroy(Nnode node);
-void myast_resize(Nnode *node);
-Nnode myast_add_node(Nnode *node, Ntype type, char *data, bool inmain ,int indent) ;
-
+void ast_init(Nnode *node);
+Nnode ast_add_node(Nnode *node, Ntype type, char *data, bool inmain ,int indent) ;
+void ast_rename_value(char *com, Nnode ast, char *new_c);
 
 Nnode root;
 

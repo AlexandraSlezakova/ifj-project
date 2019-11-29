@@ -13,6 +13,12 @@
 
 char *token_while = NULL;
 
+void generate_return(Nnode pNode, HTable *pHashtable);
+
+void generate_read_func(Nnode ast, HTable *table, char *type);
+
+void generate_write_func(Nnode ast, HTable *table);
+
 int lenHelper(unsigned long long x) {
     if (x >= 1000000000) return 10;
     if (x >= 100000000)  return 9;
@@ -48,7 +54,7 @@ char * generate_unique_identifier()
     return ident;
 }
 
-char * generate_unique_func_identifier( int a)
+char * generate_unique_func_identifier( int a, char c)
 {
     static unsigned long long int i = 0;
     if (a == 0)
@@ -61,11 +67,12 @@ char * generate_unique_func_identifier( int a)
     int lenght = lenHelper(i);
     char *ident = malloc((lenght + 4) * sizeof(char));
     ident[0] = prefix;
-    sprintf(&ident[1], "F");
+    sprintf(&ident[1], "%c", c);
     sprintf(&ident[2], "_");
     sprintf(&ident[3], "%llu", i++);
     return ident;
 }
+
 
 void create_local_frame()
 {
@@ -404,7 +411,13 @@ int generate_assign(Nnode ast, HTable *table)
     int value = 0;
      
     if (ast->data->inmain) {
-         
+
+        if(ast->children[1]->data->ntype == CALL)
+        {
+            indetify_call_function(ast->children[1],table);
+            return 0;
+        }
+
         if (ast->children[0]->data->ntype == VAR_DEF) {
             
             value = generate_vardef(true, ast, table);
@@ -426,7 +439,13 @@ int generate_assign(Nnode ast, HTable *table)
             value = generate_vardef(true, ast, table);
         }
         if (ast->children[1] == NULL)
-            return0;
+            return 0;
+
+        if(ast->children[1]->data->ntype == CALL)
+        {
+            indetify_call_function(ast->children[1],table);
+            return 0;
+        }
 
         if (ast->children[1]->children[0] != NULL && ast->children[1]->children[1] != NULL) {
             math_operation(ast, table);
@@ -672,25 +691,116 @@ int generate_while(Nnode ast,HTable *table)
 
 void generate_call(Nnode ast,HTable *table)
 {
+    if(ast->parent_node->data->ntype == ASSIGN)
+    {
+        fprintf(stdout,"DEFVAR LF@%s\n",ast->parent_node->children[0]->data->data);
+    }
     for(int i = 0; ast->children[0]->children[i] != NULL; i++)
     {
-        char *newvar = generate_unique_func_identifier(1);
+        char *newvar = generate_unique_func_identifier(1,'F');
         fprintf(stdout, "DEFVAR LF@%s\n", newvar);
         fprintf(stdout, "MOVE LF@%s %s\n", newvar, ast->children[0]->children[i]->data->data);
         free(ast->children[0]->children[i]->data->data);
         ast->children[0]->children[i]->data->data=newvar;
     }
-    generate_unique_func_identifier(0);
+    generate_unique_func_identifier(0,'F');
     fprintf(stdout,"CALL %s\n", ast->data->data);
+    if(ast->parent_node->data->ntype == ASSIGN)
+    {
+        fprintf(stdout,"MOVE LF@%s TF@%%retval\n ",ast->parent_node->children[0]->data->data);
+    }
 }
 
 void generate_func_def(Nnode ast,HTable *table)
 {
-    fprintf(stdout,"\n FUNCTIOOOOOOOON \n");
+    fprintf(stdout, "LABEL %s\n", ast->data->data);
+    fprintf(stdout, "PUSHFRAME\n");
+    for(int i = 0; ast->children[0]->children[i] != NULL; i++)
+    {
+        char *com=malloc(200);
+        strcpy(com,ast->children[0]->children[i]->data->data);
+        //char *com=ast->children[0]->children[i]->data->data;
+        char *newvar = generate_unique_func_identifier(1,'P');
+        fprintf(stdout, "DEFVAR LF@%s\n", newvar);
+        fprintf(stdout, "MOVE LF@%s LF%s\n\n", newvar, generate_unique_func_identifier(1,'F'));
+        free(ast->children[0]->children[i]->data->data);
+        ast->children[0]->children[i]->data->data=newvar;
+        ast_rename_value(com,ast->children[1],newvar);
+    }
+    generate(ast->children[1], table);
 
-//    for (int i = 0; i < ast->data->child_count; i++) {
-//        generate(ast->children[i], table);
-//    }
+    fprintf(stdout, "\n\n");
+}
+
+void generate_return(Nnode ast, HTable *table)
+{
+    fprintf(stdout,"POPFRAME\n");
+    if(ast->children[0]->data->data != NULL)
+        fprintf(stdout, "MOVE TF@%%RETVAL %s\n", ast->children[0]->data->data);
+
+    fprintf(stdout, "RETURN\n");
+}
+
+int data2int(char *data)
+{
+    if(!strcmp(data,"inputs"))
+    {
+        return 0;
+    }
+    else if(!strcmp(data,"inputi"))
+    {
+        return 1;
+    }
+    else if(!strcmp(data,"inputf"))
+    {
+        return 2;
+    }
+    else if(!strcmp(data,"print"))
+    {
+        return 3;
+    }
+    else
+        return 4;
+}
+
+void indetify_call_function(Nnode ast, HTable *table)
+{
+    int tmp = data2int(ast->data->data);
+    switch (tmp){
+        case 0:
+            generate_read_func(ast,table,"string");
+            break;
+        case 1:
+            generate_read_func(ast,table,"int");
+            break;
+        case 2:
+            generate_read_func(ast,table,"float");
+            break;
+        case 3:
+            generate_write_func(ast,table);
+            break;
+        case 4 :
+        default:
+            generate_call(ast,table);
+            break;
+    }
+}
+
+void generate_write_func(Nnode ast, HTable *table) {
+
+    char *tmp = generate_unique_identifier();
+    fprintf(stdout,"DEFVAR LF%s\n",tmp);
+    for(int i = 0; ast->children[0]->children[i]!= NULL; i++)
+    {
+        fprintf(stdout,"MOVE LF@%s %s\n",tmp,ast->children[0]->children[i]->data->data);
+        fprintf(stdout,"WRITE LF%s\n",tmp);
+    }
+}
+
+void generate_read_func(Nnode ast, HTable *table, char *type) {
+
+    fprintf(stdout,"DEFVAR LF@%s\n",ast->parent_node->children[0]->data->data);
+    fprintf(stdout,"READ TF@%s %s\n",ast->parent_node->children[0]->data->data,type);
 }
 
 void identify_header(Nnode ast, HTable *table)
@@ -742,15 +852,20 @@ void identify_header(Nnode ast, HTable *table)
             identify_header(ast->children[0], table);
             break;
         case CALL:
-            generate_call(ast,table);
+            indetify_call_function(ast,table);
             break;
         case FUNC_DEF:
             generate_func_def(ast,table);
+            break;
+        case RETURN:
+            generate_return(ast,table);
             break;
         default:
             break;
     }
 }
+
+
 
 int generate(Nnode ast, HTable *table)
 {

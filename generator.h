@@ -35,4 +35,8 @@ void type_control_exit();
 void save_val_to_variable(Nnode ast);
 void generate_call(Nnode ast,HTable *table);
 void generate_func_def(Nnode ast,HTable *table);
+void generate_write_func(Nnode ast, HTable *table);
+void generate_read_func(Nnode ast, HTable *table, char *type);
+void indetify_call_function(Nnode ast, HTable *table);
+int data2int(char *data);
 #endif
