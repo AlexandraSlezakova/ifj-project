@@ -2,10 +2,10 @@
  * Formal Languages and Compilers
  * Implementation of the imperative language interpreter
  * @file parser.c
- * @author
- * @author
- * @author
- * @author
+ * @author xhladi23 Martin Hladis
+ * @author xprasi06 Matej Prasil
+ * @author xvadur04 Martin Vadura
+ * @author xsleza20 Alexandra Slezakova
  */
 
 #include "parser.h"

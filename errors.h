@@ -3,10 +3,10 @@
  * Implementation of the imperative language interpreter
  * @file errors.h
  * @brief header file for error codes
- * @author
- * @author
- * @author
- * @author
+ * @author xhladi23 Martin Hladis
+ * @author xprasi06 Matej Prasil
+ * @author xvadur04 Martin Vadura
+ * @author xsleza20 Alexandra Slezakova
  */
 
 #ifndef IFJ_ERRORS_H
