@@ -12,9 +12,19 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "symtable.h"
+#include "symtable.c"
 #ifndef IFJ_GENERATOR_H
 #define IFJ_GENERATOR_H
+
+typedef struct FrameVar {
+   char *var;
+   struct FrameVar *next;
+   
+}*FrameVars;
+
+
+
+
 
 void create_header();
 void identify_header(Nnode ast, HTable *table);
