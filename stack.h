@@ -9,7 +9,7 @@
  * @author xsleza20 Alexandra Slezakova
  */
 
-#include "myast.h"
+#include "ast.h"
 #ifndef IFJ_STACK_H
 #define IFJ_STACK_H
 

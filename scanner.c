@@ -12,9 +12,9 @@
 
 #include "scanner.h"
 
-char *keywords[7] = {"def", "else", "if", "None", "pass", "return", "while"};
+char* keywords[7] = { "def", "else", "if", "None", "pass", "return", "while" };
 
-int is_keyword(char *string)
+int is_keyword(char* string)
 {
     for (int j = 0; j < 7; j++) {
         if (strcmp(string, keywords[j]) == 0) {
@@ -26,7 +26,7 @@ int is_keyword(char *string)
 }
 
 
-void create_token(int character, char *string, struct TToken *new_token, TType type)
+void create_token(int character, char* string, struct TToken* new_token, TType type)
 {
 
     TType keyword_type;
@@ -40,13 +40,15 @@ void create_token(int character, char *string, struct TToken *new_token, TType t
 
 
     if (new_token->type == T_INT) {
-        char *ptr = malloc(sizeof(char));
+        char* ptr = malloc(sizeof(char));
         new_token->value.is_int = (int)strtol(string, &ptr, 10);
 
-    } else if (new_token->type  == T_FLOAT) {
+    }
+    else if (new_token->type == T_FLOAT) {
         new_token->value.is_float = strtof(string, NULL);
 
-    } else if (new_token->type  == T_VAR || new_token->type == T_STRING) {
+    }
+    else if (new_token->type == T_VAR || new_token->type == T_STRING) {
         new_token->value.is_char = string;
     }
 }
@@ -65,17 +67,19 @@ int get_token()
         /* buffer reallocation */
         buffer = realloc(buffer, (size_t) ++allocated);
 
-        c = getchar();
+        if (state != S_ERROR) {
+            c = getchar();
 
+            /* write to buffer without comments */
+            if (state != S_DOC_CONTENT && state != S_LINE_COMMENT) {
+                buffer[iterator++] = c;
+            }
+            else if (c == 34 && previous_state != START) {
+                buffer[iterator++] = c;
+            }
 
-        /* write to buffer without comments */
-        if (state != S_DOC_CONTENT && state != S_LINE_COMMENT) {
-            buffer[iterator++] = c;
-        } else if (c == 34 && previous_state != START) {
-            buffer[iterator++] = c;
         }
-
-        } else {
+        else {
             token.type = T_IS_ERR;
             line_position++;
             line_counter++;
@@ -91,7 +95,7 @@ int get_token()
                     break;
                 }  /* number */
                 else if (isdigit(c)) {
-                    if(c == '0')
+                    if (c == '0')
                         state = S_ZERO;
                     else
                         state = S_INT;
@@ -115,7 +119,7 @@ int get_token()
                     state = START_STRING;
                     break;
                 }
-                /* documentation string */
+                    /* documentation string */
                 else if (c == 34) {
                     state = S_START_DOC_1;
                     break;
@@ -167,7 +171,8 @@ int get_token()
                             indent_counter++;
                         } while (c == 32);  /* 32 - space */
                         ungetc(c, stdin);
-                    } else if (previous_state == START) {
+                    }
+                    else if (previous_state == START) {
                         state = S_ERROR;
                         break;
                     }
@@ -180,10 +185,11 @@ int get_token()
                     if (eol_flag) {
                         do {
                             c = getchar();
-                            indent_counter+=4;
+                            indent_counter += 4;
                         } while (c == 9);  /* 9 - TAB */
                         ungetc(c, stdin);
-                    } else if (previous_state == START) {
+                    }
+                    else if (previous_state == START) {
                         state = S_ERROR;
                         break;
                     }
@@ -203,13 +209,13 @@ int get_token()
 
 
             case S_ZERO:
-                if(isdigit(c) || isalpha(c)) {
+                if (isdigit(c) || isalpha(c)) {
                     state = S_ERROR;
                     break;
                 }
                 else {
-                    previous_state =  S_ZERO;
-                    if(c == '.')
+                    previous_state = S_ZERO;
+                    if (c == '.')
                     {
                         state = S_DEC_SEP;
                         break;
@@ -334,7 +340,8 @@ int get_token()
                     /* 34 - " 92 - \ */
                     if (c == 34 && previous_state == S_DOC_STRING) {
                         state = S_END_DOC_1;
-                    } else {
+                    }
+                    else {
                         state = S_STRING_CONTENT;
                     }
                 }
@@ -350,7 +357,8 @@ int get_token()
                 if (c > 31 && c != 92 && c != 39) {
                     if (c == 34 && previous_state == S_DOC_STRING) {
                         state = S_END_DOC_1;
-                    } else {
+                    }
+                    else {
                         state = S_STRING_CONTENT;
                     }
                 }
@@ -424,7 +432,8 @@ int get_token()
                     line_position++;
                     create_token(c, buffer, &token, T_STRING);
                     return 0;
-                } else {
+                }
+                else {
                     state = S_ERROR;
                     break;
                 }
@@ -470,7 +479,8 @@ int get_token()
                 if (c == '=') {
                     state = S_IS_EQUAL;
                     break;
-                } else {
+                }
+                else {
                     previous_state = S_ASSIGN;
                     line_position++;
                     create_token(c, buffer, &token, T_ASSIGNMENT);
@@ -483,7 +493,7 @@ int get_token()
                 create_token(c, buffer, &token, T_IS_EQUAL);
                 return 0;
 
-            /* mathematical operation */
+                /* mathematical operation */
             case S_MATH_OP:
                 if (buffer[iterator - 2] == '+') {
                     previous_state = S_MATH_OP;
@@ -507,7 +517,8 @@ int get_token()
                     if (buffer[iterator - 1] == '/') {
                         state = S_DIV_INT;
                         break;
-                    } else {
+                    }
+                    else {
                         previous_state = S_MATH_OP;
                         line_position++;
                         create_token(c, buffer, &token, T_DIV);
@@ -526,12 +537,13 @@ int get_token()
                 create_token(c, buffer, &token, T_DIV_INT);
                 return 0;
 
-            /* documentation string */
+                /* documentation string */
             case S_START_DOC_1:
                 if (c == 34) {
                     state = S_START_DOC_2;
                     if (previous_state != START) previous_state = S_DOC_STRING;
-                } else {
+                }
+                else {
                     state = S_ERROR;
                 }
                 break;
@@ -541,10 +553,12 @@ int get_token()
                     if (previous_state != START) {
                         previous_state = S_DOC_STRING;
                         state = S_STRING_CONTENT;
-                    } else {
+                    }
+                    else {
                         state = S_DOC_CONTENT;
                     }
-                } else {
+                }
+                else {
                     state = S_ERROR;
                 }
                 break;
@@ -552,7 +566,8 @@ int get_token()
             case S_DOC_CONTENT:
                 if (c != 34) {
                     state = S_DOC_CONTENT;
-                } else {
+                }
+                else {
                     state = S_END_DOC_1;
                 }
                 break;
@@ -560,7 +575,8 @@ int get_token()
             case S_END_DOC_1:
                 if (c == 34) {
                     state = S_END_DOC_2;
-                } else {
+                }
+                else {
                     state = S_ERROR;
                 }
                 break;
@@ -571,18 +587,21 @@ int get_token()
                         c = getchar();  /* get next character to return */
                         create_token(c, buffer, &token, T_STRING);
                         return 0;
-                    } else {
+                    }
+                    else {
                         state = S_END_DOC_2;
                         break;
                     }
-                } else if (c == '\n') {
+                }
+                else if (c == '\n') {
                     state = START;
                     allocated = 0;
                     iterator = 0;
                     line_position = 0;
                     line_counter++;
                     buffer = NULL;
-                } else {
+                }
+                else {
                     state = S_ERROR;
                 }
 
@@ -590,7 +609,7 @@ int get_token()
                 break;
 
 
-            /* no equal */
+                /* no equal */
             case S_IS_NOT_EQUAL:
                 if (c == '=') {
                     c = getchar();
@@ -599,7 +618,8 @@ int get_token()
                     line_position++;
                     create_token(c, buffer, &token, T_IS_NOT_EQUAL);
                     return 0;
-                } else {
+                }
+                else {
                     state = S_ERROR;
                     break;
                 }
@@ -609,7 +629,8 @@ int get_token()
                     if (previous_state != START) {
                         state = START;
                         ungetc('\n', stdin);
-                    } else {
+                    }
+                    else {
                         state = START;
                     }
                 }
