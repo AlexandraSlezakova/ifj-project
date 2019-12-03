@@ -418,14 +418,12 @@ void math_operation(Nnode ast, HTable *table)
     if (tmp != top)
         goto Tree;
 
-    if (ast->children[0]->data->ntype == VAR_DEF)
-    {
+    if (ast->children[0]->data->ntype == VAR_DEF){   
         fprintf(stdout, "MOVE %s@%s LF@%s\n", memory_model(ast), ast->children[0]->data->data, ast->children[1]->data->data);
     } else {
         while (ptr != NULL) {
-            if (ptr->var == ast->children[0]->data->data) {
+            if (!strcmp(ptr->var, ast->children[0]->data->data)) {
                 a = 1;
-                fprintf(stdout, "adfasdf\n");
                 break;
             }
             ptr = ptr->next;
@@ -433,6 +431,8 @@ void math_operation(Nnode ast, HTable *table)
         if (a == 1) {
             fprintf(stdout, "MOVE GF@%s LF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
         } else {
+
+             fprintf(stdout, "adfasdf\n");
             fprintf(stdout, "MOVE LF@%s LF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
         }
     }
@@ -576,94 +576,84 @@ void type_control_exit() //typová kontrola =<>=
 
 int generate_aritmetic(Nnode ast)
 {
+    fprintf(stdout, "CREATEFRAME\n");
+    fprintf (stdout, "PUSHFRAME\n");
 
     char *new = generate_unique_identifier();
+    bool before;
     // char *contr_type_name = generate_unique_identifier();
-    char *div_not_0 = generate_unique_label();
-    char *div_not_0_0 = generate_unique_label();
-    char *not_int =  generate_unique_label();
-    char *not_flout = generate_unique_label();
+    // char *div_not_0 = generate_unique_label();
+    // char *div_not_0_0 = generate_unique_label();
+    // char *not_int =  generate_unique_label();
+    // char *not_flout = generate_unique_label();
 
-    if (ast->children[0]->data->ntype == VAL)
-    {
+
+    if (ast->children[0]->data->ntype == VAL) {
+        ast->children[0]->data->inmain = false;
         save_val_to_variable(ast->children[0]);
+    } else if (ast->children[0]->data->inmain) {           //if variable is from globalframe transforme it into localframe{
+        fprintf(stdout, "DEFVAR LF@%s\n", ast->children[0]->data->data);
+        fprintf(stdout, "MOVE LF@%s GF@%s\n", ast->children[0]->data->data, ast->children[0]->data->data);
     }
-    if (ast->children[1]->data->ntype == VAL)
-    {
+
+    if (ast->children[1]->data->ntype == VAL) {
+        ast->children[1]->data->inmain = false;
         save_val_to_variable(ast->children[1]);
+    } else if (ast->children[1]->data->inmain) {
+        fprintf(stdout, "DEFVAR LF@%s\n", ast->children[1]->data->data);
+        fprintf(stdout, "MOVE LF@%s GF@%s\n", ast->children[1]->data->data, ast->children[1]->data->data);
     }
+
     free(ast->data->data);
     ast->data->data = new;
-    if (ast->data->inmain){
-        fprintf(stdout, "DEFVAR GF@%s\n", new);
-    } else {
+    //if (ast->data->inmain){
+     //   fprintf(stdout, "DEFVAR GF@%s\n", new);
+   // } else {
         fprintf(stdout, "DEFVAR LF@%s\n", new);
-    }
+    //}
 
-    if (token_while != NULL)
-    {
-        fprintf(stdout, "LABEL %s\n", token_while);
-    }
-
-    if (ast->data->ntype != COMP && ast->data->ntype != NOTCOMP) {
-        // generate_type_control_exit(ast, table, contr_type_name);
-    }
-
-    if (ast->data->ntype == DIVINIT) {
-        fprintf(stdout, "JUMPIFNEQ %s %s@%s string@int\n", not_int, memory_model(ast), ast->children[0]->data->data);
-        fprintf(stdout, "JUMPIFNEQ %s %s@%s string@int\n", not_int, memory_model(ast), ast->children[1]->data->data);
-        fprintf(stdout, "JUMPIFNEQ %s  %s@%s int@0\n", div_not_0, memory_model(ast), ast->children[1]->data->data);
-        fprintf(stdout, "EXIT int@57\n");
-
-        fprintf(stdout, "JUMP %s\n", div_not_0);
-        fprintf(stdout, "LABEL %s\n", not_int);
-        fprintf(stdout, "EXIT int@4\n");
-        fprintf(stdout, "LABEL %s\n", div_not_0);
-
-    } else if (ast->data->ntype == DIV) {
-        fprintf(stdout, "JUMPIFNEQ %s %s@%s string@flout\n", not_flout, memory_model(ast), ast->children[0]->data->data);
-        fprintf(stdout, "JUMPIFNEQ %s %s@%s string@flout\n", not_flout, memory_model(ast), ast->children[1]->data->data);
-        fprintf(stdout, "JUMPIFNEQ %s  %s@%s int@0\n", div_not_0_0, memory_model(ast), ast->children[1]->data->data);
-        fprintf(stdout, "EXIT int@57\n");
-
-        fprintf(stdout, "JUMP %s\n", div_not_0_0);
-        fprintf(stdout, "LABEL %s\n", not_flout);
-        fprintf(stdout, "EXIT int@4\n");
-        fprintf(stdout, "LABEL %s\n", div_not_0_0);
-
-    } else if (ast->data->ntype == ADD || ast->data->ntype == MUL || ast->data->ntype == SUB){
+   // if (token_while != NULL)
+   // {
+      //  fprintf(stdout, "LABEL %s\n", token_while);
+    //}
 
 
-    } else if (ast->data->ntype == COMP || ast->data->ntype == NOTCOMP) {
+
+    if (ast->data->ntype == COMP || ast->data->ntype == NOTCOMP) {
+        before = ast->data->inmain;
+        ast->data->inmain = false;
         generate_type_control_cmp(ast);
-
-        if (ast->data->inmain){
-            fprintf(stdout, "EQ GF@%s GF@%s GF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
-            fprintf(stdout, "AND GF@%s TF@%%retval GF@%s\n", new, new);
-            if (ast->data->ntype == NOTCOMP)
-                fprintf(stdout, "NOT GF@%s GF@%s\n", new, new);
-        } else {
+        ast->data->inmain = before;
+        // if (ast->data->inmain){
+        //     fprintf(stdout, "EQ GF@%s GF@%s GF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
+        //     fprintf(stdout, "AND GF@%s TF@%%retval GF@%s\n", new, new);
+        //     if (ast->data->ntype == NOTCOMP)
+        //         fprintf(stdout, "NOT GF@%s GF@%s\n", new, new);
+        // } else {
             fprintf(stdout, "EQ LF@%s LF@%s LF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
             fprintf(stdout, "AND LF@%s TF@%%retval LF@%s\n",  new, new);
             if (ast->data->ntype == NOTCOMP)
-                fprintf(stdout, "NOT GF@%s GF@%s\n", new, new);
-        }
+                fprintf(stdout, "NOT LF@%s LF@%s\n", new, new);
+        //}
     }
     else {
+        before = ast->data->inmain;
+        ast->data->inmain = false;
         generate_type_control_exit(ast);
+        ast->data->inmain = before;
         aritmetic_operation(ast);
 
-        if (ast->data->inmain){
-            fprintf(stdout, " GF@%s GF@%s GF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
-            fprintf(stdout, "AND GF@%s TF@%%retval GF@%s\n", new, new);
-            if (ast->data->ntype == LOQ){
-                fprintf(stdout, "EQ TF@%%retval GF@%s GF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
-                fprintf(stdout, "OR GF@%s TF@%%retval GF@%s\n", new, new);
-            } else if (ast->data->ntype == GEQ) {
-                fprintf(stdout, "EQ TF@%%retval GF@%s GF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
-                fprintf(stdout, "OR GF@%s TF@%%retval GF@%s\n", new, new);
-            }
-        } else {
+        // if (ast->data->inmain){
+        //     fprintf(stdout, " GF@%s GF@%s GF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
+        //     fprintf(stdout, "AND GF@%s TF@%%retval GF@%s\n", new, new);
+        //     if (ast->data->ntype == LOQ){
+        //         fprintf(stdout, "EQ TF@%%retval GF@%s GF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
+        //         fprintf(stdout, "OR GF@%s TF@%%retval GF@%s\n", new, new);
+        //     } else if (ast->data->ntype == GEQ) {
+        //         fprintf(stdout, "EQ TF@%%retval GF@%s GF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
+        //         fprintf(stdout, "OR GF@%s TF@%%retval GF@%s\n", new, new);
+        //     }
+        // } else {
             fprintf(stdout, " LF@%s LF@%s LF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
             fprintf(stdout, "AND LF@%s TF@%%retval LF@%s\n", new, new);
             if (ast->data->ntype == LOQ){
@@ -673,8 +663,9 @@ int generate_aritmetic(Nnode ast)
                 fprintf(stdout, "EQ TF@%%retval LF@%s LF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
                 fprintf(stdout, "OR LF@%s TF@%%retval LF@%s\n", new, new);
             }
-        }
+       // }
     }
+    fprintf(stdout, "POPFRAME\n");
     return 0;
 }
 
@@ -686,9 +677,9 @@ int generate_if(Nnode ast, HTable *table)
 
     generate(ast->children[0], table);
     if(ast->data->inmain){
-        fprintf(stdout, "JUMPIFNEQ %s GF@%s bool@true\n", label_else, ast->children[0]->children[0]->data->data);
+        fprintf(stdout, "JUMPIFNEQ %s TF@%s bool@true\n", label_else, ast->children[0]->children[0]->data->data);
     } else {
-        fprintf(stdout, "JUMPIFNEQ %s LF@%s bool@true\n", label_else, ast->children[0]->children[0]->data->data);
+        fprintf(stdout, "JUMPIFNEQ %s TF@%s bool@true\n", label_else, ast->children[0]->children[0]->data->data);
 
     }
     generate(ast->children[1], table);
@@ -705,18 +696,18 @@ int generate_while(Nnode ast,HTable *table)
 {
     char *label_start = generate_unique_label();
     char *label_end = generate_unique_label();
-    token_while = label_start;
-    //fprintf(stdout, "LABEL %s\n", label_start);
+    //token_while = label_start;
+    fprintf(stdout, "LABEL %s\n", label_start);
     generate(ast->children[0], table);
-    if (token_while != NULL)
-    {
-        token_while = NULL;
-    }
-    if (ast->data->inmain) {
-        fprintf(stdout, "JUMPIFNEQ %s GF@%s bool@true\n", label_end, ast->children[0]->data->data);
-    } else {
-        fprintf(stdout, "JUMPIFNEQ %s LF@%s bool@true\n", label_end, ast->children[0]->data->data);
-    }
+    // if (token_while != NULL)
+    // {
+    //     token_while = NULL;
+    // // }
+    // if (ast->data->inmain) {
+    //     fprintf(stdout, "JUMPIFNEQ %s GF@%s bool@true\n", label_end, ast->children[0]->data->data);
+    // } else {
+        fprintf(stdout, "JUMPIFNEQ %s TF@%s bool@true\n", label_end, ast->children[0]->data->data);
+   // }
     generate(ast->children[1], table);
     fprintf(stdout, "JUMP %s\n", label_start);
     fprintf(stdout, "LABEL %s\n", label_end);
@@ -793,12 +784,30 @@ int data2int(char *data)
     {
         return 3;
     }
-    else
+    else if(!strcmp(data,"chr"))
+    {
         return 4;
+    }
+    else if(!strcmp(data,"len"))
+    {
+        return 5;
+    }
+    else if(!strcmp(data,"substr"))
+    {
+        return 6;
+    }
+    else if(!strcmp(data,"ord"))
+    {
+        return 7;
+    }
+    else
+        return 8;
 }
 
 void indetify_call_function(Nnode ast)
-{
+{   
+    fprintf(stdout, "CREATEFRAME\n");
+    fprintf(stdout, "PUSHFRAME\n");
     int tmp = data2int(ast->data->data);
     switch (tmp){
         case 0:
@@ -818,23 +827,25 @@ void indetify_call_function(Nnode ast)
             generate_call(ast);
             break;
     }
+    fprintf(stdout, "POPFRAME\n");
 }
 
 void generate_write_func(Nnode ast) {
 
     char *tmp = generate_unique_identifier();
-    fprintf(stdout,"DEFVAR LF%s\n",tmp);
+    fprintf(stdout,"DEFVAR LF@%s\n",tmp);
     for(int i = 0; ast->children[0]->children[i]!= NULL; i++)
-    {
+    {   
+        
         fprintf(stdout,"MOVE LF@%s %s\n",tmp,ast->children[0]->children[i]->data->data);
-        fprintf(stdout,"WRITE LF%s\n",tmp);
+        fprintf(stdout,"WRITE LF@%s\n",tmp);
     }
 }
 
 void generate_read_func(Nnode ast, char *type) {
 
     fprintf(stdout,"DEFVAR LF@%s\n",ast->parent_node->children[0]->data->data);
-    fprintf(stdout,"READ TF@%s %s\n",ast->parent_node->children[0]->data->data,type);
+    fprintf(stdout,"READ LF@%s %s\n",ast->parent_node->children[0]->data->data,type);
 }
 
 void identify_header(Nnode ast, HTable *table)
@@ -915,7 +926,7 @@ int generate(Nnode ast, HTable *table)
                 if(ast->children[i]->data->ntype == FUNC_DEF)
                     identify_header(ast->children[i],table);
 
-            fprintf(stdout, "LABEL $main\n");
+            fprintf(stdout, "LABEL $$main\n");
             create_local_frame();
 
             //identify_header(ast, table);
