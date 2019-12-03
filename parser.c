@@ -408,6 +408,8 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         previous_token = T_RETURN;
 
         IF_RETURN(get_token(), TOKEN_ERR)
+        //if(token.type == T_VAL || token.type == T_VAR)
+        ast_add_node(&return_node, PARAM, create_value(&token),is_global_scope(scope),indent_stack->top->indent_counter);
         IF_RETURN(get_token(), TOKEN_ERR)
         result = expression(scope, stack, table, return_node, NULL, indent_stack, previous_token);
 

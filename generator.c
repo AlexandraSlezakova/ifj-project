@@ -16,6 +16,7 @@ FrameVars glob = NULL;
 
 
 
+
 int lenHelper(unsigned long long x) {
     if (x >= 1000000000) return 10;
     if (x >= 100000000)  return 9;
@@ -252,11 +253,11 @@ void generate_math_aritmetic(Nnode ast)
         fprintf(stdout, "ADD LF@%s LF@%s LF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
         fprintf(stdout, "JUMP %s\n", end_add);
         fprintf(stdout, "LABEL %s\n", var1_str);
-        fprintf(stdout, "JUMPIFEQ %s TF@%s string@string\n", var2_str, var2_str);
+        fprintf(stdout, "JUMPIFNEQ %s TF@%s string@string\n", var2_str, var2_str);
         fprintf(stdout, "EXIT int@4\n");
         fprintf(stdout, "JUMP %s\n", end_add);
         fprintf(stdout, "LABEL %s\n", var2_str);
-        fprintf(stdout, "CONCAT LF@%s LF@%s LF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
+        fprintf(stdout, "CONCAT LF@%s LF@%s LF@%s\n", new, ast->children[1]->data->data, ast->children[0]->data->data);
         fprintf(stdout, "LABEL %s\n", end_add);
     } else {
         aritmetic_operation(ast);
@@ -433,10 +434,10 @@ void math_operation(Nnode ast, HTable *table)
             fprintf(stdout, "MOVE GF@%s LF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
         } else {
 
+             fprintf(stdout, "adfasdf\n");
             fprintf(stdout, "MOVE LF@%s LF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
         }
     }
-    
     fprintf(stdout, "POPFRAME\n");
 }
 
@@ -446,17 +447,16 @@ int generate_assign(Nnode ast, HTable *table)
 
     if (ast->data->inmain) {
 
-        
+        if(ast->children[1]->data->ntype == CALL)
+        {
+            indetify_call_function(ast->children[1]);
+            return 0;
+        }
 
         if (ast->children[0]->data->ntype == VAR_DEF) {
 
             generate_vardef( ast);
             //IF_RETURN(value != OK, ERR_INTERNAL)
-        }
-        if(ast->children[1]->data->ntype == CALL)
-        {
-            indetify_call_function(ast->children[1]);
-            return 0;
         }
         if (ast->children[1] == NULL)
             return 0;
@@ -754,18 +754,19 @@ void generate_func_def(Nnode ast,HTable *table)
         ast->children[0]->children[i]->data->data=newvar;
         ast_rename_value(com,ast->children[1],newvar);
     }
-
     generate(ast->children[1], table);
-     fprintf(stdout, "DEFsdfasdV\n");
-        generate(ast->children[2], table);
+    
+    //generate_return(ast->children[2]);
+
     fprintf(stdout, "\n\n");
 }
 
 void generate_return(Nnode ast)
 {
-    fprintf(stdout,"POPFRAME\n");
-    if(ast->children[0]->data->data != NULL)
-        fprintf(stdout, "MOVE TF@%%RETVAL %s\n", ast->children[0]->data->data);
+    //fprintf(stdout,"POPFRAME\n");
+    if(ast->children[0]!= NULL)
+        if(ast->children[0]->data->data != NULL)
+            fprintf(stdout, "MOVE TF@%%RETVAL %s\n", ast->children[0]->data->data);
 
     fprintf(stdout, "RETURN\n");
 }
@@ -825,24 +826,109 @@ void indetify_call_function(Nnode ast)
             break;
         case 3:
             generate_write_func(ast);
-            fprintf(stdout, "POPFRAME\n");
-            return;
             break;
         case 4 :
             generate_chr_func(ast);
         case 5:
+            generate_len_func(ast);
+        case 6:
+        generate_substr_func(ast);
         default:
             generate_call(ast);
             break;
     }
     fprintf(stdout, "POPFRAME\n");
-    if (ast->data->inmain){
-        fprintf(stdout, "MOVE GF@%s TF@%s\n", ast->parent_node->children[0]->data->data, ast->parent_node->children[0]->data->data);   
-    } else {
-        fprintf(stdout, "MOVE LF@%s TF@%s\n", ast->parent_node->children[0]->data->data, ast->parent_node->children[0]->data->data);
-    }
+}
+
+void generate_substr_func() {
+
+    fprintf(stdout, "LABEL F_SUBSTR\n\n");
     
-   
+    fprintf(stdout,"PUSHFRAME\n");
+    
+    fprintf(stdout, "DEFVAR LF@SBSTR_NOW\n");
+    fprintf(stdout, "DEFVAR LF@SBSTR_CNT\n");
+    fprintf(stdout, "DEFVAR LF@SBSTR_ITER\n");
+    fprintf(stdout, "DEFVAR LF@SBSTR_TYPE\n\n");
+
+
+    fprintf(stdout, "TYPE LF@SBSTR_TYPE LF@F_1\n");
+    fprintf(stdout, "JUMPIFNEQ SBSTR_ERR LF@SBSTR_TYPE string@string\n");
+    
+    fprintf(stdout, "TYPE LF@SBSTR_TYPE LF@F_2\n");
+    fprintf(stdout, "JUMPIFNEQ SBSTR_ERR LF@SBSTR_TYPE string@int\n");
+    
+    fprintf(stdout, "TYPE LF@SBSTR_TYPE LF@F_3\n");
+    fprintf(stdout,"JUMPIFNEQ SBSTR_ERR LF@SBSTR_TYPE string@int\n");
+    
+    fprintf(stdout, "JUMP SBSTR_CONT\n\n");
+    
+    fprintf(stdout, "LABEL SBSTR_ERR\n");
+    fprintf(stdout, "EXIT int@53\n\n");
+    
+    fprintf(stdout, "LABEL SBSTR_CONT\n");
+    fprintf(stdout, "CREATEFRAME\n");
+    fprintf(stdout, "DEFVAR LF@SBSTR_BOOL\n");
+    fprintf(stdout, "DEFVAR LF@SBSTR_LEN\n");
+    fprintf(stdout, "DEFVAR TF@LF@F_1\n");
+    fprintf(stdout, "MOVE TF@SBSTR_1 LF@F_1\n\n");
+    
+    fprintf(stdout, "CALL $F_LEN\n");
+    fprintf(stdout, "DEFVAR LF@%%retval\n");
+    fprintf(stdout, "MOVE LF@SBSTR_LEN TF@%%retval\n");
+    fprintf(stdout, "SUB LF@SBSTR_LEN LF@SBSTR_LEN int@1\n");
+    fprintf(stdout, "LT LF@SBSTR_BOOL LF@F_1 int@0\n");
+    fprintf(stdout, "JUMPIFEQ SBSTR_OUTOFFIELD LF@SBSTR_BOOL bool@true\n");
+    fprintf(stdout, "GT LF@SBSTR_BOOL LF@F_2 LF@SBSTR_LEN\n");
+    fprintf(stdout, "JUMPIFEQ SBSTR_OUTOFFIELD LF@SBSTR_BOOL bool@true\n");
+    fprintf(stdout, "ADD LF@SBSTR_LEN LF@SBSTR_LEN int@1\n");
+    fprintf(stdout, "SUB LF@SBSTR_LEN LF@SBSTR_LEN LF@F_2\n");
+    fprintf(stdout, "LT LF@SBSTR_BOOL LF@F_3 int@0\n");
+    fprintf(stdout, "JUMPIFEQ SBSTR_OUTOFFIELD LF@SBSTR_BOOL bool@true\n");
+    fprintf(stdout, "GT LF@SBSTR_BOOL LF@F_3 LF@SBSTR_LEN\n");
+    fprintf(stdout, "MOVE LF@SBSTR_ITER LF@SBSTR_LEN\n");
+    fprintf(stdout, "JUMPIFEQ SBSTR_START LF@SBSTR_BOOL bool@true\n");
+    fprintf(stdout, "MOVE LF@SBSTR_ITER LF@F_3\n");
+    fprintf(stdout, "JUMP SBSTR_START\n\n");
+
+    fprintf(stdout, "LABEL SBSTR_OUTOFFIELD\n");
+    fprintf(stdout, "MOVE LF@%%retval nil@nil\n\n");
+
+    fprintf(stdout, "JUMP SBSTR_END\n");
+    fprintf(stdout, "LABEL SBSTR_START\n");
+    fprintf(stdout, " MOVE LF@%%retval string@\n");
+    fprintf(stdout, "MOVE LF@CNT int@0\n");
+    fprintf(stdout, "LABEL SBSTR_LOOP\n");
+    fprintf(stdout, "JUMPIFEQ SBSTR_END LF@CNT LF@SBSTR_ITER\n");
+    fprintf(stdout, "GETCHAR LF@SBSTR_NOW LF@F_1 LF@F_2\n");
+    fprintf(stdout, "CONCAT LF@%%retval LF@%%retval LF@SBSTR_NOW\n");
+    fprintf(stdout, "ADD LF@CNT LF@CNT int@1\n");
+    fprintf(stdout, "ADD LF@F_2 LF@F_2 int@1\n");
+    fprintf(stdout, "JUMP SBSTR_LOOP\n\n");
+    fprintf(stdout, "LABEL SBSTR_END\n");
+    fprintf(stdout, "POPFRAME\n");
+    fprintf(stdout, "RETURN\n\n");
+}
+
+void generate_len_func() {
+
+    fprintf(stdout, "LABEL F_LEN\n\n");
+    
+    fprintf(stdout,"PUSHFRAME\n");
+    
+    
+
+    fprintf(stdout,"DEFVAR LF@%%LEN_TYPE\n");
+
+    fprintf(stdout,"TYPE LF@%%LEN_TYPE LF@F_1\n");
+    fprintf(stdout,"JUMPIFEQ LEN_CONT LF@%%LEN_TYPE string@string\n");
+    fprintf(stdout,"EXIT int@53\n");
+    fprintf(stdout,"LABEL LEN_CONT\n");
+    fprintf(stdout,"DEFVAR LF@%%retval\n");
+    fprintf(stdout,"STRLEN LF@%%retval LF@F_1\n");
+    fprintf(stdout,"POPFRAME\n");
+    fprintf(stdout,"RETURN\n");
+
 }
 
 void generate_chr_func(Nnode ast) {
@@ -862,17 +948,17 @@ void generate_chr_func(Nnode ast) {
 
     fprintf(stdout, "TYPE LF@%%CHR_TYPE LF@%%CHR_1\n");
 
-    fprintf(stdout, "JUMPIFNEQ QUIT LF@%%CHR_TYPE string@int\n");
+    fprintf(stdout, "JUMPIFNEQ CHR_QUIT LF@%%CHR_TYPE string@int\n");
     fprintf(stdout, "LT LF@%%CHR_TYPE LF@%%CHR_1 int@0\n");
-    fprintf(stdout, "JUMPIFNEQ QUIT LF@%%CHR_TYPE bool@true\n");
+    fprintf(stdout, "JUMPIFNEQ CHR_QUIT LF@%%CHR_TYPE bool@true\n");
     fprintf(stdout, "GT LF@%%CHR_TYPE LF@%%CHR_1 int@255\n");
-    fprintf(stdout, "JUMPIFNEQ QUIT LF@%%CHR_TYPE bool@true\n");
-    fprintf(stdout, "JUMP CONT\n");
+    fprintf(stdout, "JUMPIFNEQ CHR_QUIT LF@%%CHR_TYPE bool@true\n");
+    fprintf(stdout, "JUMP CHR_CONT\n");
 
-    fprintf(stdout, "LABEL QUIT\n");
-    fprintf(stdout, "EXIT int@4\n");
+    fprintf(stdout, "LABEL CHR_QUIT\n");
+    fprintf(stdout, "EXIT int@58\n");
 
-    fprintf(stdout, "LABEL CONT\n");
+    fprintf(stdout, "LABEL CHR_CONT\n");
 
     fprintf(stdout, "DEFVAR LF@%%retval\n");
     fprintf(stdout, "INT2CHAR LF@%%retval LF@%%CHR_1\n");
@@ -888,38 +974,21 @@ void generate_chr_func(Nnode ast) {
 }
 
 void generate_write_func(Nnode ast) {
-    FrameVars ptr = glob;
-    int a = 0;
+
     char *tmp = generate_unique_identifier();
     fprintf(stdout,"DEFVAR LF@%s\n",tmp);
     for(int i = 0; ast->children[0]->children[i]!= NULL; i++)
     {   
-        if (ast->children[0]->children[i]->data->ntype == VAL){
-            fprintf(stdout,"MOVE LF@%s %s\n",tmp,ast->children[0]->children[i]->data->data);
-        } else if (ast->children[0]->children[i]->data->ntype == VAR){
-            while (ptr != NULL) {
-            if (!strcmp(ptr->var, ast->children[0]->children[i]->data->data)) {
-                a = 1;
-                break;
-            }
-            ptr = ptr->next;
-            }
-            if (a == 1) {
-                fprintf(stdout, "MOVE LF@%s GF@%s\n", tmp, ast->children[0]->children[i]->data->data);
-            } else {
-
-                fprintf(stdout, "MOVE LF@%s LF@%s\n", tmp, ast->children[0]->children[i]->data->data);
-            }
-        }
         
+        fprintf(stdout,"MOVE LF@%s %s\n",tmp,ast->children[0]->children[i]->data->data);
         fprintf(stdout,"WRITE LF@%s\n",tmp);
     }
 }
 
 void generate_read_func(Nnode ast, char *type) {
 
-    fprintf(stdout, "DEFVAR LF@%s\n", ast->parent_node->children[0]->data->data);
-    fprintf(stdout, "READ LF@%s %s\n", ast->parent_node->children[0]->data->data, type);
+    fprintf(stdout,"DEFVAR LF@%s\n",ast->parent_node->children[0]->data->data);
+    fprintf(stdout,"READ LF@%s %s\n",ast->parent_node->children[0]->data->data,type);
 }
 
 void identify_header(Nnode ast, HTable *table)
@@ -1009,7 +1078,7 @@ int generate(Nnode ast, HTable *table)
             for (int i = 0; i < ast->data->child_count; i++) {
                 generate(ast->children[i], table);
             }
-        } else if (ast->data->ntype != PROG || ast->data->ntype != FUNC_DEF) {
+        } else if (ast->data->ntype != PROG && ast->data->ntype !=FUNC_DEF) {
             identify_header(ast, table);
         }
         if (ast->data->ntype == PROG) {
