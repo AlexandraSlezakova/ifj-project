@@ -39,7 +39,15 @@ void ast_init(Nnode *node)
 //    }
 //}
 
-
+void NstackFirstPush(NStack *s, Nnode node)
+{
+    for(int i = s->top - 1; i >= 0; i--)
+    {
+        s->nstack[i+1] = s->nstack[i];
+    }
+    s->nstack[0]=node;
+    s->top += 1;
+}
 
 void ast_rename_value(char *com, Nnode ast, char *new_c)
 {
