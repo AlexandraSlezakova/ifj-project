@@ -252,11 +252,11 @@ void generate_math_aritmetic(Nnode ast)
         fprintf(stdout, "ADD LF@%s LF@%s LF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
         fprintf(stdout, "JUMP %s\n", end_add);
         fprintf(stdout, "LABEL %s\n", var1_str);
-        fprintf(stdout, "JUMPIFNEQ %s TF@%s string@string\n", var2_str, var2_str);
+        fprintf(stdout, "JUMPIFEQ %s TF@%s string@string\n", var2_str, var2_str);
         fprintf(stdout, "EXIT int@4\n");
         fprintf(stdout, "JUMP %s\n", end_add);
         fprintf(stdout, "LABEL %s\n", var2_str);
-        fprintf(stdout, "CONCAT LF@%s LF@%s LF@%s\n", new, ast->children[1]->data->data, ast->children[0]->data->data);
+        fprintf(stdout, "CONCAT LF@%s LF@%s LF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
         fprintf(stdout, "LABEL %s\n", end_add);
     } else {
         aritmetic_operation(ast);
@@ -433,10 +433,10 @@ void math_operation(Nnode ast, HTable *table)
             fprintf(stdout, "MOVE GF@%s LF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
         } else {
 
-             fprintf(stdout, "adfasdf\n");
             fprintf(stdout, "MOVE LF@%s LF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
         }
     }
+    
     fprintf(stdout, "POPFRAME\n");
 }
 
@@ -446,16 +446,17 @@ int generate_assign(Nnode ast, HTable *table)
 
     if (ast->data->inmain) {
 
-        if(ast->children[1]->data->ntype == CALL)
-        {
-            indetify_call_function(ast->children[1]);
-            return 0;
-        }
+        
 
         if (ast->children[0]->data->ntype == VAR_DEF) {
 
             generate_vardef( ast);
             //IF_RETURN(value != OK, ERR_INTERNAL)
+        }
+        if(ast->children[1]->data->ntype == CALL)
+        {
+            indetify_call_function(ast->children[1]);
+            return 0;
         }
         if (ast->children[1] == NULL)
             return 0;
@@ -753,8 +754,10 @@ void generate_func_def(Nnode ast,HTable *table)
         ast->children[0]->children[i]->data->data=newvar;
         ast_rename_value(com,ast->children[1],newvar);
     }
-    generate(ast->children[1], table);
 
+    generate(ast->children[1], table);
+     fprintf(stdout, "DEFsdfasdV\n");
+        generate(ast->children[2], table);
     fprintf(stdout, "\n\n");
 }
 
@@ -822,6 +825,8 @@ void indetify_call_function(Nnode ast)
             break;
         case 3:
             generate_write_func(ast);
+            fprintf(stdout, "POPFRAME\n");
+            return;
             break;
         case 4 :
             generate_chr_func(ast);
@@ -831,6 +836,13 @@ void indetify_call_function(Nnode ast)
             break;
     }
     fprintf(stdout, "POPFRAME\n");
+    if (ast->data->inmain){
+        fprintf(stdout, "MOVE GF@%s TF@%s\n", ast->parent_node->children[0]->data->data, ast->parent_node->children[0]->data->data);   
+    } else {
+        fprintf(stdout, "MOVE LF@%s TF@%s\n", ast->parent_node->children[0]->data->data, ast->parent_node->children[0]->data->data);
+    }
+    
+   
 }
 
 void generate_chr_func(Nnode ast) {
@@ -876,21 +888,38 @@ void generate_chr_func(Nnode ast) {
 }
 
 void generate_write_func(Nnode ast) {
-
+    FrameVars ptr = glob;
+    int a = 0;
     char *tmp = generate_unique_identifier();
     fprintf(stdout,"DEFVAR LF@%s\n",tmp);
     for(int i = 0; ast->children[0]->children[i]!= NULL; i++)
     {   
+        if (ast->children[0]->children[i]->data->ntype == VAL){
+            fprintf(stdout,"MOVE LF@%s %s\n",tmp,ast->children[0]->children[i]->data->data);
+        } else if (ast->children[0]->children[i]->data->ntype == VAR){
+            while (ptr != NULL) {
+            if (!strcmp(ptr->var, ast->children[0]->children[i]->data->data)) {
+                a = 1;
+                break;
+            }
+            ptr = ptr->next;
+            }
+            if (a == 1) {
+                fprintf(stdout, "MOVE LF@%s GF@%s\n", tmp, ast->children[0]->children[i]->data->data);
+            } else {
+
+                fprintf(stdout, "MOVE LF@%s LF@%s\n", tmp, ast->children[0]->children[i]->data->data);
+            }
+        }
         
-        fprintf(stdout,"MOVE LF@%s %s\n",tmp,ast->children[0]->children[i]->data->data);
         fprintf(stdout,"WRITE LF@%s\n",tmp);
     }
 }
 
 void generate_read_func(Nnode ast, char *type) {
 
-    fprintf(stdout,"DEFVAR LF@%s\n",ast->parent_node->children[0]->data->data);
-    fprintf(stdout,"READ LF@%s %s\n",ast->parent_node->children[0]->data->data,type);
+    fprintf(stdout, "DEFVAR LF@%s\n", ast->parent_node->children[0]->data->data);
+    fprintf(stdout, "READ LF@%s %s\n", ast->parent_node->children[0]->data->data, type);
 }
 
 void identify_header(Nnode ast, HTable *table)
@@ -980,7 +1009,7 @@ int generate(Nnode ast, HTable *table)
             for (int i = 0; i < ast->data->child_count; i++) {
                 generate(ast->children[i], table);
             }
-        } else if (ast->data->ntype != PROG && ast->data->ntype !=FUNC_DEF) {
+        } else if (ast->data->ntype != PROG || ast->data->ntype != FUNC_DEF) {
             identify_header(ast, table);
         }
         if (ast->data->ntype == PROG) {
