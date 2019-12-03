@@ -73,6 +73,7 @@ typedef struct {
 NStack* nStack;
 NStack* Arr_Nstack;
 
+void NstackFirstPush(NStack *s, Nnode node);
 void NstackPopGround (NStack *s);
 void NstackPopAll (NStack *s);
 void NstackPop (NStack *s);
