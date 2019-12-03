@@ -15,6 +15,7 @@ char *token_while = NULL;
 FrameVars glob = NULL;
 
 
+
 int lenHelper(unsigned long long x) {
     if (x >= 1000000000) return 10;
     if (x >= 100000000)  return 9;
@@ -823,11 +824,55 @@ void indetify_call_function(Nnode ast)
             generate_write_func(ast);
             break;
         case 4 :
+            generate_chr_func(ast);
+        case 5:
         default:
             generate_call(ast);
             break;
     }
     fprintf(stdout, "POPFRAME\n");
+}
+
+void generate_chr_func(Nnode ast) {
+
+    /*char c = ast->children[0]->children[0]->data->data;
+    free(ast->children[0]->children[0]->data);
+    free(ast->children[0]->children[0]);
+    free(ast->children[0]->data);
+    free(ast->children[0]);
+    ast->data->data = &c;
+    */
+    fprintf(stdout, "PUSHFRAME \n");
+    fprintf(stdout, "DEFVAR LF@%%CHR_1 \n");
+    fprintf(stdout, "DEFVAR LF@%%CHR_TYPE\n");
+    fprintf(stdout, "MOVE LF@%%CHR_1 %s\n",ast->children[0]->children[0]->data->data);
+
+
+    fprintf(stdout, "TYPE LF@%%CHR_TYPE LF@%%CHR_1\n");
+
+    fprintf(stdout, "JUMPIFNEQ QUIT LF@%%CHR_TYPE string@int\n");
+    fprintf(stdout, "LT LF@%%CHR_TYPE LF@%%CHR_1 int@0\n");
+    fprintf(stdout, "JUMPIFNEQ QUIT LF@%%CHR_TYPE bool@true\n");
+    fprintf(stdout, "GT LF@%%CHR_TYPE LF@%%CHR_1 int@255\n");
+    fprintf(stdout, "JUMPIFNEQ QUIT LF@%%CHR_TYPE bool@true\n");
+    fprintf(stdout, "JUMP CONT\n");
+
+    fprintf(stdout, "LABEL QUIT\n");
+    fprintf(stdout, "EXIT int@4\n");
+
+    fprintf(stdout, "LABEL CONT\n");
+
+    fprintf(stdout, "DEFVAR LF@%%retval\n");
+    fprintf(stdout, "INT2CHAR LF@%%retval LF@%%CHR_1\n");
+
+    fprintf(stdout, "POPFRAME\n");
+    fprintf(stdout, "RETURN\n");
+
+
+
+    if(c > 255 || c < 0)
+        fprintf(stdout, "EXIT 58");
+
 }
 
 void generate_write_func(Nnode ast) {
