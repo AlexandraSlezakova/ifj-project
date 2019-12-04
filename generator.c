@@ -15,7 +15,7 @@ char *token_while = NULL;
 FrameVars glob = NULL;
 
 
-
+void genereate_ord_func(Nnode ast);
 
 int lenHelper(unsigned long long x) {
     if (x >= 1000000000) return 10;
@@ -832,12 +832,62 @@ void indetify_call_function(Nnode ast)
         case 5:
             generate_len_func(ast);
         case 6:
-        generate_substr_func(ast);
+            generate_substr_func(ast);
+        case 7:
+            genereate_ord_func(ast);
         default:
             generate_call(ast);
             break;
     }
     fprintf(stdout, "POPFRAME\n");
+}
+
+void genereate_ord_func(Nnode ast) {
+     
+    fprintf(stdout, "LABEL $F_ORD\n\n");
+     
+    fprintf(stdout, "PUSHFRAME\n");
+    fprintf(stdout, "DEFVAR LF@%%retval\n");
+    fprintf(stdout, "DEFVAR LF@ORD_1\n");
+    fprintf(stdout, "DEFVAR LF@ORD_CNT\n");
+    fprintf(stdout, "DEFVAR LF@ORD_TYPE1\n");
+    fprintf(stdout, "DEFVAR LF@ORD_TYPE2\n\n");
+    
+    fprintf(stdout, "TYPE LF@ORD_TYPE1 LF@F_1\n");
+    fprintf(stdout, "JUMPIFNEQ ORD_ERR LF@ORD_TYPE1 string@string\n");
+    
+    fprintf(stdout, "TYPE LF@ORD_TYPE2 LF@F_2\n");
+    fprintf(stdout, "JUMPIFEQ ORD_CONT LF@ORD_TYPE2 string@int\n");
+    fprintf(stdout, "LABEL ORD_ERR\n");
+    fprintf(stdout, "EXIT int@4\n\n");
+    
+    fprintf(stdout, "LABEL ORD_CONT\n");
+    fprintf(stdout, "CREATEFRAME\n");
+    fprintf(stdout, "DEFVAR LF@ORD_BOOL\n");
+    fprintf(stdout, "DEFVAR LF@ORD_LEN\n\n");
+    
+    fprintf(stdout, "CALL $length\n");
+    fprintf(stdout, "MOVE LF@ORD_LEN TF@%%retval\n");
+    fprintf(stdout, "SUB LF@ORD_LEN LF@ORD_LEN int@1\n");
+    fprintf(stdout, "LT LF@ORD_BOOL LF@F_2 int@0\n");
+    fprintf(stdout, "JUMPIFEQ ORD_ERR_OUT_OF_FIELD LF@ORD_BOOL bool@true\n");
+    fprintf(stdout, "GT LF@ORD_BOOL LF@F_2 LF@ORD_LEN\n");
+    fprintf(stdout, "JUMPIFEQ ORD_ERR_OUT_OF_FIELD LF@ORD_BOOL bool@true\n");
+    fprintf(stdout, "JUMP ORD_CONT2\n\n");
+    
+    fprintf(stdout, "LABEL ORD_ERR_OUT_OF_FIELD\n");
+    fprintf(stdout, "MOVE LF@%%retval nil@nil\n\n");
+
+    fprintf(stdout, "JUMP ORD_END\n");
+    fprintf(stdout, "LABEL ORD_CONT2\n");
+    fprintf(stdout, "MOVE LF@ORD_1 LF@F_1\n");
+    fprintf(stdout, "MOVE LF@ORD_CNT LF@F_2\n");
+    fprintf(stdout, "STRI2INT LF@%%retval LF@ORD_1 LF@ORD_CNT\n\n");
+    
+    fprintf(stdout, "LABEL ORD_END\n");
+    fprintf(stdout, "POPFRAME\n");
+    fprintf(stdout, "RETURN\n\n");
+
 }
 
 void generate_substr_func() {
