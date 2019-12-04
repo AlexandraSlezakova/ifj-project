@@ -394,12 +394,10 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
 
         /* INDENT */
         /* indent has to be greater */
-        if (indent_stack->top->indent_counter == indent_counter) {
-            return SYNTAX_ERR;
-        }
-        else if (indent_stack->top->indent_counter > indent_counter) {
+        if (indent_stack->top->indent_counter >= indent_counter) {
             return LEX_ERR;
         }
+
         IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
 
         result = handle_indent(scope, table, while_body, indent_stack, functions_list);
