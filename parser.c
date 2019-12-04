@@ -9,6 +9,7 @@
  */
 
 #include "parser.h"
+#include "scanner.h"
 
 
 int function_arguments(HTable* function_symtable, char* function_name, Nnode ast, STACK* indent_stack)
@@ -240,6 +241,9 @@ int statement_list(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDL
 
     }
 
+    if (!is_eol(token.type))
+        unget_token();
+
     return OK;
 
 }
@@ -447,9 +451,11 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
 
         }
 
+        result = SYNTAX_OK;
+
     }
     else if (token.type == T_IS_EOL || token.type == T_IS_EOF) {
-        result = 0;
+        result = SYNTAX_OK;
     }
 
     free(previous_tkn);
