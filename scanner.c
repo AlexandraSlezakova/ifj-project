@@ -83,7 +83,6 @@ int get_token()
             token.type = T_IS_ERR;
             line_position++;
             line_counter++;
-            fprintf(stderr, "Wrong token - line:%d (position:%d)!\n", line_counter, line_position);
             return TOKEN_ERR;
         }
 
