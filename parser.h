@@ -45,7 +45,6 @@ PSA_SYMBOL psa_rules[3][4] =
     {NON_TERMINAL, MATHEMATICAL_OPERATION, NON_TERMINAL, END_HANDLE}    /* E -> E op E */
 };
 
-static int counter = 0;
 HTable *global_hashtable;
 int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList *functions_list);
 int statement_list(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList *functions_list);
