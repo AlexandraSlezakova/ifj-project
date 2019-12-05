@@ -487,9 +487,9 @@ int generate_assign(Nnode ast, HTable *table)
 
             }
             if (in_glob == 1) {
-                fprintf(stdout, "MOVE GF@%s TF@%%retval\n", ast->children[0]->data->data);
+                fprintf(stdout, "MOVE GF@%s TF@%%RETVAL\n", ast->children[0]->data->data);
             } else {
-                fprintf(stdout, "MOVE LF@%s TF@%%retval\n", ast->children[0]->data->data);
+                fprintf(stdout, "MOVE LF@%s TF@%%RETVAL\n", ast->children[0]->data->data);
             }
             return 0;
         }
@@ -800,11 +800,12 @@ void generate_call(Nnode ast)
                     break;
                 }
 
-                if (in_glob == 1) {
-                    fprintf(stdout, "MOVE TF@%s GF@%s\n", newvar, ast->children[0]->children[i]->data->data);
-                } else {
-                    fprintf(stdout, "MOVE TF@%s LF@%s\n", newvar, ast->children[0]->children[i]->data->data);
-                }
+            }
+
+            if (in_glob == 1) {
+                fprintf(stdout, "MOVE TF@%s GF@%s\n", newvar, ast->children[0]->children[i]->data->data);
+            } else {
+                fprintf(stdout, "MOVE TF@%s LF@%s\n", newvar, ast->children[0]->children[i]->data->data);
             }
         }
         
@@ -824,18 +825,21 @@ void generate_func_def(Nnode ast,HTable *table)
     func = true;
     fprintf(stdout, "LABEL %s\n", ast->data->data);
     fprintf(stdout, "PUSHFRAME\n");
+    fprintf(stdout, "DEFVAR LF@%%RETVAL\n");
     for(int i = 0; ast->children[0]->children[i] != NULL; i++)
     {
         char *com=malloc(200);
         strcpy(com,ast->children[0]->children[i]->data->data);
-        //char *com=ast->children[0]->children[i]->data->data;
+        //com=ast->children[0]->children[i]->data->data;
         char *newvar = generate_unique_func_identifier(1,'F');
         //fprintf(stdout, "DEFVAR LF@%s\n", newvar);
-        //fprintf(stdout, "MOVE LF@%s LF@%s\n\n", newvar, generate_unique_func_identifier(1,'F'));
+
+        //fprintf(stdout, "MOVE LF@%s LF@%s\n\n", newvar, ast->children[0]->children[i]->data->data);
         free(ast->children[0]->children[i]->data->data);
         ast->children[0]->children[i]->data->data=newvar;
         ast_rename_value(com,ast->children[1],newvar);
     }
+    
    
     generate(ast->children[1], table);
     //generate(ast->children[2], table);
@@ -846,12 +850,16 @@ void generate_func_def(Nnode ast,HTable *table)
 void generate_return(Nnode ast)
 {   
      fprintf(stdout,"POPFRAME\n");
-    if(ast->children[0] != NULL)
-        if(ast->children[0]->data->data != NULL)
-            fprintf(stdout, "MOVE TF@%%RETVAL %s\n", ast->children[0]->data->data);
-        else
+    if(ast->children[0] != NULL) {
+        if(ast->children[0]->data->data != NULL){
+            fprintf(stdout, "MOVE TF@%%RETVAL TF@%s\n", ast->children[0]->data->data);
+        } else {
             fprintf(stdout, "MOVE TF@%%RETVAL nil@nil\n");
-
+        }
+        
+    } else
+        fprintf(stdout, "MOVE TF@%%RETVAL nil@nil\n"); 
+       
     fprintf(stdout, "RETURN\n");
 }
 
