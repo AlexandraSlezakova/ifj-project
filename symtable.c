@@ -86,8 +86,10 @@ HTItem *ht_search(HTable *symtable, char *key) {
     tmp = symtable->first[hash];
 
     while(tmp != NULL){
-        if (strcmp(tmp->key, key) == 0)
-            return tmp;
+        if (tmp->key != NULL) {
+            if (strcmp(tmp->key, key) == 0)
+                return tmp;
+        }
         tmp = tmp->next; /* move to next item */
     }
 

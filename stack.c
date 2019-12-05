@@ -105,6 +105,7 @@ int stack_push_indent(STACK *stack, int count_indent, TType indent_type) {
     new_elem->next = stack->top;
     new_elem->indent_counter = count_indent;
     new_elem->indent_type = indent_type;
+    new_elem->token_type = token.type;
 
     stack->top = new_elem;
 

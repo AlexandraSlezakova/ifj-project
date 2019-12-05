@@ -599,7 +599,6 @@ int get_token()
                     iterator = 0;
                     line_position = 0;
                     line_counter++;
-                    indent_counter = 0;
                     buffer = NULL;
                 }
                 else {
