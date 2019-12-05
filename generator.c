@@ -13,6 +13,7 @@
 
 char *token_while = NULL;
 FrameVars glob = NULL;
+bool func;
 
 
 
@@ -189,6 +190,7 @@ void generate_math_aritmetic(Nnode ast)
     char *var2_str = generate_unique_label();
     char *end_add = generate_unique_label();
 
+
     fprintf(stdout, "CREATEFRAME\n");
     fprintf(stdout, "DEFVAR LF@%s\n", new);
 
@@ -198,7 +200,8 @@ void generate_math_aritmetic(Nnode ast)
     if (ast->children[0]->data->ntype == VAL) {
         ast->children[0]->data->inmain = false;
         save_val_to_variable(ast->children[0]);
-    } else if (ast->children[0]->data->inmain) {           //if variable is from globalframe transforme it into localframe{
+    } 
+    else if (ast->children[0]->data->inmain) {           //if variable is from globalframe transforme it into localframe{
         fprintf(stdout, "DEFVAR LF@%s\n", ast->children[0]->data->data);
         fprintf(stdout, "MOVE LF@%s GF@%s\n", ast->children[0]->data->data, ast->children[0]->data->data);
     }
@@ -206,7 +209,8 @@ void generate_math_aritmetic(Nnode ast)
     if (ast->children[1]->data->ntype == VAL) {
         ast->children[1]->data->inmain = false;
         save_val_to_variable(ast->children[1]);
-    } else if (ast->children[1]->data->inmain) {
+    } 
+    else if (ast->children[1]->data->inmain) {
         fprintf(stdout, "DEFVAR LF@%s\n", ast->children[1]->data->data);
         fprintf(stdout, "MOVE LF@%s GF@%s\n", ast->children[1]->data->data, ast->children[1]->data->data);
     }
@@ -338,7 +342,7 @@ int generate_vardef( Nnode ast)
     //         //fprintf(stdout, "MOVE %s@%s %s\n", memory_model(ast), found->key, ast->children[1]->data->data);
     //    // }
     // } else {
-        glob_frame_vars(new);
+        
     if (ast->data->inmain){
         // if (glob == NULL) {
         //     glob = new;
@@ -348,7 +352,7 @@ int generate_vardef( Nnode ast)
         //     }
         //     tmp->next = new;
         // }
-
+        glob_frame_vars(new);
         fprintf(stdout, "DEFVAR GF@%s\n",  ast->children[0]->data->data);
     } else {
         fprintf(stdout, "DEFVAR LF@%s\n",  ast->children[0]->data->data);
@@ -413,7 +417,7 @@ void math_operation(Nnode ast, HTable *table)
     FrameVars ptr = glob;
     int a = 0;
     fprintf(stdout, "CREATEFRAME\n");
-    fprintf(stdout, "PUSHFRAME\n");
+    //fprintf(stdout, "PUSHFRAME\n");
     Tree:
     tmp = top;
 
@@ -502,15 +506,16 @@ int generate_assign(Nnode ast, HTable *table)
 
     } else {
 
+        if (ast->children[0]->data->ntype == VAR_DEF) {
+            generate_vardef( ast);
+        }
+
         if (ast->children[1]->data->ntype == CALL)
         {
             indetify_call_function(ast->children[1]);
             return 0;
         }
-
-        if (ast->children[0]->data->ntype == VAR_DEF) {
-            generate_vardef( ast);
-        }
+        
         if (ast->children[1] == NULL)
             return 0;
 
@@ -608,8 +613,32 @@ void type_control_exit() //typová kontrola =<>=
 
 
 int generate_aritmetic(Nnode ast)
-{
+{   
+
     fprintf(stdout, "CREATEFRAME\n");
+    if (ast->children[0]->data->ntype == VAR){
+        if (func == 1) {
+            fprintf(stdout, "DEFVAR TF@%s\n", ast->children[0]->data->data);
+            fprintf(stdout, "MOVE TF@%s LF@%s\n", ast->children[0]->data->data, ast->children[0]->data->data);
+        } else {
+            fprintf(stdout, "DEFVAR TF@%s\n", ast->children[0]->data->data);
+            fprintf(stdout, "MOVE TF@%s GF@%s\n", ast->children[0]->data->data, ast->children[0]->data->data);
+       }
+    } 
+    if (ast->children[1]->data->ntype == VAR){
+       if (func == 1) {
+            fprintf(stdout, "DEFVAR TF@%s\n", ast->children[1]->data->data);
+            fprintf(stdout, "MOVE TF@%s LF@%s\n", ast->children[1]->data->data, ast->children[1]->data->data);
+        } else {
+            fprintf(stdout, "DEFVAR TF@%s\n", ast->children[1]->data->data);
+            fprintf(stdout, "MOVE TF@%s GF@%s\n", ast->children[1]->data->data, ast->children[1]->data->data);
+       }
+
+    }
+
+
+
+
     fprintf (stdout, "PUSHFRAME\n");
 
     char *new = generate_unique_identifier();
@@ -624,18 +653,20 @@ int generate_aritmetic(Nnode ast)
     if (ast->children[0]->data->ntype == VAL) {
         ast->children[0]->data->inmain = false;
         save_val_to_variable(ast->children[0]);
-    } else if (ast->children[0]->data->inmain) {           //if variable is from globalframe transforme it into localframe{
-        fprintf(stdout, "DEFVAR LF@%s\n", ast->children[0]->data->data);
-        fprintf(stdout, "MOVE LF@%s GF@%s\n", ast->children[0]->data->data, ast->children[0]->data->data);
-    }
+    } 
+    // else if (ast->children[0]->data->inmain) {           //if variable is from globalframe transforme it into localframe{
+    //     fprintf(stdout, "DEFVAR LF@%s\n", ast->children[0]->data->data);
+    //     fprintf(stdout, "MOVE LF@%s GF@%s\n", ast->children[0]->data->data, ast->children[0]->data->data);
+    // }
 
     if (ast->children[1]->data->ntype == VAL) {
         ast->children[1]->data->inmain = false;
         save_val_to_variable(ast->children[1]);
-    } else if (ast->children[1]->data->inmain) {
-        fprintf(stdout, "DEFVAR LF@%s\n", ast->children[1]->data->data);
-        fprintf(stdout, "MOVE LF@%s GF@%s\n", ast->children[1]->data->data, ast->children[1]->data->data);
     }
+    //  else if (ast->children[1]->data->inmain) {
+    //     fprintf(stdout, "DEFVAR LF@%s\n", ast->children[1]->data->data);
+    //     fprintf(stdout, "MOVE LF@%s GF@%s\n", ast->children[1]->data->data, ast->children[1]->data->data);
+    // }
 
     free(ast->data->data);
     ast->data->data = new;
@@ -748,29 +779,49 @@ int generate_while(Nnode ast,HTable *table)
 }
 
 void generate_call(Nnode ast)
-{
-    if(ast->parent_node->data->ntype == ASSIGN)
-    {
-        fprintf(stdout,"DEFVAR LF@%s\n",ast->parent_node->children[0]->data->data);
-    }
+{   
+    
+    int in_glob = 0;
+    generate_unique_func_identifier(0,'F');
+    // if(ast->parent_node->data->ntype == ASSIGN)
+    // {
+    //     fprintf(stdout,"DEFVAR LF@%s\n",ast->parent_node->children[0]->data->data);
+    // }
     for(int i = 0; ast->children[0]->children[i] != NULL; i++)
     {
         char *newvar = generate_unique_func_identifier(1,'F');
-        fprintf(stdout, "DEFVAR LF@%s\n", newvar);
-        fprintf(stdout, "MOVE LF@%s %s\n", newvar, ast->children[0]->children[i]->data->data);
+        fprintf(stdout, "DEFVAR TF@%s\n", newvar);
+        if (ast->children[0]->children[i]->data->ntype == VAL) {
+            fprintf(stdout, "MOVE TF@%s %s\n", newvar, ast->children[0]->children[i]->data->data);
+        } else {
+            for (FrameVars tmp = glob; tmp != NULL; tmp = tmp->next) {
+                if (!strcmp(tmp->var, ast->children[0]->children[i]->data->data)) {
+                    in_glob = 1;
+                    break;
+                }
+
+                if (in_glob == 1) {
+                    fprintf(stdout, "MOVE TF@%s GF@%s\n", newvar, ast->children[0]->children[i]->data->data);
+                } else {
+                    fprintf(stdout, "MOVE TF@%s LF@%s\n", newvar, ast->children[0]->children[i]->data->data);
+                }
+            }
+        }
+        
         free(ast->children[0]->children[i]->data->data);
         ast->children[0]->children[i]->data->data=newvar;
     }
     generate_unique_func_identifier(0,'F');
     fprintf(stdout,"CALL %s\n", ast->data->data);
-    if(ast->parent_node->data->ntype == ASSIGN)
-    {
-        fprintf(stdout,"MOVE LF@%s TF@%%retval\n ",ast->parent_node->children[0]->data->data);
-    }
+    // if(ast->parent_node->data->ntype == ASSIGN)
+    // {
+    //     fprintf(stdout,"MOVE LF@%s TF@%%retval\n ",ast->parent_node->children[0]->data->data);
+    // }
 }
 
 void generate_func_def(Nnode ast,HTable *table)
-{
+{   
+    func = true;
     fprintf(stdout, "LABEL %s\n", ast->data->data);
     fprintf(stdout, "PUSHFRAME\n");
     for(int i = 0; ast->children[0]->children[i] != NULL; i++)
@@ -778,25 +829,28 @@ void generate_func_def(Nnode ast,HTable *table)
         char *com=malloc(200);
         strcpy(com,ast->children[0]->children[i]->data->data);
         //char *com=ast->children[0]->children[i]->data->data;
-        char *newvar = generate_unique_func_identifier(1,'P');
-        fprintf(stdout, "DEFVAR LF@%s\n", newvar);
-        fprintf(stdout, "MOVE LF@%s LF%s\n\n", newvar, generate_unique_func_identifier(1,'F'));
+        char *newvar = generate_unique_func_identifier(1,'F');
+        //fprintf(stdout, "DEFVAR LF@%s\n", newvar);
+        //fprintf(stdout, "MOVE LF@%s LF@%s\n\n", newvar, generate_unique_func_identifier(1,'F'));
         free(ast->children[0]->children[i]->data->data);
         ast->children[0]->children[i]->data->data=newvar;
         ast_rename_value(com,ast->children[1],newvar);
     }
-
+   
     generate(ast->children[1], table);
-    generate(ast->children[2], table);
+    //generate(ast->children[2], table);
+    func = false;
     fprintf(stdout, "\n\n");
 }
 
 void generate_return(Nnode ast)
-{
-     //fprintf(stdout,"POPFRAME\n");
+{   
+     fprintf(stdout,"POPFRAME\n");
     if(ast->children[0] != NULL)
         if(ast->children[0]->data->data != NULL)
             fprintf(stdout, "MOVE TF@%%RETVAL %s\n", ast->children[0]->data->data);
+        else
+            fprintf(stdout, "MOVE TF@%%RETVAL nil@nil\n");
 
     fprintf(stdout, "RETURN\n");
 }
@@ -843,7 +897,7 @@ void indetify_call_function(Nnode ast)
 {   
     
     fprintf(stdout, "CREATEFRAME\n");
-    static int in_glob = 0; 
+    int in_glob = 0; 
     int tmp = data2int(ast->data->data);
     switch (tmp){
         case 0:
@@ -969,6 +1023,7 @@ void indetify_call_function(Nnode ast)
           break;
         default:
             generate_call(ast);
+            return;
             break;
     }
     fprintf(stdout, "POPFRAME\n");
@@ -980,6 +1035,7 @@ void indetify_call_function(Nnode ast)
     
    
 }
+
 void generate_len_func() {
 
     fprintf(stdout, "\n");
@@ -1294,9 +1350,9 @@ int generate(Nnode ast, HTable *table)
                             if (ast->children[i]->children[2]->children[k]->data->ntype == ASSIGN) {
                                     if (ast->children[i]->children[2]->children[k]->children[0]->data->ntype == VAR_DEF) {
                                     ast->children[i]->children[2]->children[k]->children[0]->data->inmain = true;
-                                    fprintf(stdout, "DEFVAR GF@%s\n", ast->children[i]->children[1]->children[k]->children[0]->data->data);
+                                    fprintf(stdout, "DEFVAR GF@%s\n", ast->children[i]->children[2]->children[k]->children[0]->data->data);
                                     new = malloc(sizeof(struct FrameVar));
-                                    new->var = ast->children[i]->children[1]->children[k]->children[0]->data->data;
+                                    new->var = ast->children[i]->children[2]->children[k]->children[0]->data->data;
                                     glob_frame_vars(new);
                                     ast->children[i]->children[2]->children[k]->children[0]->data->ntype = VAR;
                                 }
@@ -1313,6 +1369,7 @@ int generate(Nnode ast, HTable *table)
                                 fprintf(stdout, "DEFVAR GF@%s\n", ast->children[i]->children[1]->children[k]->children[0]->data->data);
                                 new = malloc(sizeof(struct FrameVar));
                                 new->var = ast->children[i]->children[1]->children[k]->children[0]->data->data;
+                                glob_frame_vars(new);
                                 ast->children[i]->children[1]->children[k]->children[0]->data->ntype = VAR;
                             }
                         }
@@ -1325,6 +1382,8 @@ int generate(Nnode ast, HTable *table)
         }
         if (ast->data->ntype == PROG || ast->data->ntype == BODY || ast->data->ntype == IF_BODY || ast->data->ntype == IF_ELSE) {
             for (int i = 0; i < ast->data->child_count; i++) {
+                if ( ast->children[i]->data->ntype == BODY)
+                 fprintf(stdout,"oj\n");
                 generate(ast->children[i], table);
             }
         } else if (ast->data->ntype != PROG && ast->data->ntype != FUNC_DEF) {
