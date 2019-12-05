@@ -99,11 +99,12 @@ int get_token()
                     else
                         state = S_INT;
                     break;
-                } /* white-space character */ // todo
+                } /* white-space character */
                 else if (c == '\v' || c == '\f' || c == '\r') {
                     state = START;
                     iterator = 0;
                     allocated = 0;
+                    indent_counter = 0;
                     break;
                 } /* new line */
                 else if (c == '\n') {
@@ -598,6 +599,7 @@ int get_token()
                     iterator = 0;
                     line_position = 0;
                     line_counter++;
+                    indent_counter = 0;
                     buffer = NULL;
                 }
                 else {
@@ -632,6 +634,7 @@ int get_token()
                     else {
                         state = START;
                     }
+                    indent_counter = 0;
                 }
                 else {
                     state = S_LINE_COMMENT;

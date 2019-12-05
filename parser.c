@@ -241,9 +241,6 @@ int statement_list(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDL
 
     }
 
-    if (!is_eol(token.type))
-        unget_token();
-
     return OK;
 
 }
@@ -352,6 +349,10 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         result = handle_indent(scope, table, if_body, indent_stack, functions_list);
         IF_VALUE_RETURN(result)
 
+        while (is_eol(token.type)) {
+            IF_RETURN(get_token(), TOKEN_ERR)
+        }
+
         /* else */
         IF_RETURN(token.type != T_ELSE, LEX_ERR) /* lex error because of wrong indent */
         Nnode else_body = ast_add_node(&if_node, IF_ELSE, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
@@ -410,7 +411,7 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         previous_token = T_RETURN;
 
         IF_RETURN(get_token(), TOKEN_ERR)
-        //if(token.type == T_VAL || token.type == T_VAR)
+
         ast_add_node(&return_node, PARAM, create_value(&token),is_global_scope(scope),indent_stack->top->indent_counter);
         IF_RETURN(get_token(), TOKEN_ERR)
         result = expression(scope, stack, table, return_node, NULL, indent_stack, previous_token);
@@ -435,6 +436,8 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         while (is_eol(token.type)) {
             IF_RETURN(get_token(), TOKEN_ERR)
         }
+
+        unget_token();
 
         /* local scope ends with pass - similar to return */
         if (!is_global_scope(scope)) {
@@ -737,10 +740,7 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                     IF_RETURN(!(stack_push(stack, &token, NULL, input, found->data_type) == OK), ERR_INTERNAL)
 
                 }
-                else
-                {
-                    if( token.type == T_LEFT_BRACKET)
-                        left_bracket++;
+                else {
                     IF_RETURN(!(stack_push(stack, &token, NULL, input, token_to_data_type(token)) == OK), ERR_INTERNAL)
                 }
 
@@ -842,7 +842,7 @@ int reduce(int scope, STACK* stack, struct TToken* previous, int bracekt)
             case MATHEMATICAL_OPERATION_RULE:
                 /* in function definition parameter may have unknown type */
                 if (stack_elem[0].type != TYPE_UNKNOWN && stack_elem[2].type != TYPE_UNKNOWN) {
-                    type = check_data_type(stack_elem[0].type, stack_elem[2].type);
+                    type = check_data_type(stack_elem[0].type, stack_elem[2].type, stack_elem[1].psa_symbol);
                     IF_RETURN(type == TYPE_UNKNOWN, SEM_ERR_COMPAT)
                 }
 
@@ -928,9 +928,13 @@ int reduce(int scope, STACK* stack, struct TToken* previous, int bracekt)
     }
 }
 
-DATA_TYPE check_data_type(DATA_TYPE type1, DATA_TYPE type2)
+DATA_TYPE check_data_type(DATA_TYPE type1, DATA_TYPE type2, PSA_SYMBOL symbol)
 {
-    return type1 == type2 ? type1 : TYPE_UNKNOWN;
+    if (symbol == PSA_EQUAL || symbol == PSA_NOTEQUAL) {
+        return type1 == TYPE_NIL ? type1 : type2;
+    } else {
+        return type1 == type2 ? type1 : TYPE_UNKNOWN;
+    }
 }
 
 bool compare_rules(PSA_SYMBOL* rule1, PSA_SYMBOL* rule2)
