@@ -46,24 +46,4 @@ tDLList * DLInitList ();
  */
 bool DLInsertLast(tDLList *L,  char *ptr);
 
-/**
- * @param tDLList * list
- * @param char* key
- * @return true if found
- */
-//bool DLSearch(tDLList *, char*);
-
-//bool DLInsertFirst (tDLList *,  char *);
-
-/**
- * @param tDLList * ukazatel na list kde chceme mazat
- * @return True pokud uspech, jinak FALSE
- */
-//bool DLDeleteLast (tDLList *);
-/**
- * @param tDLList * ukazatel na list kde chceme mazat
- * @return True pokud uspech, jinak FALSE
- */
-//bool DLDeleteFirst(tDLList *);
-
 #endif
