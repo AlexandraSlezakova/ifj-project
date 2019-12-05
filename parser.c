@@ -359,7 +359,7 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         }
 
         /* else */
-        IF_RETURN(token.type != T_ELSE, LEX_ERR) /* lex error because of wrong indent */
+        IF_RETURN(token.type != T_ELSE, SYNTAX_ERR) /* lex error because of wrong indent */
         Nnode else_body = ast_add_node(&if_node, IF_ELSE, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
 
         /* colon */

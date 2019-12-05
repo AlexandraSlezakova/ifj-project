@@ -387,6 +387,9 @@ int get_token()
                 else if (c == 'x') {
                     state = S_HEX_ESCAPE;
                 }
+                else if (isalpha(c)) {
+                    state = S_STRING_CONTENT;
+                }
                 else {
                     state = S_ERROR;
                 }
@@ -400,6 +403,9 @@ int get_token()
                 }
                 else if (c == 39) {
                     state = S_STRING;
+                }
+                else if (isalpha(c)) {
+                    state = S_STRING_CONTENT;
                 }
                 else {
                     state = S_ERROR;
