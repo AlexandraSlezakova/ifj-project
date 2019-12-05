@@ -985,7 +985,7 @@ char* create_value(struct TToken* current_token)
             sprintf(value, "int@%d", current_token->value.is_int);
             break;
         case T_FLOAT:
-            sprintf(value, "float@%f", current_token->value.is_float);
+            sprintf(value, "float@%a", current_token->value.is_float);
             break;
         case T_NONE:
             value = "nil@nil";
