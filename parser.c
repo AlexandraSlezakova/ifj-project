@@ -764,7 +764,13 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 /* find identifier before push with correct data type*/
                 if (token.type == T_VAR) {
                     found = ht_search(table, token.value.is_char);
-                    IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
+                    if (!found) {
+                        if (!is_global_scope(scope)) {
+                            found = ht_search(global_hashtable, token.value.is_char);
+                        }
+
+                        IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
+                    }
 
                     /* check if variable is defined*/
                     IF_RETURN(found->data_type == UNDEFINED, SEM_ERR_UNDEF_VAR)
@@ -966,7 +972,15 @@ DATA_TYPE check_data_type(DATA_TYPE type1, DATA_TYPE type2, PSA_SYMBOL symbol)
     if (symbol == PSA_EQUAL || symbol == PSA_NOTEQUAL) {
         return type1 == TYPE_NIL ? type1 : type2;
     } else {
-        return type1 == type2 ? type1 : TYPE_UNKNOWN;
+        if (type1 == TYPE_FLOAT || type2 == TYPE_FLOAT) {
+            if (type1 == TYPE_INTEGER || type2 == TYPE_INTEGER) {
+                return TYPE_FLOAT;
+            } else {
+                return type1 == type2 ? type1 : TYPE_UNKNOWN;
+            }
+        } else {
+            return type1 == type2 ? type1 : TYPE_UNKNOWN;
+        }
     }
 }
 
