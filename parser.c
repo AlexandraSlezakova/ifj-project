@@ -9,6 +9,7 @@
  */
 
 #include "parser.h"
+#include "scanner.h"
 
 
 int function_arguments(HTable* function_symtable, char* function_name, Nnode ast, STACK* indent_stack)
@@ -184,7 +185,7 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
 
         }
         else {
-            result = token.type == T_IS_EOL ? SYNTAX_OK : SYNTAX_ERR;
+            result = token.type == T_IS_EOL ? SYNTAX_OK : LEX_ERR;
         }
 
         IF_VALUE_RETURN(result)
@@ -239,6 +240,9 @@ int statement_list(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDL
         }
 
     }
+
+    if (!is_eol(token.type))
+        unget_token();
 
     return OK;
 
@@ -390,12 +394,10 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
 
         /* INDENT */
         /* indent has to be greater */
-        if (indent_stack->top->indent_counter == indent_counter) {
-            return SYNTAX_ERR;
-        }
-        else if (indent_stack->top->indent_counter > indent_counter) {
+        if (indent_stack->top->indent_counter >= indent_counter) {
             return LEX_ERR;
         }
+
         IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
 
         result = handle_indent(scope, table, while_body, indent_stack, functions_list);
@@ -447,9 +449,11 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
 
         }
 
+        result = SYNTAX_OK;
+
     }
     else if (token.type == T_IS_EOL || token.type == T_IS_EOF) {
-        result = 0;
+        result = SYNTAX_OK;
     }
 
     free(previous_tkn);
@@ -981,7 +985,7 @@ char* create_value(struct TToken* current_token)
             sprintf(value, "int@%d", current_token->value.is_int);
             break;
         case T_FLOAT:
-            sprintf(value, "float@%f", current_token->value.is_float);
+            sprintf(value, "float@%a", current_token->value.is_float);
             break;
         case T_NONE:
             value = "nil@nil";

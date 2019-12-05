@@ -50,7 +50,7 @@ int data2int(char *data);
 void generate_return(Nnode ast);
 void generate_read_func(Nnode ast, char *type);
 void generate_write_func(Nnode ast);
-void generate_chr_func(Nnode ast);
+void generate_chr_func();
 void generate_len_func();
 void generate_substr_func();
 #endif
