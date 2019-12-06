@@ -131,6 +131,7 @@ typedef struct stackElem {
     DATA_TYPE type;
     TType indent_type;      /* indent or dedent */
     int indent_counter;     /* number of spaces - indentation level */
+    TType token_type;
 } S_ELEM;
 
 Ntype node_type(S_ELEM *stack_elem);
