@@ -186,7 +186,7 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
 
         }
         else {
-            result = token.type == T_IS_EOL ? SYNTAX_OK : LEX_ERR;
+            result = token.type == T_IS_EOL ? SYNTAX_OK : SYNTAX_ERR;
         }
 
         IF_VALUE_RETURN(result)
