@@ -51,6 +51,8 @@ void NstackFirstPush(NStack *s, Nnode node)
 
 void ast_rename_value(char *com, Nnode ast, char *new_c)
 {
+    // int a = 5;
+
     if(ast->data->data != NULL)
         if(!strcmp(com,ast->data->data))
             ast->data->data = new_c;
@@ -63,11 +65,11 @@ void ast_rename_value(char *com, Nnode ast, char *new_c)
 }
 
 void NstackPopGround (NStack *s) {
-    for (int i = 1; i <= s->top+1 && s->top != 0; i++) {
+    for (int i = 1; i != s->top && s->top != 0; i++) {
         s->nstack[i - 1] = s->nstack[i];
     }
-    if(s->top >= 0)
-        s->top--;
+    s->top--;
+    s->nstack[s->top] = NULL;
 }
 
 void NstackPop (NStack *s)
