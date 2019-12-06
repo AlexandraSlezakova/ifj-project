@@ -48,6 +48,8 @@ typedef enum Node_Type{
     VAR_DEF     = 26,
     NO_NODE     = 27,
     PARAM       = 28,
+    LF_BR       = 29,
+    RG_BR       = 30,
 } Ntype;
 
 typedef struct NDATA{

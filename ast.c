@@ -65,11 +65,11 @@ void ast_rename_value(char *com, Nnode ast, char *new_c)
 }
 
 void NstackPopGround (NStack *s) {
-    for (int i = 1; i != s->top && s->top != 0; i++) {
+    for (int i = 1; i <= s->top+1 && s->top != 0; i++) {
         s->nstack[i - 1] = s->nstack[i];
     }
-    s->top--;
-    s->nstack[s->top] = NULL;
+    if(s->top >= 0)
+        s->top--;
 }
 
 void NstackPop (NStack *s)

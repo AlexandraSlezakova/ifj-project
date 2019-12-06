@@ -9,7 +9,9 @@
  * @author xsleza20 Alexandra Slezakova
  */
 
-#include "ast.h"
+
+#include "posfix_func.h"
+
 #ifndef IFJ_STACK_H
 #define IFJ_STACK_H
 
