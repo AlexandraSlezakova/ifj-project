@@ -194,8 +194,33 @@ void generate_math_aritmetic(Nnode ast)
     fprintf(stdout, "CREATEFRAME\n");
     fprintf(stdout, "DEFVAR LF@%s\n", new);
 
+    //vyhledání GF VAR a nastavaní inmain na TRUE
+/*    for(int i = 0; root->children[i] != NULL ; i++)
+    {
+        char *gf_val = malloc(50);
+        if(root->children[i]->data->ntype == ASSIGN)
+        {
+            //=============================================
+            //TU TO PADÁ DOPIČE!
+            //=============================================
+            strcpy(gf_val,root->children[i]->data->data);
+            //*gf_val = *root->children[i]->data->data;
 
-    ast->data->inmain = false;
+            for(int j = 0; root->children[j] != NULL ; j++) {
+                if (root->children[j]->data->ntype == ASSIGN) {
+                    for(int k = 0 ; root->children[j]->children[k] != NULL;k++ )
+                    {
+                        if(!strcmp(gf_val,root->children[j]->children[k]->data->data))
+                        {
+                            root->children[j]->children[k]->data->inmain =false;
+                        }
+                    }
+                }
+            }
+        }
+    }*/
+
+/*    ast->data->inmain = false;
 
     if (ast->children[0]->data->ntype == VAL) {
         ast->children[0]->data->inmain = false;
@@ -215,10 +240,133 @@ void generate_math_aritmetic(Nnode ast)
         fprintf(stdout, "MOVE LF@%s GF@%s\n", ast->children[1]->data->data, ast->children[1]->data->data);
     }
 
-    generate_type_control_exit(ast);
+    generate_type_control_exit(ast);*/
+
+    for(int i = 1; ast->children[i] != NULL; i++ )
+    {
+        char *new = generate_unique_identifier();
+        char *not_int = generate_unique_label();
+        char *not_flout = generate_unique_label();
+        char *div_not_0 = generate_unique_label();
+        char *div_not_0_0 = generate_unique_label();
+        char *var1_str = generate_unique_label();
+        char *var2_str = generate_unique_label();
+        char *end_add = generate_unique_label();
+
+        Nnode c1,c2,o;
+        int j = 1;
+        for(; ast->children[j] != NULL; j ++)
+        {
+            if(ast->children[j]->data->ntype == ADD || ast->children[j]->data->ntype == SUB || ast->children[j]->data->ntype == MUL
+            || ast->children[j]->data->ntype == DIV || ast->children[j]->data->ntype == DIVINIT)
+            {
+                o = ast->children[j];
+                c1 = ast->children[j - 2];
+                c2 = ast->children[j - 1];
+            }
+        }
+
+        switch (o->data->ntype)
+        {
+            case ADD:
+                fprintf(stdout, "DEFVAR TF@%s\n", var1_str);
+                fprintf(stdout, "DEFVAR TF@%s\n", var2_str);
+                fprintf(stdout, "TYPE TF@%s %s@%s\n", var1_str, memory_model(c1) ,c1->data->data);
+                fprintf(stdout, "TYPE TF@%s %s@%s\n", var2_str, memory_model(c2), c2->data->data);
+                fprintf(stdout, "JUMPIFEQ  %s TF@%s string@string\n", var1_str, var1_str);
+                fprintf(stdout, "ADD LF@%s %s@%s %s@%s\n", new,memory_model(c1) ,c1->data->data,memory_model(c2), c2->data->data);
+                fprintf(stdout, "JUMP %s\n", end_add);
+                fprintf(stdout, "LABEL %s\n", var1_str);
+                fprintf(stdout, "JUMPIFEQ %s TF@%s string@string\n", var2_str, var2_str);
+                fprintf(stdout, "EXIT int@4\n");
+                fprintf(stdout, "JUMP %s\n", end_add);
+                fprintf(stdout, "LABEL %s\n", var2_str);
+                fprintf(stdout, "CONCAT LF@%s %s@%s %s@%s\n", new, memory_model(c1),c1->data->data,memory_model(c1), c1->data->data);
+                fprintf(stdout, "LABEL %s\n", end_add);
+                break;
+            case SUB:
+                fprintf(stdout, "DEFVAR TF@%s\n", var1_str);
+                fprintf(stdout, "DEFVAR TF@%s\n", var2_str);
+                fprintf(stdout, "TYPE TF@%s %s@%s\n", var1_str, memory_model(c1) ,c1->data->data);
+                fprintf(stdout, "TYPE TF@%s %s@%s\n", var2_str, memory_model(c2), c2->data->data);
+                fprintf(stdout, "JUMPIFEQ  %s TF@%s string@string\n", var1_str, var1_str);
+                fprintf(stdout, "JUMPIFEQ  %s TF@%s string@string\n", var1_str, var2_str);
+                fprintf(stdout, "SUB LF@%s %s@%s %s@%s\n", new,memory_model(c1) ,c1->data->data,memory_model(c2), c2->data->data);
+                fprintf(stdout, "JUMP %s\n", end_add);
+                fprintf(stdout, "LABEL %s\n", var1_str);
+                fprintf(stdout, "EXIT int@4\n");
+                fprintf(stdout, "LABEL %s\n", end_add);
+                break;
+            case MUL:
+                fprintf(stdout, "DEFVAR TF@%s\n", var1_str);
+                fprintf(stdout, "DEFVAR TF@%s\n", var2_str);
+                fprintf(stdout, "TYPE TF@%s %s@%s\n", var1_str, memory_model(c1) ,c1->data->data);
+                fprintf(stdout, "TYPE TF@%s %s@%s\n", var2_str, memory_model(c2), c2->data->data);
+                fprintf(stdout, "JUMPIFEQ  %s TF@%s string@string\n", var1_str, var1_str);
+                fprintf(stdout, "JUMPIFEQ  %s TF@%s string@string\n", var1_str, var2_str);
+                fprintf(stdout, "MUL LF@%s %s@%s %s@%s\n", new,memory_model(c1) ,c1->data->data,memory_model(c2), c2->data->data);
+                fprintf(stdout, "JUMP %s\n", end_add);
+                fprintf(stdout, "LABEL %s\n", var1_str);
+                fprintf(stdout, "EXIT int@4\n");
+                fprintf(stdout, "LABEL %s\n", end_add);
+                break;
+            case DIV:
+                fprintf(stdout, "DEFVAR TF@%s\n", not_flout);
+                fprintf(stdout, "DEFVAR TF@%s\n", div_not_0_0);
+                fprintf(stdout, "TYPE TF@%s %s@%s\n", var1_str, memory_model(c1) ,c1->data->data);
+                fprintf(stdout, "TYPE TF@%s %s@%s\n", var2_str, memory_model(c2), c2->data->data);
+                fprintf(stdout, "JUMPIFNEQ %s TF@%s string@flout\n", not_flout, var1_str);
+                fprintf(stdout, "JUMPIFNEQ %s TF@%s string@flout\n", not_flout, var2_str);
+                fprintf(stdout, "JUMPIFNEQ %s  LF@%s flout@0.0\n", div_not_0_0, c2->data->data);
+                fprintf(stdout, "EXIT int@57\n");
+                fprintf(stdout, "JUMP %s\n", div_not_0_0);
+                fprintf(stdout, "LABEL %s\n", not_flout);
+                fprintf(stdout, "EXIT int@4\n");
+                fprintf(stdout, "LABEL %s\n", div_not_0_0);
+                fprintf(stdout, "DIV LF@%s LF@%s LF@%s\n", new, c1->data->data, c2->data->data);
+                break;
+            case DIVINIT:
+                fprintf(stdout, "DEFVAR TF@%s\n", not_int);
+                fprintf(stdout, "DEFVAR TF@%s\n", div_not_0);
+                fprintf(stdout, "TYPE TF@%s LF@%s\n", var1_str, c1->data->data);
+                fprintf(stdout, "TYPE TF@%s LF@%s\n", var2_str, c2->data->data);
+                fprintf(stdout, "JUMPIFNEQ %s TF@%s string@int\n", not_int, var1_str);
+                fprintf(stdout, "JUMPIFNEQ %s TF@%s string@int\n", not_int, var2_str);
+                fprintf(stdout, "JUMPIFNEQ %s LF@%s int@0\n", div_not_0, c2->data->data);
+                fprintf(stdout, "EXIT int@57\n");
+                fprintf(stdout, "JUMP %s\n", div_not_0);
+                fprintf(stdout, "LABEL %s\n", not_int);
+                fprintf(stdout, "EXIT int@4\n");
+                fprintf(stdout, "LABEL %s\n", div_not_0);
+                fprintf(stdout, "IDIV LF@%s LF@%s LF@%s\n", new, c1->data->data, c2->data->data);
+                break;
+            default:
+                break;
+        }
+        if(ast->children[j] == NULL)
+            j--;
+        ast->children[j-2]->data->data = new;
+        while(ast->children[j] != NULL)
+        {
+            ast->children[j-1]=ast->children[j];
+            j++;
+        }
+        for(int k = 0; k <=1; k++)
+        {
+            j--;
+            free(ast->children[j]->data);
+            for(int m = 0; m <= TAB_SIZE; m++)
+                ast->children[j]->children[m]=NULL;
+            free(ast->children[j]);
+            ast->children[j] = NULL;
+        }
+    }
+    fflush(stdout);
+    fprintf(stdout, "DEFVAR %s@%s\n",memory_model(ast->children[0]),ast->children[0]->data->data);
+    fprintf(stdout, "MOVE %s@%s LF@%s\n",memory_model(ast->children[0]),ast->children[0]->data->data,ast->children[1]->data->data);
 
 
-    if (ast->data->ntype == DIV) {
+/*    if (ast->data->ntype == DIV) {
         fprintf(stdout, "DEFVAR TF@%s\n", not_flout);
         fprintf(stdout, "DEFVAR TF@%s\n", div_not_0_0);
         fprintf(stdout, "TYPE TF@%s LF@%s\n", not_int, ast->children[0]->data->data);
@@ -247,28 +395,13 @@ void generate_math_aritmetic(Nnode ast)
         fprintf(stdout, "EXIT int@4\n");
         fprintf(stdout, "LABEL %s\n", div_not_0);
         fprintf(stdout, "IDIV LF@%s LF@%s LF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
-    } else if (ast->data->ntype == ADD) {
-        fprintf(stdout, "DEFVAR TF@%s\n", var1_str);
-        fprintf(stdout, "DEFVAR TF@%s\n", var2_str);
-        fprintf(stdout, "TYPE TF@%s LF@%s\n", var1_str, ast->children[0]->data->data);
-        fprintf(stdout, "TYPE TF@%s LF@%s\n", var2_str, ast->children[1]->data->data);
-        fprintf(stdout, "JUMPIFEQ  %s TF@%s string@string\n", var1_str, var1_str);
-        fprintf(stdout, "ADD LF@%s LF@%s LF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
-        fprintf(stdout, "JUMP %s\n", end_add);
-        fprintf(stdout, "LABEL %s\n", var1_str);
-        fprintf(stdout, "JUMPIFEQ %s TF@%s string@string\n", var2_str, var2_str);
-        fprintf(stdout, "EXIT int@4\n");
-        fprintf(stdout, "JUMP %s\n", end_add);
-        fprintf(stdout, "LABEL %s\n", var2_str);
-        fprintf(stdout, "CONCAT LF@%s LF@%s LF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
-        fprintf(stdout, "LABEL %s\n", end_add);
     } else {
         aritmetic_operation(ast);
         fprintf(stdout, " LF@%s LF@%s LF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
 
     }
     ast->data->ntype = VAR;
-    ast->data->data = new;
+    ast->data->data = new;*/
 
 }
 
@@ -403,7 +536,7 @@ int generate_vardef( Nnode ast)
 
 char* memory_model(Nnode ast)
 {
-    if(ast->parent_node == root || ast->data->indent == 0)
+    if(ast->parent_node == root || ast->data->indent == 0 || ast->data->inmain == true)
         return "GF";
     else
         return "LF";
@@ -1259,7 +1392,10 @@ void identify_header(Nnode ast, HTable *table)
             generate_vardef(ast);
             break;
         case ASSIGN:
-            generate_assign(ast, table);
+            if(ast->children[2]==NULL)
+                generate_assign(ast, table);
+            else
+                generate_math_aritmetic(ast);
             break;
         case IF_NODE:
             generate_if(ast, table);
@@ -1282,21 +1418,21 @@ void identify_header(Nnode ast, HTable *table)
         case NOTCOMP:
             generate_aritmetic(ast);
             break;
-        case DIVINIT:
-            generate_math_aritmetic(ast);
-            break;
-        case DIV:
-            generate_math_aritmetic(ast);
-            break;
-        case ADD:
-            generate_math_aritmetic(ast);
-            break;
-        case MUL:
-            generate_math_aritmetic(ast);
-            break;
-        case SUB:
-            generate_math_aritmetic(ast);
-            break;
+//        case DIVINIT:
+//            generate_math_aritmetic(ast);
+//            break;
+//        case DIV:
+//            generate_math_aritmetic(ast);
+//            break;
+//        case ADD:
+//            generate_math_aritmetic(ast);
+//            break;
+//        case MUL:
+//            generate_math_aritmetic(ast);
+//            break;
+//        case SUB:
+//            generate_math_aritmetic(ast);
+//            break;
         case COND:
             identify_header(ast->children[0], table);
             break;
@@ -1321,6 +1457,7 @@ int generate(Nnode ast, HTable *table)
     FrameVars new;
     if(ast) {
         if (ast->data->ntype == PROG) {
+            fflush(stdout);
             create_header();
 
             type_control();

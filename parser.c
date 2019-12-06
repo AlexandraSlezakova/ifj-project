@@ -92,13 +92,12 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
 
     /* temporary stack for saving nodes */
     nStack = malloc(sizeof(nStack));
-    Arr_Nstack = malloc(sizeof(nStack));
+    stackInit(nStack);
 
     int item = OK;
 
     while (1) {
         NstackPopAll(nStack);
-        NstackPopAll(Arr_Nstack);
 
         success = get_token();
         IF_VALUE_RETURN(success)
@@ -254,6 +253,7 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
 {
     int result = SYNTAX_ERR;
     int success = 0;
+    Nnode add_node = NULL;
 
     /* stack init */
     STACK* stack = malloc(sizeof(STACK));
@@ -740,6 +740,8 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
     int left_bracket = 0;
     int right_bracket = 0;
     int result = 0;
+    Nnode add_node = NULL;
+    int tmp=0;
 
     IF_RETURN(stack_push(stack, NULL, NULL, PSA_END, TYPE_UNKNOWN) != OK, ERR_INTERNAL)
 
@@ -749,6 +751,9 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
     if (token.type == T_LEFT_BRACKET) {
         while (token.type == T_LEFT_BRACKET) {
             left_bracket++;
+            add_node = ast_add_node((&add_node), LF_BR, "(", is_global_scope(scope), -1);
+            stackPush(nStack,add_node);
+            tmp = 1;
             IF_VALUE_RETURN(get_token())
         }
         unget_token();
@@ -777,6 +782,8 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 if (token.type == T_RIGHT_BRACKET) {
                     while (token.type == T_RIGHT_BRACKET) {
                         right_bracket++;
+                        add_node = ast_add_node((&add_node), RG_BR, ")", is_global_scope(scope), -1);
+                        stackPush(nStack,add_node);
                         IF_VALUE_RETURN(get_token())
                     }
                     IF_RETURN(left_bracket != right_bracket, SYNTAX_ERR)
@@ -821,6 +828,24 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 previous->type = token.type;
                 previous->value = token.value;
 
+                if(token.type == T_ADD)
+                    add_node = ast_add_node((&add_node), ADD, NULL, is_global_scope(scope), -1);
+                else if(token.type == T_SUB)
+                    add_node = ast_add_node((&add_node), SUB, NULL, is_global_scope(scope), -1);
+                else if(token.type == T_MUL)
+                    add_node = ast_add_node((&add_node), MUL, NULL, is_global_scope(scope), -1);
+                else if(token.type == T_DIV)
+                    add_node = ast_add_node((&add_node), DIV, NULL, is_global_scope(scope), -1);
+                else if(token.type == T_DIV_INT)
+                    add_node = ast_add_node((&add_node), DIVINIT, NULL, is_global_scope(scope), -1);
+                else if (token.type == T_VAR)
+                    add_node = ast_add_node((&add_node), VAR, token.value.is_char, is_global_scope(scope), -1);
+                else if (token.type != T_LEFT_BRACKET && token.type != T_RIGHT_BRACKET)
+                    add_node = ast_add_node((&add_node), VAL, create_value(&token), is_global_scope(scope), -1);
+                if(tmp == 0)
+                    stackPush(nStack,add_node);
+                tmp = 0;
+
                 IF_VALUE_RETURN(get_token())
                 IF_RETURN((previous->type == T_DIV || previous->type == T_DIV_INT) && (token.value.is_int == 0 || token.value.is_float == 0),
                           ERR_ZERO_DIV)
@@ -828,11 +853,24 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 if (token.type == T_IS_COLON && (node->data->ntype == COND || node->data->ntype == WHILE)) {
                     colon_counter++;
                     IF_RETURN(colon_counter > 1, SYNTAX_ERR)
+
                 }
+
+                if (token.type == T_LEFT_BRACKET)
+                {
+                    add_node = ast_add_node((&add_node), LF_BR, "(", is_global_scope(scope), -1);
+                    left_bracket++;
+                }
+                if (token.type == T_RIGHT_BRACKET)
+                    add_node = ast_add_node((&add_node), RG_BR, ")", is_global_scope(scope), -1);
 
                 break;
             case '>':
-                result = reduce(scope, stack, previous,left_bracket-right_bracket);
+                //result = reduce(scope, stack, previous,left_bracket-right_bracket);
+                while (stack->top->psa_symbol != START_HANDLE)
+                stack_pop(stack);
+
+                stack_pop(stack);
                 IF_RETURN(result != SYNTAX_OK, result)
                 break;
             case 0:
@@ -848,12 +886,14 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
         input = token_to_psa_symbol();
     }
 
+    infix2postfix(nStack,node);
+
     /* update data type of variable */
     if (token_name) {
         result = insert_variable(table, token_name, stack->top->type);
         IF_VALUE_RETURN(result)
     }
-    if (nStack->nstack[0] != NULL)
+/*    if (nStack->nstack[0] != NULL)
     {
         nStack->nstack[0]->parent_node = node->children[node->data->child_count];
         node->children[node->data->child_count] = nStack->nstack[0];
@@ -866,7 +906,7 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
         NstackPopGround(Arr_Nstack);
     }
     node->data->child_count++;
-    stack_destroy(stack);
+    stack_destroy(stack);*/
 
     return SYNTAX_OK;
 }
@@ -874,7 +914,7 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
 int reduce(int scope, STACK* stack, struct TToken* previous, int bracekt)
 {
 
-    PSA_SYMBOL rule[4] = { END_HANDLE, END_HANDLE, END_HANDLE, END_HANDLE};
+ /*   PSA_SYMBOL rule[4] = { END_HANDLE, END_HANDLE, END_HANDLE, END_HANDLE};
     S_ELEM stack_elem[4];
 
     int rule_index = 0;
@@ -913,13 +953,13 @@ int reduce(int scope, STACK* stack, struct TToken* previous, int bracekt)
                 break;
 
             case MATHEMATICAL_OPERATION_RULE:
-                /* in function definition parameter may have unknown type */
+                *//* in function definition parameter may have unknown type *//*
                 if (stack_elem[0].type != TYPE_UNKNOWN && stack_elem[2].type != TYPE_UNKNOWN) {
                     type = check_data_type(stack_elem[0].type, stack_elem[2].type, stack_elem[1].psa_symbol);
                     IF_RETURN(type == TYPE_UNKNOWN, SEM_ERR_COMPAT)
                 }
 
-                /* undefined variable */
+                *//* undefined variable *//*
                 IF_RETURN(stack_elem[0].type == UNDEFINED || stack_elem[2].type == UNDEFINED, SEM_ERR_UNDEF_VAR)
 
                 original = NULL;
@@ -989,7 +1029,7 @@ int reduce(int scope, STACK* stack, struct TToken* previous, int bracekt)
             stack_pop(stack);
         }
 
-        /* pop start handle */
+        /* pop start handle
         stack_pop(stack);
 
         stack_push(stack, original, &node, NON_TERMINAL, type);
@@ -998,7 +1038,7 @@ int reduce(int scope, STACK* stack, struct TToken* previous, int bracekt)
     }
     else {
         return SYNTAX_ERR;
-    }
+    }*/
 }
 
 DATA_TYPE check_data_type(DATA_TYPE type1, DATA_TYPE type2, PSA_SYMBOL symbol)

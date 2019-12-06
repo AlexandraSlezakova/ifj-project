@@ -47,7 +47,7 @@ void stackPush ( NStack* s, Nnode node ){
 void untilLeftPar ( NStack* s, NStack *out ) {
 
     Nnode c;
-    while(stackEmpty(s) != 1) //Vyprázdění zásobníku dokud nenarazímena ( nebo zásobník se vypprázdní
+    while(s->top != -1) //Vyprázdění zásobníku dokud nenarazímena ( nebo zásobník se vypprázdní
     {
         c = stackTop(s);
         stackPop(s);
@@ -78,6 +78,7 @@ void doOperation ( NStack* out, NStack* in, NStack* tmp,Nnode node) {
     else if ((node->data->ntype == DIV || node->data->ntype == DIVINIT || c_top->data->ntype == MUL) && (c_top->data->ntype == ADD || c_top->data->ntype == SUB))  //Pokud je operand nebo na vrchlu je operátor s nižší prioritou vlož na zásobník
     {
         stackPush(tmp, c_top);
+        NstackPopGround(in);
     }
     else
     {                  //Pokud je c operand a na vrcholu je vyšší nebo stejná pririta
@@ -108,10 +109,12 @@ void infix2postfix (NStack *in,Nnode node) {
         else if (in->nstack[0]->data->ntype == LF_BR)
         {
             stackPush(tmp, in->nstack[0]);
+            NstackPopGround(in);
         }
         else if (in->nstack[0]->data->ntype == RG_BR)
         {
             untilLeftPar(tmp,out);
+            NstackPopGround(in);
         }
     }
 
