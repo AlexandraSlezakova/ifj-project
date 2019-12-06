@@ -42,11 +42,11 @@ int function_arguments(HTable* function_symtable, char* function_name, Nnode ast
         Nnode argv = ast_add_node(&ast, ARGV, NULL, NULL, indent_stack->top->indent_counter);
         ast_add_node(&argv, PARAM, create_value(&token), NULL, indent_stack->top->indent_counter);
 
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
 
         while (token.type != T_RIGHT_BRACKET) {
             IF_RETURN(!is_comma(token.type), SYNTAX_ERR)
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
 
             IF_RETURN(!(token.type == T_VAR), SYNTAX_ERR)
             ast_add_node(&argv, PARAM, create_value(&token), NULL, indent_stack->top->indent_counter);
@@ -61,7 +61,7 @@ int function_arguments(HTable* function_symtable, char* function_name, Nnode ast
             IF_RETURN(!DLInsertLast(arg_list, name), ERR_INTERNAL)
 
             countParams++;
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
         }
 
         function->params_quantity = countParams;
@@ -98,7 +98,7 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
     while (1) {
         NstackPopAll(nStack);
         NstackPopAll(Arr_Nstack);
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
         HTable* function_table = NULL;
 
         /* end of file */
@@ -108,7 +108,7 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
             return result;
         } /* function definition */
         else if (token.type == T_DEF) {
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
 
             /* check if token is identifier */
             IF_RETURN(!is_identifier(token.type), SYNTAX_ERR)
@@ -134,27 +134,27 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
             IF_RETURN(!function_node, ERR_INTERNAL)
 
             /* left bracket*/
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
             IF_RETURN(!is_left_bracket(token.type), SYNTAX_ERR)
 
             /* get next token - variable name */
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
 
             /* arguments with right bracket */
             int arg = function_arguments(function_table, name, function_node, indent_stack);
             IF_VALUE_RETURN(arg)
 
             /* colon */
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
             IF_RETURN(token.type != T_IS_COLON, SYNTAX_ERR)
 
             /* eol */
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
             IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
 
 
             while (is_eol(token.type)) {
-                IF_RETURN(get_token(), TOKEN_ERR)
+                IF_VALUE_RETURN(get_token())
             }
 
             /* INDENT */
@@ -211,13 +211,13 @@ int statement_list(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDL
 
         IF_VALUE_RETURN(result)
 
-        if (token.type == T_RETURN) IF_RETURN(get_token(), TOKEN_ERR)
+        if (token.type == T_RETURN) IF_VALUE_RETURN(get_token())
 
         /* eol */
         if (is_eol(token.type)) {
             /* check indent */
             while (is_eol(token.type)) {
-                IF_RETURN(get_token(), TOKEN_ERR)
+                IF_VALUE_RETURN(get_token())
             }
 
             if (indent_stack->top->indent_counter == initial_indent) {
@@ -264,14 +264,14 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         previous_tkn->type = token.type;
         previous_tkn->value = token.value;
 
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
 
         /* function call without assignment */
         if (is_left_bracket(token.type)) {
 
             found = ht_search(global_hashtable, previous_tkn->value.is_char);
             /* function has to be defined if it is called in global scope */
-            IF_RETURN(is_global_scope(scope) && !found, SYNTAX_ERR)
+            IF_RETURN(is_global_scope(scope) && !found, SEM_ERR_UNDEF_VAR)
 
             /* in local scope function does not have to defined */
             if (!is_global_scope((scope)) && !found) {
@@ -309,7 +309,7 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
 
             if (token.type == T_ASSIGNMENT) {
                 /* start of expression */
-                IF_RETURN(get_token(), TOKEN_ERR)
+                IF_VALUE_RETURN(get_token())
                 result = expression(scope, stack, table, equals, name, indent_stack, previous_token);
                 found = ht_search(table, name);
                 if (found == NULL)
@@ -328,7 +328,7 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         if (indent_counter == 0) indent_stack->top->token_type = T_IF;
 
         /* condition -> expression */
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
         Nnode if_node = ast_add_node((&ast), IF_NODE, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
         Nnode condition_node = ast_add_node(&if_node, COND, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
 
@@ -336,11 +336,11 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         IF_VALUE_RETURN(condition)
 
         /* eol */
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
         IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
 
         while (is_eol(token.type)) {
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
         }
 
         Nnode if_body = ast_add_node((&if_node), IF_BODY, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
@@ -355,7 +355,7 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         IF_VALUE_RETURN(result)
 
         while (is_eol(token.type)) {
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
         }
 
         /* else */
@@ -363,14 +363,14 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         Nnode else_body = ast_add_node(&if_node, IF_ELSE, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
 
         /* colon */
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
         IF_RETURN(token.type != T_IS_COLON, SYNTAX_ERR)
 
         /* eol */
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
         IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
         while (is_eol(token.type)) {
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
         }
 
         /* INDENT */
@@ -387,15 +387,15 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         Nnode while_node = ast_add_node(&ast, WHILE, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
         //while_node->data->child_count++;
 
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
         int condition = expression(scope, stack, table, while_node, NULL, indent_stack, previous_token);
         IF_VALUE_RETURN(condition)
 
         /* eol */
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
         IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
         while (is_eol(token.type)) {
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
         }
 
         Nnode while_body = ast_add_node((&while_node), BODY, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
@@ -418,18 +418,18 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         previous_token = T_RETURN;
 
         ast_add_node(&return_node, PARAM, create_value(&token),is_global_scope(scope),indent_stack->top->indent_counter);
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
         result = expression(scope, stack, table, return_node, NULL, indent_stack, previous_token);
 
         IF_VALUE_RETURN(result)
 
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
 
         /* local scope ends with return */
         IF_RETURN(indent_stack->top->indent_counter <= indent_counter, SYNTAX_ERR)
 
         while (is_eol(token.type)) {
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
         }
 
         /* indent counter should be smaller here */
@@ -448,10 +448,10 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
     } /* pass */
     else if (token.type == T_PASS) {
         /* eol */
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
         IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
         while (is_eol(token.type)) {
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
         }
 
         unget_token();
@@ -464,7 +464,7 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
             IF_RETURN(indent_stack->top->indent_counter <= indent_counter, SYNTAX_ERR)
 
             while (is_eol(token.type)) {
-                IF_RETURN(get_token(), TOKEN_ERR)
+                IF_VALUE_RETURN(get_token())
             }
 
             /* indent counter should be smaller here */
@@ -498,13 +498,13 @@ int handle_indent(int scope, HTable* table, Nnode node, STACK* indent_stack, tDL
         result = statement(scope, table, node, indent_stack, functions_list);
         IF_VALUE_RETURN(result)
         /* indent */
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
         if (indent_stack->top->indent_counter < indent_counter) {
             return SYNTAX_ERR;
         }
         else if (indent_stack->top->indent_counter > indent_counter) {
             while (is_eol(token.type)) {
-                IF_RETURN(get_token(), TOKEN_ERR)
+                IF_VALUE_RETURN(get_token())
             }
 
             while (indent_stack->top->indent_counter != indent_counter) {
@@ -566,7 +566,7 @@ int expression(int scope, STACK* stack, HTable* table, Nnode ast, char* token_na
             previous_tkn->value = token.value;
             //Nnode l_cond = ast_add_node( (&ast), token.type, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
 
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
             HTItem* found;
             /* function call */
             if (is_left_bracket(token.type)) {
@@ -574,7 +574,7 @@ int expression(int scope, STACK* stack, HTable* table, Nnode ast, char* token_na
 
                 found = ht_search(global_hashtable, previous_tkn->value.is_char);
                 /* function has to be defined if it is called in global scope */
-                IF_RETURN(is_global_scope(scope) && !found, SYNTAX_ERR)
+                IF_RETURN(is_global_scope(scope) && !found, SEM_ERR_UNDEF_VAR)
 
                 /* call node to AST */
                 Nnode call_node = ast_add_node(&ast, CALL, previous_tkn->value.is_char, is_global_scope(scope), indent_stack->top->indent_counter);
@@ -619,10 +619,10 @@ int function_call(HTItem* found, HTable* function_table, Nnode ast, STACK* inden
 {
     int result = 0;
 
-    IF_RETURN(get_token(), TOKEN_ERR)
+    IF_VALUE_RETURN(get_token())
 
     if (is_right_bracket(token.type)) {
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
         return found && found->params_quantity != 0 ? SEM_ERR_PARAM_NUM : SYNTAX_OK;
     }
     else {
@@ -630,7 +630,7 @@ int function_call(HTItem* found, HTable* function_table, Nnode ast, STACK* inden
         result = function_call_arg(found, function_table, ast, indent_stack);
 
         if (token.type != T_IS_EOL)
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
 
         /* return token if function call is used for example in sum*/
         if (token.type != T_IS_EOL)
@@ -659,11 +659,11 @@ int function_call_arg(HTItem* found, HTable* table, Nnode ast, STACK* indent_sta
 
     int ret;
     IF_RETURN(is_comma(get_token()), SYNTAX_ERR)
-    //  IF_RETURN(get_token(), TOKEN_ERR)
+    //  IF_VALUE_RETURN(get_token())
 
     while (token.type != T_RIGHT_BRACKET) {
 
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
         ret = check_function_arguments(table);
         IF_RETURN(ret != 0, ret)
         countParams++;
@@ -715,11 +715,11 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
     if (token.type == T_LEFT_BRACKET) {
         while (token.type == T_LEFT_BRACKET) {
             left_bracket++;
-            IF_RETURN(get_token(), TOKEN_ERR)
+            IF_VALUE_RETURN(get_token())
         }
         unget_token();
         ungetc('(', stdin); /* we need left bracket to find rule */
-        IF_RETURN(get_token(), TOKEN_ERR)
+        IF_VALUE_RETURN(get_token())
     }
 
     /* current token from input*/
@@ -743,12 +743,12 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 if (token.type == T_RIGHT_BRACKET) {
                     while (token.type == T_RIGHT_BRACKET) {
                         right_bracket++;
-                        IF_RETURN(get_token(), TOKEN_ERR)
+                        IF_VALUE_RETURN(get_token())
                     }
                     IF_RETURN(left_bracket != right_bracket, SYNTAX_ERR)
                 }
                 else {
-                    IF_RETURN(get_token(), TOKEN_ERR)
+                    IF_VALUE_RETURN(get_token())
                 }
 
                 /* any operator must follow after right bracket or color in if/while*/
@@ -787,7 +787,7 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 previous->type = token.type;
                 previous->value = token.value;
 
-                IF_RETURN(get_token(), TOKEN_ERR)
+                IF_VALUE_RETURN(get_token())
                 IF_RETURN((previous->type == T_DIV || previous->type == T_DIV_INT) && (token.value.is_int == 0 || token.value.is_float == 0),
                           ERR_ZERO_DIV)
 

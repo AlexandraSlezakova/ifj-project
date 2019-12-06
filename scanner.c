@@ -67,7 +67,7 @@ int get_token()
         /* buffer reallocation */
         buffer = realloc(buffer, (size_t) ++allocated);
 
-        if (state != S_ERROR) {
+        if (state != S_ERROR && state != S_INDENT_ERROR) {
             c = getchar();
 
             /* write to buffer without comments */
@@ -79,11 +79,15 @@ int get_token()
             }
 
         }
-        else {
+        else if (state == S_ERROR) {
             token.type = T_IS_ERR;
             line_position++;
             line_counter++;
             return TOKEN_ERR;
+
+        } else {
+            token.type = T_IS_ERR;
+            return SYNTAX_ERR;
         }
 
         switch (state) {
@@ -173,7 +177,7 @@ int get_token()
                         ungetc(c, stdin);
                     }
                     else if (previous_state == START) {
-                        state = S_ERROR;
+                        state = S_INDENT_ERROR;
                         break;
                     }
                     state = START;
@@ -190,7 +194,7 @@ int get_token()
                         ungetc(c, stdin);
                     }
                     else if (previous_state == START) {
-                        state = S_ERROR;
+                        state = S_INDENT_ERROR;
                         break;
                     }
                     state = START;
