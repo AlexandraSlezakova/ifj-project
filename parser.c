@@ -21,6 +21,7 @@ int function_arguments(HTable* function_symtable, char* function_name, Nnode ast
     arg_list = DLInitList();
 
     int countParams = 0;
+    int success = 0;
 
     /* function has arguments */
     if (token.type == T_VAR) {
@@ -41,11 +42,14 @@ int function_arguments(HTable* function_symtable, char* function_name, Nnode ast
         Nnode argv = ast_add_node(&ast, ARGV, NULL, NULL, indent_stack->top->indent_counter);
         ast_add_node(&argv, PARAM, create_value(&token), NULL, indent_stack->top->indent_counter);
 
-        IF_VALUE_RETURN(get_token())
+        success = get_token();
+        IF_VALUE_RETURN(success)
 
         while (token.type != T_RIGHT_BRACKET) {
             IF_RETURN(!is_comma(token.type), SYNTAX_ERR)
-            IF_VALUE_RETURN(get_token())
+
+            success = get_token();
+            IF_VALUE_RETURN(success)
 
             IF_RETURN(!(token.type == T_VAR), SYNTAX_ERR)
             ast_add_node(&argv, PARAM, create_value(&token), NULL, indent_stack->top->indent_counter);
@@ -60,7 +64,9 @@ int function_arguments(HTable* function_symtable, char* function_name, Nnode ast
             IF_RETURN(!DLInsertLast(arg_list, name), ERR_INTERNAL)
 
             countParams++;
-            IF_VALUE_RETURN(get_token())
+
+            success = get_token();
+            IF_VALUE_RETURN(success)
         }
 
         function->params_quantity = countParams;
@@ -201,6 +207,7 @@ int statement_list(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDL
 {
     /* FUNCTION BODY */
     int result = 0;
+    int success = 0;
 
     /* indent of function definition */
     int initial_indent = indent_stack->top->indent_counter;
@@ -214,13 +221,17 @@ int statement_list(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDL
 
         IF_VALUE_RETURN(result)
 
-        if (token.type == T_RETURN) IF_VALUE_RETURN(get_token())
+        if (token.type == T_RETURN) {
+            success = get_token();
+            IF_VALUE_RETURN(success)
+        }
 
         /* eol */
         if (is_eol(token.type)) {
             /* check indent */
             while (is_eol(token.type)) {
-                IF_VALUE_RETURN(get_token())
+                success = get_token();
+                IF_VALUE_RETURN(success)
             }
 
             if (indent_stack->top->indent_counter == initial_indent) {
@@ -340,6 +351,7 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         /* condition -> expression */
         success = get_token();
         IF_VALUE_RETURN(success)
+
         Nnode if_node = ast_add_node((&ast), IF_NODE, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
         Nnode condition_node = ast_add_node(&if_node, COND, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
 
@@ -352,7 +364,8 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
 
         while (is_eol(token.type)) {
-            IF_VALUE_RETURN(get_token())
+            success = get_token();
+            IF_VALUE_RETURN(success)
         }
 
         Nnode if_body = ast_add_node((&if_node), IF_BODY, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
@@ -383,9 +396,11 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         /* eol */
         success = get_token();
         IF_VALUE_RETURN(success)
+
         IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
         while (is_eol(token.type)) {
-            IF_VALUE_RETURN(get_token())
+            success = get_token();
+            IF_VALUE_RETURN(success)
         }
 
         /* INDENT */
@@ -404,15 +419,18 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
 
         success = get_token();
         IF_VALUE_RETURN(success)
+
         int condition = expression(scope, stack, table, while_node, NULL, indent_stack, previous_token);
         IF_VALUE_RETURN(condition)
 
         /* eol */
         success = get_token();
         IF_VALUE_RETURN(success)
+
         IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
         while (is_eol(token.type)) {
-            IF_VALUE_RETURN(get_token())
+            success = get_token();
+            IF_VALUE_RETURN(success)
         }
 
         Nnode while_body = ast_add_node((&while_node), BODY, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
@@ -435,7 +453,10 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         previous_token = T_RETURN;
 
         ast_add_node(&return_node, PARAM, create_value(&token),is_global_scope(scope),indent_stack->top->indent_counter);
-        IF_VALUE_RETURN(get_token())
+
+        success = get_token();
+        IF_VALUE_RETURN(success)
+
         result = expression(scope, stack, table, return_node, NULL, indent_stack, previous_token);
 
         IF_VALUE_RETURN(result)
@@ -469,6 +490,7 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         /* eol */
         success = get_token();
         IF_VALUE_RETURN(success)
+
         IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
 
         while (is_eol(token.type)) {
@@ -649,7 +671,8 @@ int function_call(HTItem* found, HTable* function_table, Nnode ast, STACK* inden
     int result = 0;
     int success = 0;
 
-    IF_VALUE_RETURN(get_token())
+    success = get_token();
+    IF_VALUE_RETURN(success)
 
     if (is_right_bracket(token.type)) {
         success = get_token();
@@ -745,6 +768,7 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
     int left_bracket = 0;
     int right_bracket = 0;
     int result = 0;
+    int success = 0;
 
     IF_RETURN(stack_push(stack, NULL, NULL, PSA_END, TYPE_UNKNOWN) != OK, ERR_INTERNAL)
 
@@ -754,11 +778,15 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
     if (token.type == T_LEFT_BRACKET) {
         while (token.type == T_LEFT_BRACKET) {
             left_bracket++;
-            IF_VALUE_RETURN(get_token())
+
+            success = get_token();
+            IF_VALUE_RETURN(success)
         }
         unget_token();
         ungetc('(', stdin); /* we need left bracket to find rule */
-        IF_VALUE_RETURN(get_token())
+
+        success = get_token();
+        IF_VALUE_RETURN(success)
     }
 
     /* current token from input*/
@@ -782,12 +810,14 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 if (token.type == T_RIGHT_BRACKET) {
                     while (token.type == T_RIGHT_BRACKET) {
                         right_bracket++;
-                        IF_VALUE_RETURN(get_token())
+                        success = get_token();
+                        IF_VALUE_RETURN(success)
                     }
                     IF_RETURN(left_bracket != right_bracket, SYNTAX_ERR)
                 }
                 else {
-                    IF_VALUE_RETURN(get_token())
+                    success = get_token();
+                    IF_VALUE_RETURN(success)
                 }
 
                 /* any operator must follow after right bracket or color in if/while*/
@@ -825,7 +855,9 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 previous->type = token.type;
                 previous->value = token.value;
 
-                IF_VALUE_RETURN(get_token())
+                success = get_token();
+                IF_VALUE_RETURN(success)
+
                 IF_RETURN((previous->type == T_DIV || previous->type == T_DIV_INT) && (token.value.is_int == 0 || token.value.is_float == 0),
                           ERR_ZERO_DIV)
 
