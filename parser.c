@@ -693,9 +693,11 @@ int function_call_arg(HTItem* found, HTable* table, Nnode ast, STACK* indent_sta
 
 
     int ret;
-    IF_RETURN(is_comma(get_token()), SYNTAX_ERR)
+    success = get_token();
+    IF_VALUE_RETURN(success)
 
     while (token.type != T_RIGHT_BRACKET) {
+        IF_RETURN(!is_comma(token.type), SYNTAX_ERR)
 
         success = get_token();
         IF_VALUE_RETURN(success)
@@ -708,7 +710,8 @@ int function_call_arg(HTItem* found, HTable* table, Nnode ast, STACK* indent_sta
         else
             ast_add_node(&argv, VAR, create_value(&token), NULL, indent_stack->top->indent_counter);
 
-        IF_RETURN(is_comma(get_token()), SYNTAX_ERR)
+        success = get_token();
+        IF_VALUE_RETURN(success)
 
     }
 
