@@ -96,8 +96,9 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
     IF_RETURN(!ast_add_node((&ast), PROG, NULL, true, indent_stack->top->indent_counter), ERR_INTERNAL)
 
     /* temporary stack for saving nodes */
-    nStack = malloc(sizeof(nStack));
-    Arr_Nstack = malloc(sizeof(nStack));
+    nStack = malloc(sizeof(*nStack));
+    Arr_Nstack = malloc(sizeof(*nStack));
+    stackInit(nStack);
 
     int item = OK;
 
@@ -769,6 +770,8 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
     int right_bracket = 0;
     int result = 0;
     int success = 0;
+    Nnode add_node = NULL;
+    int tmp = 0;
 
     IF_RETURN(stack_push(stack, NULL, NULL, PSA_END, TYPE_UNKNOWN) != OK, ERR_INTERNAL)
 
@@ -778,7 +781,9 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
     if (token.type == T_LEFT_BRACKET) {
         while (token.type == T_LEFT_BRACKET) {
             left_bracket++;
-
+            add_node = ast_add_node((&add_node), LF_BR, "(", is_global_scope(scope), -1);
+            stackPush(nStack,add_node);
+            tmp = 1;
             success = get_token();
             IF_VALUE_RETURN(success)
         }
@@ -810,6 +815,9 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 if (token.type == T_RIGHT_BRACKET) {
                     while (token.type == T_RIGHT_BRACKET) {
                         right_bracket++;
+                        add_node = ast_add_node((&add_node), RG_BR, ")", is_global_scope(scope), -1);
+                        stackPush(nStack,add_node);
+
                         success = get_token();
                         IF_VALUE_RETURN(success)
                     }
@@ -821,7 +829,7 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 }
 
                 /* any operator must follow after right bracket or color in if/while*/
-                IF_RETURN(!is_operator(token.type) && token.type != T_IS_COLON, SYNTAX_ERR)
+                //IF_RETURN(!is_operator(token.type) && token.type != T_IS_COLON, SYNTAX_ERR) //TODO  a = ( 5 * 7 ) - 5 - ( 6 / 7 ) vyhodí mi to chybu
 
                 input = token_to_psa_symbol();
                 IF_RETURN(!(input <= PSA_END), ERR_INTERNAL)
@@ -855,6 +863,24 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 previous->type = token.type;
                 previous->value = token.value;
 
+                if(token.type == T_ADD)
+                    add_node = ast_add_node((&add_node), ADD, NULL, is_global_scope(scope), -1);
+                else if(token.type == T_SUB)
+                    add_node = ast_add_node((&add_node), SUB, NULL, is_global_scope(scope), -1);
+                else if(token.type == T_MUL)
+                    add_node = ast_add_node((&add_node), MUL, NULL, is_global_scope(scope), -1);
+                else if(token.type == T_DIV)
+                    add_node = ast_add_node((&add_node), DIV, NULL, is_global_scope(scope), -1);
+                else if(token.type == T_DIV_INT)
+                    add_node = ast_add_node((&add_node), DIVINIT, NULL, is_global_scope(scope), -1);
+                else if (token.type == T_VAR)
+                    add_node = ast_add_node((&add_node), VAR, token.value.is_char, is_global_scope(scope), -1);
+                else if (token.type != T_LEFT_BRACKET && token.type != T_RIGHT_BRACKET)
+                    add_node = ast_add_node((&add_node), VAL, create_value(&token), is_global_scope(scope), -1);
+                if(tmp == 0)
+                    stackPush(nStack,add_node);
+                tmp = 0;
+
                 success = get_token();
                 IF_VALUE_RETURN(success)
 
@@ -865,6 +891,15 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                     colon_counter++;
                     IF_RETURN(colon_counter > 1, SYNTAX_ERR)
                 }
+
+                if (token.type == T_LEFT_BRACKET)
+                {
+                    add_node = ast_add_node((&add_node), LF_BR, "(", is_global_scope(scope), -1);
+                    left_bracket++;
+                }
+                if (token.type == T_RIGHT_BRACKET)
+                    add_node = ast_add_node((&add_node), RG_BR, ")", is_global_scope(scope), -1);
+
 
                 break;
             case '>':
@@ -884,25 +919,13 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
         input = token_to_psa_symbol();
     }
 
+    infix2postfix(nStack,node);
+
     /* update data type of variable */
     if (token_name) {
         result = insert_variable(table, token_name, stack->top->type);
         IF_VALUE_RETURN(result)
     }
-    if (nStack->nstack[0] != NULL)
-    {
-        nStack->nstack[0]->parent_node = node->children[node->data->child_count];
-        node->children[node->data->child_count] = nStack->nstack[0];
-        NstackPopGround(nStack);
-    }
-    else
-    {
-        Arr_Nstack->nstack[0]->parent_node = node->children[node->data->child_count];
-        node->children[node->data->child_count] = Arr_Nstack->nstack[0];
-        NstackPopGround(Arr_Nstack);
-    }
-    node->data->child_count++;
-    stack_destroy(stack);
 
     return SYNTAX_OK;
 }
@@ -931,13 +954,6 @@ int reduce(int scope, STACK* stack, struct TToken* previous, int bracekt)
                 original->type = stack_elem[0].current_token->type;
                 original->value = stack_elem[0].current_token->value;
                 original->value.is_char = stack_elem[0].current_token->value.is_char;
-                node = ast_add_node(&node, original->type == T_VAR ? VAR : VAL, create_value(original), is_global_scope(scope), -1);
-
-                if(bracekt > 0 )//&& (previous->type == DIV || previous->type == DIVINIT || previous_state == SUB))
-                    NstackFirstPush(nStack, node);
-                else
-                    NstackPush(nStack, node);
-
                 break;
 
             case BRACKET_RULE:
@@ -961,60 +977,7 @@ int reduce(int scope, STACK* stack, struct TToken* previous, int bracekt)
                 original = NULL;
                 type_of_node = node_type(&stack_elem[1]);
                 IF_RETURN(type_of_node == NO_NODE, ERR_INTERNAL)
-                node = ast_add_node((&node), type_of_node, NULL, is_global_scope(scope), -1);
-                if (nStack->top != -1 && nStack->nstack[0] != NULL)
-                {
-                    nStack->nstack[0]->parent_node = node->children[0];
-                    node->children[0] = nStack->nstack[0];
-                    node->data->child_count++;
-                    NstackPopGround(nStack);
 
-                }
-                if (node->data->ntype == GR || node->data->ntype == GEQ || node->data->ntype == LESS || node->data->ntype == LOQ || node->data->ntype == COMP || node->data->ntype == NOTCOMP || node->data->ntype == ADD || node->data->ntype == SUB || node->data->ntype == MUL || node->data->ntype == DIV || node->data->ntype == DIVINIT)
-                {
-                    if (nStack->nstack[0] != NULL &&  Arr_Nstack->nstack[0] == NULL)
-                    {
-                        nStack->nstack[0]->parent_node = node->children[node->data->child_count];
-                        node->children[node->data->child_count] = nStack->nstack[0];
-                        node->data->child_count++;
-                        NstackPopGround(nStack);
-                        NstackPush(Arr_Nstack, node);
-                    }
-                    else if (node->children[0] != NULL)
-                    {
-                        Arr_Nstack->top--;
-                        Arr_Nstack->nstack[Arr_Nstack->top]->parent_node = node->children[node->data->child_count];
-                        node->children[node->data->child_count] = Arr_Nstack->nstack[Arr_Nstack->top];
-                        node->data->child_count++;
-                        NstackPop(Arr_Nstack);
-                        Arr_Nstack->top++;
-                        NstackPush(Arr_Nstack, node);
-                    }
-                    else
-                    {
-                        Arr_Nstack->nstack[0]->parent_node = node->children[node->data->child_count];
-                        node->children[node->data->child_count] = Arr_Nstack->nstack[0];
-                        node->data->child_count++;
-                        NstackPopGround(Arr_Nstack);
-                        Arr_Nstack->nstack[0]->parent_node = node->children[node->data->child_count];
-                        node->children[node->data->child_count] = Arr_Nstack->nstack[0];
-                        node->data->child_count++;
-                        NstackPopGround(Arr_Nstack);
-                        NstackPush(Arr_Nstack, node);
-                    }
-                }
-                if (
-                        (node->data->ntype == DIV || node->data->ntype == DIVINIT || node->data->ntype == SUB) &&
-                        ((node->children[node->data->child_count - 1]->data->ntype >= 12 && node->children[node->data->child_count - 1]->data->ntype <= 16) ||
-                         ((node->children[node->data->child_count - 2]->data->ntype) >= 12 && node->children[node->data->child_count - 2]->data->ntype <= 16) ||
-                         bracekt > 0)  //&&(node->children[node->data->child_count - 1]->data->ntype == DIV || node->children[node->data->child_count - 1]->data->ntype == DIVINIT || node->children[node->data->child_count - 1]->data->ntype == SUB )
-                        )
-                {
-                    node->children[node->data->child_count] = node->children[node->data->child_count - 2];
-                    node->children[node->data->child_count - 2] = node->children[node->data->child_count - 1];
-                    node->children[node->data->child_count - 1] = node->children[node->data->child_count];
-                    node->children[node->data->child_count] = NULL;
-                }
                 break;
 
             default:

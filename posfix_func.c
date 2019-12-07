@@ -13,6 +13,10 @@
 void stackInit ( NStack *s )
 {
     s->top = -1;
+    for(int i = 0; i != TAB_SIZE; i++)
+    {
+        s->nstack[0]= NULL;
+    }
 }
 int stackEmpty ( const NStack* s )
 {
@@ -46,14 +50,14 @@ void stackPush ( NStack* s, Nnode node ){
 
 void untilLeftPar ( NStack* s, NStack *out ) {
 
-    Nnode c;
+    Nnode ast;
     while(s->top != -1) //Vyprázdění zásobníku dokud nenarazímena ( nebo zásobník se vypprázdní
     {
-        c = stackTop(s);
+        ast = stackTop(s);
         stackPop(s);
-        if (c->data->ntype == LF_BR)
+        if (ast->data->ntype == LF_BR)
             return;
-        stackPush(out ,c);
+        stackPush(out ,ast);
     }
 }
 
@@ -90,9 +94,9 @@ void doOperation ( NStack* out, NStack* in, NStack* tmp,Nnode node) {
 
 void infix2postfix (NStack *in,Nnode node) {
 
-    NStack *tmp = malloc(sizeof(nStack));
+    NStack *tmp = malloc(sizeof(*nStack));
     stackInit(tmp);
-    NStack *out = malloc(sizeof(nStack));
+    NStack *out = malloc(sizeof(*nStack));
     stackInit(out);
 
     while(in->top != -1) //Cyklus dokud nedojdeme do konce řetězce

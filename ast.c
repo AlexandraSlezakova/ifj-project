@@ -51,7 +51,7 @@ void NstackFirstPush(NStack *s, Nnode node)
 
 void ast_rename_value(char *com, Nnode ast, char *new_c)
 {
-    // int a = 5;
+    int a = 5;
 
     if(ast->data->data != NULL)
         if(!strcmp(com,ast->data->data))
@@ -65,11 +65,11 @@ void ast_rename_value(char *com, Nnode ast, char *new_c)
 }
 
 void NstackPopGround (NStack *s) {
-    for (int i = 1; i != s->top && s->top != 0; i++) {
+    for (int i = 1; i <= s->top+1 && s->top != 0; i++) {
         s->nstack[i - 1] = s->nstack[i];
     }
-    s->top--;
-    s->nstack[s->top] = NULL;
+    if(s->top >= 0)
+        s->top--;
 }
 
 void NstackPop (NStack *s)
@@ -84,11 +84,13 @@ void NstackPop (NStack *s)
 //předělat neřešit indent vracet přidanou větvu
 void NstackPopAll (NStack *s)
 {
-    while(s->top != 0 && s->top > -1)
+    while( s->top != -1)
     {
         s->nstack[s->top] = NULL;
         s->top -= 1;
     }
+    if(s->nstack[0] != NULL)
+        s->nstack[0] = NULL;
     s->nstack[s->top] = NULL;
 }
 
