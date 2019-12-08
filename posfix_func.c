@@ -79,9 +79,9 @@ void doOperation ( NStack* out, NStack* in, NStack* tmp,Nnode node) {
         stackPush(tmp, node);
         NstackPopGround(in);
     }
-    else if ((node->data->ntype == DIV || node->data->ntype == DIVINIT || c_top->data->ntype == MUL) && (c_top->data->ntype == ADD || c_top->data->ntype == SUB))  //Pokud je operand nebo na vrchlu je operátor s nižší prioritou vlož na zásobník
+    else if ((node->data->ntype == DIV || node->data->ntype == DIVINIT || node->data->ntype == MUL) && (c_top->data->ntype == ADD || c_top->data->ntype == SUB))  //Pokud je operand nebo na vrchlu je operátor s nižší prioritou vlož na zásobník
     {
-        stackPush(tmp, c_top);
+        stackPush(tmp, node);
         NstackPopGround(in);
     }
     else
@@ -125,7 +125,7 @@ void infix2postfix (NStack *in,Nnode node) {
     while(tmp->top != -1)
     {
         stackPush(out, stackTop(tmp));
-        NstackPopGround(tmp);
+        NstackPop(tmp);
     }
 
 
