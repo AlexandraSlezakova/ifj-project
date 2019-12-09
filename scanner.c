@@ -72,17 +72,13 @@ int get_token()
 
             /* write to buffer without comments */
             if (state != S_DOC_CONTENT && state != S_LINE_COMMENT) {
-                if (c == '\n' || c == '\t' || c == 32) {
+                if (c == 32) {
                     /* make buffer bigger */
                     buffer = realloc(buffer, (size_t) ++allocated);
                     if (c == 32) {
                         strcat(buffer, "\032");
-                    } else if (c == 10) {
-                        strcat(buffer, "\010");
-                    } else if (c == 9) {
-                        strcat(buffer, "\009");
+                        iterator++;
                     }
-                    iterator++;
                 } else {
                     buffer[iterator++] = c;
                 }
@@ -376,15 +372,6 @@ int get_token()
                         state = S_END_DOC_1;
                     }
                     else {
-                        if(c==' ')
-                        {
-                            strcat(buffer,"\032");
-//                            buffer[--iterator] = '\\';
-//                            buffer[++iterator] = '0';
-//                            buffer[++iterator] = '3';
-                            iterator++;
-
-                        }
                         state = S_STRING_CONTENT;
                     }
                 }
