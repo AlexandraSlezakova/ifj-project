@@ -421,7 +421,9 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         success = get_token();
         IF_VALUE_RETURN(success)
 
-        int condition = expression(scope, stack, table, while_node, NULL, indent_stack, previous_token);
+        Nnode cond_node = ast_add_node(&while_node, COND, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
+
+        int condition = expression(scope, stack, table, cond_node, NULL, indent_stack, previous_token);
         IF_VALUE_RETURN(condition)
 
         /* eol */
