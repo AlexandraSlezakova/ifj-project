@@ -56,7 +56,7 @@ void create_token(int character, char* string, struct TToken* new_token, TType t
 int get_token()
 {
     int allocated = 0;
-
+    
     iterator = 0;
     buffer = NULL;
     TState state = START; /* initial state */
@@ -72,7 +72,20 @@ int get_token()
 
             /* write to buffer without comments */
             if (state != S_DOC_CONTENT && state != S_LINE_COMMENT) {
-                buffer[iterator++] = c;
+                if (c == '\n' || c == '\t' || c == 32) {
+                    /* make buffer bigger */
+                    buffer = realloc(buffer, (size_t) ++allocated);
+                    if (c == 32) {
+                        strcat(buffer, "\032");
+                    } else if (c == 10) {
+                        strcat(buffer, "\010");
+                    } else if (c == 9) {
+                        strcat(buffer, "\009");
+                    }
+                    iterator++;
+                } else {
+                    buffer[iterator++] = c;
+                }
             }
             else if (c == 34 && previous_state != START) {
                 buffer[iterator++] = c;
@@ -675,7 +688,8 @@ int get_token()
     }
 }
 
-void unget_token() {
+void unget_token()
+{
 
     int i = 0;
     unsigned long length = strlen(buffer);

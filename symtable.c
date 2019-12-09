@@ -23,7 +23,7 @@ int createHash(char *key){
         ret = ret + key[i];
     }
 
-    return(key_length % SIZE);
+    return(ret % (SIZE + 1));
 }
 
 
