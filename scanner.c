@@ -72,13 +72,13 @@ int get_token()
 
             /* write to buffer without comments */
             if (state != S_DOC_CONTENT && state != S_LINE_COMMENT) {
-                if (c == 32) {
-                    /* make buffer bigger */
-                    buffer = realloc(buffer, (size_t) ++allocated);
-                    if (c == 32) {
-                        strcat(buffer, "\032");
+                if (c == 32 && previous_state == START_STRING) {
+                    for (int i = 0; i < 4; i++) {
+                        buffer = realloc(buffer, (size_t) ++allocated);
                         iterator++;
                     }
+                    strcat(buffer, "\\");
+                    strcat(buffer, "032");
                 } else {
                     buffer[iterator++] = c;
                 }
@@ -130,6 +130,7 @@ int get_token()
                 } /* beginning of string */
                 else if (c == 39) {
                     state = START_STRING;
+                    previous_state = START_STRING;
                     break;
                 }
                     /* documentation string */
