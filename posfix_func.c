@@ -106,7 +106,8 @@ void infix2postfix (NStack *in,Nnode node) {
             stackPush(out,in->nstack[0]);
             NstackPopGround(in);
         }
-        else if (in->nstack[0]->data->ntype == MUL || in->nstack[0]->data->ntype == SUB || in->nstack[0]->data->ntype == DIV || in->nstack[0]->data->ntype == DIVINIT || in->nstack[0]->data->ntype == ADD)
+        else if (in->nstack[0]->data->ntype == MUL || in->nstack[0]->data->ntype == SUB || in->nstack[0]->data->ntype == DIV || in->nstack[0]->data->ntype == DIVINIT || in->nstack[0]->data->ntype == ADD
+    || in->nstack[0]->data->ntype == COMP|| in->nstack[0]->data->ntype == NOTCOMP|| in->nstack[0]->data->ntype == GR|| in->nstack[0]->data->ntype == GEQ|| in->nstack[0]->data->ntype == LESS|| in->nstack[0]->data->ntype == LOQ)
         {                                             //Pokud operátor rozhodnutí co se provede s operátorem ve funkci doOperation
             doOperation(out,in,tmp,in->nstack[0]);
         }

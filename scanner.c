@@ -376,6 +376,15 @@ int get_token()
                         state = S_END_DOC_1;
                     }
                     else {
+                        if(c==' ')
+                        {
+                            strcat(buffer,"\032");
+//                            buffer[--iterator] = '\\';
+//                            buffer[++iterator] = '0';
+//                            buffer[++iterator] = '3';
+                            iterator++;
+
+                        }
                         state = S_STRING_CONTENT;
                     }
                 }
