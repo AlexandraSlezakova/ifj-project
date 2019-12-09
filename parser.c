@@ -453,7 +453,7 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         Nnode return_node = ast_add_node((&ast), RETURN, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
         previous_token = T_RETURN;
 
-        ast_add_node(&return_node, PARAM, create_value(&token),is_global_scope(scope),indent_stack->top->indent_counter);
+        //ast_add_node(&return_node, PARAM, create_value(&token),is_global_scope(scope),indent_stack->top->indent_counter);
 
         success = get_token();
         IF_VALUE_RETURN(success)
@@ -863,6 +863,7 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 previous->type = token.type;
                 previous->value = token.value;
 
+
                 if(token.type == T_ADD)
                     add_node = ast_add_node((&add_node), ADD, NULL, is_global_scope(scope), -1);
                 else if(token.type == T_SUB)
@@ -873,6 +874,19 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                     add_node = ast_add_node((&add_node), DIV, NULL, is_global_scope(scope), -1);
                 else if(token.type == T_DIV_INT)
                     add_node = ast_add_node((&add_node), DIVINIT, NULL, is_global_scope(scope), -1);
+                else if(token.type == T_IS_EQUAL)
+                    add_node = ast_add_node((&add_node), COMP, NULL, is_global_scope(scope), -1);
+                else if(token.type == T_IS_NOT_EQUAL)
+                    add_node = ast_add_node((&add_node), NOTCOMP, NULL, is_global_scope(scope), -1);
+                else if(token.type == T_IS_GREATER)
+                    add_node = ast_add_node((&add_node), GR, NULL, is_global_scope(scope), -1);
+                else if(token.type == T_IS_GREATER_OR_EQUAL)
+                    add_node = ast_add_node((&add_node), GEQ, NULL, is_global_scope(scope), -1);
+                else if(token.type == T_IS_SMALLER)
+                add_node = ast_add_node((&add_node), LESS, NULL, is_global_scope(scope), -1);
+                else if(token.type == T_IS_SMALLER_OR_EQUAL)
+                    add_node = ast_add_node((&add_node), LOQ, NULL, is_global_scope(scope), -1);
+
                 else if (token.type == T_VAR)
                     add_node = ast_add_node((&add_node), VAR, token.value.is_char, is_global_scope(scope), -1);
                 else if (token.type != T_LEFT_BRACKET && token.type != T_RIGHT_BRACKET)
