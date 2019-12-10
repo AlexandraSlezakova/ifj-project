@@ -1200,7 +1200,9 @@ int main()
     /* global table init */
     global_hashtable = ht_init();
     IF_RETURN(!global_hashtable, ERR_INTERNAL)
-
+    while (1 ) {
+        get_token();
+    }
     /* number of lines */
     line_counter = 0;
     /* position of character */

@@ -996,7 +996,6 @@ void indetify_call_function(Nnode ast)
 
             return;
             //generate_chr_func(ast);
-            break;
         case 5:
             fprintf(stdout, "DEFVAR TF@F_1\n");
             if (ast->children[0]->children[0]->data->ntype == VAL) {
@@ -1077,7 +1076,6 @@ void indetify_call_function(Nnode ast)
         default:
             generate_call(ast);
             return;
-            break;
     }
     fprintf(stdout, "POPFRAME\n");
     if (func == 1){
