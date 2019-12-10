@@ -608,23 +608,24 @@ int get_token()
 
             case S_END_DOC_2:
                 if (c == 34) {
+                    state = S_END_DOC_3;
+                }
+                else {
+                    state = S_ERROR;
+                }
+                break;
+
+            case S_END_DOC_3:
+                if (c != 34) {
                     if (previous_state == S_DOC_STRING) {
-                        c = getchar();  /* get next character to return */
                         create_token(c, buffer, &token, T_STRING);
                         return 0;
                     }
-                    else {
-                        state = S_END_DOC_2;
-                        break;
-                    }
-                }
-                else if (c == '\n') {
                     state = START;
                     allocated = 0;
                     iterator = 0;
                     line_position = 0;
                     line_counter++;
-                    buffer = NULL;
                 }
                 else {
                     state = S_ERROR;

@@ -38,8 +38,9 @@ typedef enum {
     S_START_DOC_1,              /* druha uvodzovka pre dokumentacny retazec */
     S_START_DOC_2,              /* tretia uvodzovka pre dokumentacny retazec */
     S_DOC_CONTENT,              /* obsah komentara */
-    S_END_DOC_1,                /* koniec - druha uvodzovka pre dokumentacny retazec */
-    S_END_DOC_2,                /* koniec - tretia uvodzovka pre dokumentacny retazec */
+    S_END_DOC_1,                /* koniec - prva uvodzovka pre dokumentacny retazec */
+    S_END_DOC_2,                /* koniec - druha uvodzovka pre dokumentacny retazec */
+    S_END_DOC_3,                /* koniec - tretia uvodzovka pre dokumentacny retazec */
     S_COLON,                    /* dvojbodka */
     S_TAB,                      /* tabulator */
     S_SPACE,                    /* medzera */
