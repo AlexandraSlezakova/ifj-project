@@ -42,7 +42,7 @@ void generate_type_control_cmp(Nnode ast);
 void type_control();
 void generate_type_control_exit(Nnode ast);
 void type_control_exit();
-void save_val_to_variable(Nnode ast);
+void save_val_to_variable(Nnode ast, bool TF);
 void generate_call(Nnode ast);
 void generate_func_def(Nnode ast,HTable *table);
 void indetify_call_function(Nnode ast);

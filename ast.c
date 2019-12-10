@@ -57,7 +57,7 @@ void ast_rename_value(char *com, Nnode ast, char *new_c)
         if(!strcmp(com,ast->data->data))
             ast->data->data = new_c;
 
-    for(int i = 0; ast->data->child_count > i; i++)
+    for(int i = 0; ast->data->child_count >= i; i++)
     {
         if (ast->children[i]!=NULL)
             ast_rename_value(com,ast->children[i],new_c);
