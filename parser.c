@@ -800,24 +800,14 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
 
     if (token.type == T_LEFT_BRACKET) {
         /* save number of left brackets */
-        while (token.type == T_LEFT_BRACKET) {
-            left_bracket++;
+        left_bracket++;
 
-            /* add to ast only if it not unused expression */
-            if (node) {
-                add_node = ast_add_node((&add_node), LF_BR, "(", is_global_scope(scope), -1);
-                stackPush(nStack,add_node);
-                tmp = 1;
-            }
-
-            success = get_token();
-            IF_VALUE_RETURN(success)
+        /* add to ast only if it not unused expression */
+        if (node) {
+            add_node = ast_add_node((&add_node), LF_BR, "(", is_global_scope(scope), -1);
+            stackPush(nStack,add_node);
+            tmp = 1;
         }
-        unget_token();
-        ungetc('(', stdin); /* we need left bracket to find rule */
-
-        success = get_token();
-        IF_VALUE_RETURN(success)
     }
 
     /* current token from input*/
@@ -840,27 +830,19 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
 
                 if (token.type == T_RIGHT_BRACKET) {
                     /* save number of right brackets */
-                    while (token.type == T_RIGHT_BRACKET) {
-                        right_bracket++;
+                    right_bracket++;
 
-                        if (node) {
-                            add_node = ast_add_node((&add_node), RG_BR, ")", is_global_scope(scope), -1);
-                            stackPush(nStack,add_node);
-                        }
-
-                        success = get_token();
-                        IF_VALUE_RETURN(success)
+                    if (node) {
+                        add_node = ast_add_node((&add_node), RG_BR, ")", is_global_scope(scope), -1);
+                        stackPush(nStack,add_node);
                     }
-                    /* check brackets */
-                    IF_RETURN(left_bracket != right_bracket, SYNTAX_ERR)
                 }
-                else {
-                    success = get_token();
-                    IF_VALUE_RETURN(success)
-                }
+
+                success = get_token();
+                IF_VALUE_RETURN(success)
 
                 /* any operator must follow after right bracket or colon in if/while*/
-                IF_RETURN(!is_operator(token.type) && (node->data->ntype == COND || node->data->ntype == WHILE) && token.type != T_IS_COLON, SYNTAX_ERR)
+                IF_RETURN(!is_operator(token.type) && node && (node->data->ntype == COND || node->data->ntype == WHILE) && token.type != T_IS_COLON, SYNTAX_ERR)
 
                 input = token_to_psa_symbol();
                 IF_RETURN(!(input <= PSA_END), ERR_INTERNAL)
@@ -940,8 +922,10 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 }
 
 
-                if (token.type == T_LEFT_BRACKET && node) {
-                    add_node = ast_add_node((&add_node), LF_BR, "(", is_global_scope(scope), -1);
+                if (token.type == T_LEFT_BRACKET) {
+                    if (node) {
+                        add_node = ast_add_node((&add_node), LF_BR, "(", is_global_scope(scope), -1);
+                    }
                     left_bracket++;
                 }
 
@@ -966,6 +950,9 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
         /* current token from input*/
         input = token_to_psa_symbol();
     }
+
+    /* check brackets */
+    IF_RETURN(left_bracket != right_bracket, SYNTAX_ERR)
 
     if (node) infix2postfix(nStack,node);
 
