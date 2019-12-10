@@ -75,13 +75,15 @@ int get_token()
                 if (c == 32 && previous_state == START_STRING) {
                     for (int i = 0; i < 4; i++) {
                         buffer = realloc(buffer, (size_t) ++allocated);
-                        iterator++;
                     }
-                    strcat(buffer, "\\");
-                    strcat(buffer, "032");
+                    buffer[iterator++] = '\\';
+                    buffer[iterator++] = '0';
+                    buffer[iterator++] = '3';
+                    buffer[iterator++] = '2';
                 } else {
                     buffer[iterator++] = c;
                 }
+
             }
             else if (c == 34 && previous_state != START) {
                 buffer[iterator++] = c;
