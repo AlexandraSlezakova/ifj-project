@@ -51,8 +51,6 @@ void NstackFirstPush(NStack *s, Nnode node)
 
 void ast_rename_value(char *com, Nnode ast, char *new_c)
 {
-    int a = 5;
-
     if(ast->data->data != NULL)
         if(!strcmp(com,ast->data->data))
             ast->data->data = new_c;
