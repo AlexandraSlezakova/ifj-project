@@ -196,7 +196,7 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
 
         }
         else {
-            result = token.type == T_IS_EOL ? SYNTAX_OK : SYNTAX_ERR;
+            result = token.type == T_IS_EOL ? SYNTAX_OK : LEX_ERR;
         }
 
         IF_VALUE_RETURN(result)
@@ -1058,11 +1058,17 @@ char* create_value(struct TToken* current_token)
     if (current_token->type == T_STRING) {
         int i = 0, allocated = 0;
         while (current_token->value.is_char[i] != '\0') {
+            /* remove character 39 */
             if (current_token->value.is_char[i] != 39) {
                 string = realloc(string, (size_t)allocated++);
                 string[allocated - 1] = current_token->value.is_char[i];
             }
             i++;
+        }
+
+        if (string) {
+            string = realloc(string, (size_t)allocated++);
+            string[allocated - 1] = '\0';
         }
     }
 
