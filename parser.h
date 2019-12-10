@@ -48,7 +48,7 @@ PSA_SYMBOL psa_rules[3][4] =
 HTable *global_hashtable;
 int statement(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList *functions_list);
 int statement_list(int scope, HTable *table, Nnode ast, STACK *indent_stack, tDLList *functions_list);
-int reduce(int scope, STACK *stack, struct TToken *previous, int bracekt);
+int reduce(STACK *stack, struct TToken *previous);
 int expression(int scope, STACK *stack, HTable *table, Nnode ast, char *token_name, STACK *indent_stack, TType previous_token);
 int function_call(HTItem *found, HTable *function_table,Nnode ast,STACK *indent_stack);
 int function_call_arg(HTItem *found, HTable *function_table,Nnode ast,STACK *indent_stack);
