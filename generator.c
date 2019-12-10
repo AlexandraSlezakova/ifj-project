@@ -213,7 +213,7 @@ void generate_type_control_exit2(Nnode child1, Nnode child2)
 
 void generate_math_aritmetic(Nnode ast)
 {
-
+    int before = 0;
     fprintf(stdout, "CREATEFRAME\n");
     for (int i = 1; ast->children[i] != NULL; i ++){
 
@@ -235,6 +235,7 @@ void generate_math_aritmetic(Nnode ast)
         }
 
     }
+    before = func;
     func = true;
 
     fprintf(stdout, "DEFVAR TF@%%RETVAL\n");
@@ -338,6 +339,8 @@ void generate_math_aritmetic(Nnode ast)
 
             }
         }
+        if (before == false)
+            func = false;
     }
     //fprintf(stdout, "CREATEFRAME\n");
 
@@ -862,6 +865,7 @@ void generate_call(Nnode ast)
 void generate_func_def(Nnode ast,HTable *table)
 {
     func = true;
+    int count = 0;
     generate_unique_func_identifier(0,'F');
     fprintf(stdout, "LABEL %s\n", ast->data->data);
     fprintf(stdout, "PUSHFRAME\n");
@@ -881,9 +885,27 @@ void generate_func_def(Nnode ast,HTable *table)
                 ast->children[0]->children[i]->data->data = newvar;
                 ast_rename_value(com, ast->children[1], newvar);
             }
+            for (int i = 0; ast->children[1]->children[i] != NULL; i++){
+                if (ast->children[1]->children[i]->data->ntype == RETURN) {
+                    count++;
+                }
+            }
             generate(ast->children[1], table);
+
+            if (count == 0) {
+                fprintf(stdout, "RETURN\n");
+            }
         } else {
+            for (int i = 0; ast->children[0]->children[i] != NULL; i++) {
+                if (ast->children[0]->children[i]->data->ntype == RETURN) {
+                    count++;
+                }
+            }
             generate(ast->children[0], table);
+
+            if (count == 0) {
+                fprintf(stdout, "RETURN\n");
+            }
         }
 
     }
