@@ -372,7 +372,11 @@ int get_token()
                     }
                 }
                 else if (c == 39) {
-                    state = S_STRING;
+                    if (previous_state == S_DOC_STRING) {
+                        state = S_STRING_CONTENT;
+                    } else {
+                        state = S_STRING;
+                    }
                 }
                 else {
                     state = S_ERROR;
@@ -389,7 +393,11 @@ int get_token()
                     }
                 }
                 else if (c == 39) {
-                    state = S_STRING;
+                    if (previous_state == S_DOC_STRING) {
+                        state = S_STRING_CONTENT;
+                    } else {
+                        state = S_STRING;
+                    }
                 }
                 else if (c == '\\') {
                     state = S_ESC;

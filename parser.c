@@ -176,23 +176,23 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
             IF_RETURN(!function_body, ERR_INTERNAL)
 
             /* statement list - body of function */
-            result = statement_list(SCOPE, function_table, function_body, indent_stack, functions_list);
+            result = statement_list(1, SCOPE, function_table, function_body, indent_stack, functions_list);
 
         } /* variable */
         else if (token.type == T_VAR) {
-            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
+            result = statement(0, GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
 
         } /* if statement */
         else if (token.type == T_IF) {
-            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
+            result = statement(0, GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
 
         } /* while */
         else if (token.type == T_WHILE) {
-            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
+            result = statement(0, GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
 
         } /* pass */
         else if (token.type == T_PASS) {
-            result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
+            result = statement(0, GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
 
         }
         else {
@@ -203,7 +203,7 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
                     result = SYNTAX_ERR;
                 } else {
                     if (is_term(token.type) || is_left_bracket(token.type)) {
-                        result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
+                        result = statement(0, GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
                     } else {
                         result = LEX_ERR;
                     }
@@ -215,7 +215,7 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
     }
 }
 
-int statement_list(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList* functions_list)
+int statement_list(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList* functions_list)
 {
     /* FUNCTION BODY */
     int result = 0;
@@ -229,7 +229,7 @@ int statement_list(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDL
     while (indent_stack->top->indent_counter != initial_indent) {
         if (token.type == T_IF || token.type == T_WHILE
             || token.type == T_VAR || token.type == T_RETURN || token.type == T_PASS)
-            result = statement(scope, table, ast, indent_stack, functions_list);
+            result = statement(in_def, scope, table, ast, indent_stack, functions_list);
 
         IF_VALUE_RETURN(result)
 
@@ -274,7 +274,7 @@ int statement_list(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDL
 
 }
 
-int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList* functions_list)
+int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList* functions_list)
 {
     int result = SYNTAX_ERR;
     int success = 0;
@@ -388,7 +388,7 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
 
         IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
 
-        result = handle_indent(scope, table, if_body, indent_stack, functions_list);
+        result = handle_indent(in_def, scope, table, if_body, indent_stack, functions_list);
         IF_VALUE_RETURN(result)
 
         while (is_eol(token.type)) {
@@ -420,7 +420,7 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
         IF_RETURN(indent_stack->top->indent_counter >= indent_counter, SYNTAX_ERR)
         IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
 
-        result = handle_indent(scope, table, else_body, indent_stack, functions_list);
+        result = handle_indent(in_def, scope, table, else_body, indent_stack, functions_list);
 
     } /* while */
     else if (token.type == T_WHILE) {
@@ -457,7 +457,7 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
 
         IF_RETURN((stack_push_indent(indent_stack, indent_counter, T_INDENT)), ERR_INTERNAL)
 
-        result = handle_indent(scope, table, while_body, indent_stack, functions_list);
+        result = handle_indent(in_def, scope, table, while_body, indent_stack, functions_list);
 
     } /* return */
     else if (token.type == T_RETURN) {
@@ -512,19 +512,16 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
             IF_VALUE_RETURN(success)
         }
 
-        unget_token();
-        for (int i = 0; i < indent_counter; i++) {
-            ungetc(32, stdin);
+        if (token.type != T_ELSE) {
+            unget_token();
+            for (int i = 0; i < indent_counter; i++) {
+                ungetc(32, stdin);
+            }
         }
 
         /* local scope ends with pass - similar to return */
         if (!is_global_scope(scope)) {
             IF_RETURN(indent_stack->top->indent_counter <= indent_counter, SYNTAX_ERR)
-
-            while (is_eol(token.type)) {
-                success = get_token();
-                IF_VALUE_RETURN(success)
-            }
 
             /* indent counter should be smaller here */
             while (indent_stack->top->indent_counter != indent_counter) {
@@ -555,18 +552,22 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
     return result;
 }
 
-int handle_indent(int scope, HTable* table, Nnode node, STACK* indent_stack, tDLList* functions_list)
+int handle_indent(int in_def, int scope, HTable* table, Nnode node, STACK* indent_stack, tDLList* functions_list)
 {
     int result = 0;
     int help = 1;
     int success = 0;
 
     do {
-        result = statement(scope, table, node, indent_stack, functions_list);
-        IF_VALUE_RETURN(result)
-        /* indent */
-        success = get_token();
-        IF_VALUE_RETURN(success)
+        result = statement(in_def, scope, table, node, indent_stack, functions_list);
+
+        if (token.type != T_ELSE) {
+            IF_VALUE_RETURN(result)
+            /* indent */
+            success = get_token();
+            IF_VALUE_RETURN(success)
+        }
+
         if (indent_stack->top->indent_counter < indent_counter) {
             return SYNTAX_ERR;
         }
@@ -587,13 +588,15 @@ int handle_indent(int scope, HTable* table, Nnode node, STACK* indent_stack, tDL
                     return SYNTAX_ERR;
                 }
 
-                if (help) {
+                if (help && !in_def) {
                     if ((token.type == T_ELSE && indent_stack->top->token_type == T_WHILE) || token.type != T_ELSE) {
-                        unget_token();
-                        for (int i = 0; i < indent_counter; i++) {
-                            ungetc(32, stdin);
+                        if (token.type != T_WHILE) {
+                            unget_token();
+                            for (int i = 0; i < indent_counter; i++) {
+                                ungetc(32, stdin);
+                            }
+                            help = 0;
                         }
-                        help = 0;
                     }
                 }
                 IF_RETURN((indent_stack->top->indent_counter != indent_counter)
@@ -605,11 +608,12 @@ int handle_indent(int scope, HTable* table, Nnode node, STACK* indent_stack, tDL
             break;
         }
 
-        if (indent_stack->top->indent_counter == 0
-            && indent_stack->top->indent_counter == indent_counter) {
+        if (indent_stack->top->indent_counter == 0 && indent_stack->top->indent_counter == indent_counter) {
             if (token.type != T_ELSE) {
                 unget_token();
             }
+            break;
+        } else if (indent_stack->top->indent_counter == indent_counter && token.type == T_ELSE) {
             break;
         }
 
@@ -634,7 +638,6 @@ int expression(int scope, STACK* stack, HTable* table, Nnode ast, char* token_na
             /* save previous token */
             previous_tkn->type = token.type;
             previous_tkn->value = token.value;
-            //Nnode l_cond = ast_add_node( (&ast), token.type, NULL, is_global_scope(scope),indent_stack->top->indent_counter);
 
             success = get_token();
             IF_VALUE_RETURN(success)
@@ -1093,8 +1096,12 @@ char* create_value(struct TToken* current_token)
     switch (current_token->type) {
         case T_STRING:
             strcpy(value, "string@");
-            value = realloc(value, sizeof(string));
-            strcat(value, string);
+            /* do not copy empty string */
+            if (string) {
+                value = realloc(value, sizeof(string));
+                strcat(value, string);
+            }
+
             break;
         case T_INT:
             sprintf(value, "int@%d", current_token->value.is_int);
