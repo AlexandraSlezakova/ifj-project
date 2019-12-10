@@ -104,6 +104,7 @@ typedef enum {
     T_DEDENT,               /* 31 */
     T_UNKNOWN,
     T_DIV_INT,
+    T_STRANGE_CHAR,
 } TType;
 
 struct TToken {

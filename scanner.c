@@ -223,6 +223,10 @@ int get_token()
                 else if (c == EOF) {
                     token.type = T_IS_EOF;
                     return TOKEN_OK;
+                } /* some strange character */
+                else if (c > 31 && c < 256) {
+                    token.type = T_STRANGE_CHAR;
+                    return TOKEN_OK;
                 }
                 else {
                     state = S_ERROR;
