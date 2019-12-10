@@ -763,19 +763,19 @@ int check_function_arguments(HTable* table)
 int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
 {
 
+    HTItem* found;
+    Nnode add_node = NULL;
     S_ELEM* top;
     PSA_SYMBOL input;
-    HTItem* found;
     struct TToken* previous = malloc(sizeof(struct TToken));
     int colon_counter = 0;
     int left_bracket = 0;
     int right_bracket = 0;
     int result = 0;
     int success = 0;
-    Nnode add_node = NULL;
     int tmp = 0;
 
-    IF_RETURN(stack_push(stack, NULL, NULL, PSA_END, TYPE_UNKNOWN) != OK, ERR_INTERNAL)
+    IF_RETURN(stack_push(stack, PSA_END, TYPE_UNKNOWN) != OK, ERR_INTERNAL)
 
     top = top_terminal(stack);
     IF_RETURN(!top, ERR_INTERNAL)
@@ -808,7 +808,7 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
 
         switch (psa_table[top->psa_symbol][input]) {
             case '=':
-                IF_RETURN(!(stack_push(stack, &token, &node, input, TYPE_UNKNOWN) == OK), ERR_INTERNAL)
+                IF_RETURN(!(stack_push(stack, input, TYPE_UNKNOWN) == OK), ERR_INTERNAL)
 
                 previous->type = token.type;
                 previous->value.is_char = token.value.is_char;
@@ -830,8 +830,8 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                     IF_VALUE_RETURN(success)
                 }
 
-                /* any operator must follow after right bracket or color in if/while*/
-                //IF_RETURN(!is_operator(token.type) && token.type != T_IS_COLON, SYNTAX_ERR) //TODO  a = ( 5 * 7 ) - 5 - ( 6 / 7 ) vyhodí mi to chybu
+                /* any operator must follow after right bracket or colon in if/while*/
+                IF_RETURN(!is_operator(token.type) && (node->data->ntype == COND || node->data->ntype == WHILE) && token.type != T_IS_COLON, SYNTAX_ERR)
 
                 input = token_to_psa_symbol();
                 IF_RETURN(!(input <= PSA_END), ERR_INTERNAL)
@@ -855,10 +855,10 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                     IF_RETURN(found->data_type == UNDEFINED, SEM_ERR_UNDEF_VAR)
 
                     /* push to stack */
-                    IF_RETURN(!(stack_push(stack, &token, NULL, input, found->data_type) == OK), ERR_INTERNAL)
+                    IF_RETURN(!(stack_push(stack, input, found->data_type) == OK), ERR_INTERNAL)
                 }
                 else {
-                    IF_RETURN(!(stack_push(stack, &token, NULL, input, token_to_data_type(token)) == OK), ERR_INTERNAL)
+                    IF_RETURN(!(stack_push(stack, input, token_to_data_type(token)) == OK), ERR_INTERNAL)
                 }
 
                 /* save token used in reduction */
@@ -919,7 +919,7 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
 
                 break;
             case '>':
-                result = reduce(scope, stack, previous,left_bracket-right_bracket);
+                result = reduce(stack, previous);
                 IF_RETURN(result != SYNTAX_OK, result)
                 break;
             case 0:
@@ -946,38 +946,27 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
     return SYNTAX_OK;
 }
 
-int reduce(int scope, STACK* stack, struct TToken* previous, int bracekt)
+int reduce(STACK* stack, struct TToken* previous)
 {
 
     PSA_SYMBOL rule[4] = { END_HANDLE, END_HANDLE, END_HANDLE, END_HANDLE};
     S_ELEM stack_elem[4];
-
-    int rule_index = 0;
-    Nnode node = NULL;
     Ntype type_of_node;
-    struct TToken* original = malloc(sizeof(struct TToken));
     DATA_TYPE type = TYPE_UNKNOWN;
-
+    int rule_index = 0;
     int result1 = stack_top_rule(stack, rule, stack_elem, previous);
     bool result2 = is_rule(rule, &rule_index);
+
     if (!result1 && result2) {
         switch (rule_index) {
             case OPERAND_RULE:
                 type = stack_elem[0].current_token->type == T_VAR
                        ? stack_elem[0].type
                        : token_to_data_type(*stack_elem[0].current_token);
-
-                original->type = stack_elem[0].current_token->type;
-                original->value = stack_elem[0].current_token->value;
-                original->value.is_char = stack_elem[0].current_token->value.is_char;
                 break;
 
             case BRACKET_RULE:
                 type = token_to_data_type(*stack_elem[1].current_token);
-                original->type = stack_elem[1].current_token->type;
-                original->value = stack_elem[1].current_token->value;
-                original->value.is_char = stack_elem[1].current_token->value.is_char;
-                node = stack_elem[1].node ? (*stack_elem[1].node) : NULL;
                 break;
 
             case MATHEMATICAL_OPERATION_RULE:
@@ -990,7 +979,7 @@ int reduce(int scope, STACK* stack, struct TToken* previous, int bracekt)
                 /* undefined variable */
                 IF_RETURN(stack_elem[0].type == UNDEFINED || stack_elem[2].type == UNDEFINED, SEM_ERR_UNDEF_VAR)
 
-                original = NULL;
+                //original = NULL;
                 type_of_node = node_type(&stack_elem[1]);
                 IF_RETURN(type_of_node == NO_NODE, ERR_INTERNAL)
 
@@ -1007,7 +996,7 @@ int reduce(int scope, STACK* stack, struct TToken* previous, int bracekt)
         /* pop start handle */
         stack_pop(stack);
 
-        stack_push(stack, original, &node, NON_TERMINAL, type);
+        stack_push(stack, NON_TERMINAL, type);
         return SYNTAX_OK;
 
     }

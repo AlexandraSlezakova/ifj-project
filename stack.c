@@ -45,28 +45,19 @@ bool is_terminal(S_ELEM *elem) {
     return elem->psa_symbol <= PSA_END;
 }
 
-int stack_push(STACK *stack, struct TToken *current_token, Nnode *node, PSA_SYMBOL psa_symbol, DATA_TYPE type) {
+int stack_push(STACK *stack, PSA_SYMBOL psa_symbol, DATA_TYPE type) {
     IF_RETURN(!stack, ERR_INTERNAL)
 
     S_ELEM *stack_elem = malloc(sizeof(S_ELEM));
     IF_RETURN(!stack_elem, ERR_INTERNAL)
 
-    if (current_token != NULL) {
-        stack_elem->current_token = current_token;
-    }
-
     stack_elem->next = stack->top;
-    stack_elem->node = node;
     stack_elem->psa_symbol = psa_symbol;
     stack_elem->type = type;
 
     stack->top = stack_elem;
 
     return OK;
-}
-
-bool stack_empty(STACK *stack) {
-    return stack->top == NULL;
 }
 
 int stack_push_handle(STACK *stack, S_ELEM *elem, PSA_SYMBOL psa_symbol) {
@@ -149,18 +140,5 @@ void stack_pop(STACK *stack)
         S_ELEM *elem = stack->top;
         stack->top = stack->top->next;
         free(elem);
-    }
-}
-
-void stack_destroy(STACK *stack)
-{
-    S_ELEM *elem;
-
-    if (stack && stack->top) {
-        while (stack->top) {
-            elem = stack->top;
-            stack->top = stack->top->next;
-            free(elem);
-        }
     }
 }

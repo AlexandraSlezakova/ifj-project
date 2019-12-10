@@ -8,7 +8,7 @@ def get_return_code(file):
 
 def run_test(executable, file):
     """Run test and return exit code"""
-    return call("./{} < {} > output".format(executable, file), shell=True)
+    return call("./{} < {} > tests/output".format(executable, file), shell=True)
 
 def __main__():
     tests = os.path.realpath("tests/input/")  	 # directory with tests
@@ -24,8 +24,8 @@ def __main__():
             print("{} \texpected {} but returns {}".format(file, return_code, error_code))
         else:
             if return_code == 0:
-                ret = call("./{} output".format(interpret), shell=True)
+                ret = call("./{} tests/output".format(interpret), shell=True)
                 if ret:
-                    print("{} \texpected {} but returns {}".format(file, error_code, ret))
+                   print("{} \texpected {} but returns {}".format(file, error_code, ret))
 
 __main__()
