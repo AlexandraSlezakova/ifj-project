@@ -401,6 +401,28 @@ int get_token()
                 /* escape sequence */
             case S_ESC:
                 if (c == '"' || c == 'n' || c == 't' || c == '\\' || c == 39) {
+                    buffer = realloc(buffer, (size_t) ++allocated);
+                    buffer = realloc(buffer, (size_t) ++allocated);
+
+                    iterator--;
+                    buffer[iterator] = '0';
+                    if (c == '"') {
+                        buffer[++iterator] = '3';
+                        buffer[++iterator] = '4';
+                    } else if (c == 'n') {
+                        buffer[++iterator] = '1';
+                        buffer[++iterator] = '0';
+                    } else if (c == 't') {
+                        buffer[++iterator] = '0';
+                        buffer[++iterator] = '9';
+                    } else if (c == '\\') {
+                        buffer[++iterator] = '9';
+                        buffer[++iterator] = '2';
+                    } else if (c == 39) {
+                        buffer[++iterator] = '3';
+                        buffer[++iterator] = '9';
+                    }
+                    iterator++;
                     state = S_STRING_CONTENT;
                 }
                 else if (c == 39) {
@@ -608,23 +630,24 @@ int get_token()
 
             case S_END_DOC_2:
                 if (c == 34) {
+                    state = S_END_DOC_3;
+                }
+                else {
+                    state = S_ERROR;
+                }
+                break;
+
+            case S_END_DOC_3:
+                if (c != 34) {
                     if (previous_state == S_DOC_STRING) {
-                        c = getchar();  /* get next character to return */
                         create_token(c, buffer, &token, T_STRING);
                         return 0;
                     }
-                    else {
-                        state = S_END_DOC_2;
-                        break;
-                    }
-                }
-                else if (c == '\n') {
                     state = START;
                     allocated = 0;
                     iterator = 0;
                     line_position = 0;
                     line_counter++;
-                    buffer = NULL;
                 }
                 else {
                     state = S_ERROR;

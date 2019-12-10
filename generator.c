@@ -493,7 +493,7 @@ char* memory_model(Nnode ast)
 }
 
 
-int generate_assign(Nnode ast, HTable *table)
+int generate_assign(Nnode ast)
 {
 
     int in_glob = 0;
@@ -825,7 +825,6 @@ int generate_while(Nnode ast,HTable *table)
 void generate_call(Nnode ast)
 {
 
-    int in_glob = 0;
     generate_unique_func_identifier(0,'F');
     // if(ast->parent_node->data->ntype == ASSIGN)
     // {
@@ -960,17 +959,17 @@ void indetify_call_function(Nnode ast)
     switch (tmp){
         case 0:
             fprintf(stdout, "PUSHFRAME\n");
-            generate_read_func(ast,"string");
+            generate_read_func("string");
             break;
         case 1:
 
             fprintf(stdout, "PUSHFRAME\n");
-            generate_read_func(ast,"int");
+            generate_read_func("int");
             break;
         case 2:
 
             fprintf(stdout, "PUSHFRAME\n");
-            generate_read_func(ast,"float");
+            generate_read_func("float");
             break;
         case 3:
             //fprintf(stdout, "PUSHFRAME\n");
@@ -1298,7 +1297,7 @@ void generate_write_func(Nnode ast) {
     }
 }
 
-void generate_read_func(Nnode ast, char *type) {
+void generate_read_func(char *type) {
 
     fprintf(stdout, "DEFVAR LF@%%RETVAL\n");
     fprintf(stdout, "READ LF@%%RETVAL %s\n",  type);
@@ -1312,7 +1311,7 @@ void identify_header(Nnode ast, HTable *table)
             break;
         case ASSIGN:
             //           if(ast->children[2]==NULL)
-            generate_assign(ast, table);
+            generate_assign(ast);
             //         else
             //               generate_math_aritmetic(ast);
             break;
