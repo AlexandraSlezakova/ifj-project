@@ -133,47 +133,45 @@ Nnode ast_add_node(Nnode *node, Ntype type, char *data ,bool inmain, int indent)
 
 Ntype node_type(S_ELEM *stack_elem)
 {
-    Nnode node = malloc(sizeof(struct Node));
-    NData *data = malloc(sizeof(struct NDATA));
-    node->data = data;
-    switch (stack_elem->psa_symbol) {
-        case PSA_MULTIPLICATION:
-            node->data->ntype = MUL;
-            break;
-        case PSA_DIVISION:
-            node->data->ntype = DIV;
-            break;
-        case PSA_DIVISION_INT:
-            node->data->ntype= DIVINIT;
-            break;
-        case PSA_ADDITION:
-            node->data->ntype= ADD;
-            break;
-        case PSA_SUBTRACTION:
-            node->data->ntype = SUB;
-            break;
-        case PSA_LESS:
-            node->data->ntype= LESS;
-            break;
-        case PSA_LESSEQUAL:
-            node->data->ntype = LOQ;
-            break;
-        case PSA_GREATER:
-            node->data->ntype = GR;
-            break;
-        case PSA_GREATEREQUAL:
-            node->data->ntype = GEQ;
-            break;
-        case PSA_EQUAL:
-            node->data->ntype = COMP;
-            break;
-        case PSA_NOTEQUAL:
-            node->data->ntype = NOTCOMP;
-            break;
-        default:
-            node->data->ntype = NO_NODE;
-            break;
-    }
+    if (stack_elem) {
+        switch (stack_elem->psa_symbol) {
+            case PSA_MULTIPLICATION:
+                return  MUL;
 
-    return node->data->ntype;
+            case PSA_DIVISION:
+
+                return  DIV;
+            case PSA_DIVISION_INT:
+                return DIVINIT;
+
+            case PSA_ADDITION:
+                return ADD;
+
+            case PSA_SUBTRACTION:
+                return SUB;
+
+            case PSA_LESS:
+                return LESS;
+
+            case PSA_LESSEQUAL:
+                return LOQ;
+
+            case PSA_GREATER:
+                return GR;
+
+            case PSA_GREATEREQUAL:
+                return GEQ;
+
+            case PSA_EQUAL:
+                return COMP;
+
+            case PSA_NOTEQUAL:
+                return NOTCOMP;
+
+            default:
+                return NO_NODE;
+        }
+    } else {
+        return NO_NODE;
+    }
 }
