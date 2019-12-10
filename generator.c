@@ -771,7 +771,18 @@ int generate_if(Nnode ast, HTable *table)
 {
     char *label_else = generate_unique_label();
     char *label_end = generate_unique_label();
+    
+    if (func == true) {
+        for(int i = 1; ast->children[1]->children[i] != NULL; i++) {
+            if (ast->children[1]->children[i]->data->ntype == ASSIGN) {
+                if (ast->children[1]->children[i]->children[0]->data->ntype == VAR_DEF) {
+                    fprintf(stdout, "DEFVAR LF@%s\n", ast->children[1]->children[i]->children[0]->data->data);
+                    ast->children[1]->children[i]->children[0]->data->ntype = VAR;
+                }
+            }
 
+        }
+    }
     generate(ast->children[0], table);
     if(ast->data->inmain){
         fprintf(stdout, "JUMPIFNEQ %s TF@%s bool@true\n", label_else, ast->children[0]->children[2]->data->data);
