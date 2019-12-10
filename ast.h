@@ -63,7 +63,7 @@ typedef struct NDATA{
 
 typedef struct Node{
     NData *data;
-    struct Node *children[TAB_SIZE];
+    struct Node **children;
     struct Node *parent_node;
 } *Nnode;
 

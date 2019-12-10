@@ -11,6 +11,8 @@
 
 #include "ast.h"
 
+void ast_resize(Nnode *node);
+
 void ast_init(Nnode *node)
 {
     //*root = NULL;
@@ -89,7 +91,6 @@ void NstackPopAll (NStack *s)
     }
     if(s->nstack[0] != NULL)
         s->nstack[0] = NULL;
-    s->nstack[s->top] = NULL;
 }
 
 
@@ -107,14 +108,21 @@ Nnode ast_add_node(Nnode *node, Ntype type, char *data ,bool inmain, int indent)
 {
     Nnode new_node =  malloc(sizeof(struct Node));
     NData *new_data = malloc(sizeof(struct NDATA));
+    Nnode *childs = calloc(5, sizeof(Nnode *));
+    new_node->children = childs;
     new_node->data = new_data;
     new_node->data->data = data;
     new_node->data->ntype = type;
     new_node->data->indent = indent;
-    new_node->data->size = TAB_SIZE;
+    new_node->data->size = 3;
     new_node->data->child_count=0;
     new_node->data->inmain = inmain;
     new_node->parent_node = *node;
+
+    if((*node) != NULL && (*node)->data->size-2 <= (*node)->data->child_count)
+    {
+        ast_resize(node);
+    }
 
     if ( *node == NULL && root == NULL)
     {
@@ -129,6 +137,21 @@ Nnode ast_add_node(Nnode *node, Ntype type, char *data ,bool inmain, int indent)
     (*node)->children[(*node)->data->child_count++] = new_node;
     return new_node;
 
+}
+
+void ast_resize(Nnode *node) {
+
+    //Nnode *tmp = NULL;
+    (*node)->children = realloc((*node)->children,3 * sizeof(Nnode *) * (*node)->data->size);
+    for(int i = 1; i <= 3; i++)
+    {
+        (*node)->children[(*node)->data->size + i] = NULL;
+    }
+
+    (*node)->data->size += 3;
+    //(*node)->children = tmp
+
+    //memset(&(*node)->children[(*node)->data->child_count],0, sizeof(Nnode)*((*node)->data->size-(*node)->data->child_count));
 }
 
 Ntype node_type(S_ELEM *stack_elem)
