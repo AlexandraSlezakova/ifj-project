@@ -11,6 +11,8 @@
 
 #include "ast.h"
 
+void ast_resize(Nnode *node);
+
 void ast_init(Nnode *node)
 {
     //*root = NULL;
@@ -89,7 +91,6 @@ void NstackPopAll (NStack *s)
     }
     if(s->nstack[0] != NULL)
         s->nstack[0] = NULL;
-    s->nstack[s->top] = NULL;
 }
 
 
@@ -107,14 +108,21 @@ Nnode ast_add_node(Nnode *node, Ntype type, char *data ,bool inmain, int indent)
 {
     Nnode new_node =  malloc(sizeof(struct Node));
     NData *new_data = malloc(sizeof(struct NDATA));
+    Nnode *childs = calloc(5, sizeof(Nnode *));
+    new_node->children = childs;
     new_node->data = new_data;
     new_node->data->data = data;
     new_node->data->ntype = type;
     new_node->data->indent = indent;
-    new_node->data->size = TAB_SIZE;
+    new_node->data->size = 3;
     new_node->data->child_count=0;
     new_node->data->inmain = inmain;
     new_node->parent_node = *node;
+
+    if((*node) != NULL && (*node)->data->size-2 <= (*node)->data->child_count)
+    {
+        ast_resize(node);
+    }
 
     if ( *node == NULL && root == NULL)
     {
@@ -131,49 +139,62 @@ Nnode ast_add_node(Nnode *node, Ntype type, char *data ,bool inmain, int indent)
 
 }
 
-Ntype node_type(S_ELEM *stack_elem)
-{
-    Nnode node = malloc(sizeof(struct Node));
-    NData *data = malloc(sizeof(struct NDATA));
-    node->data = data;
-    switch (stack_elem->psa_symbol) {
-        case PSA_MULTIPLICATION:
-            node->data->ntype = MUL;
-            break;
-        case PSA_DIVISION:
-            node->data->ntype = DIV;
-            break;
-        case PSA_DIVISION_INT:
-            node->data->ntype= DIVINIT;
-            break;
-        case PSA_ADDITION:
-            node->data->ntype= ADD;
-            break;
-        case PSA_SUBTRACTION:
-            node->data->ntype = SUB;
-            break;
-        case PSA_LESS:
-            node->data->ntype= LESS;
-            break;
-        case PSA_LESSEQUAL:
-            node->data->ntype = LOQ;
-            break;
-        case PSA_GREATER:
-            node->data->ntype = GR;
-            break;
-        case PSA_GREATEREQUAL:
-            node->data->ntype = GEQ;
-            break;
-        case PSA_EQUAL:
-            node->data->ntype = COMP;
-            break;
-        case PSA_NOTEQUAL:
-            node->data->ntype = NOTCOMP;
-            break;
-        default:
-            node->data->ntype = NO_NODE;
-            break;
+void ast_resize(Nnode *node) {
+
+    //Nnode *tmp = NULL;
+    (*node)->children = realloc((*node)->children,2 * sizeof(struct Node) * (*node)->data->size);
+    for(int i = (*node)->data->size; i <= (*node)->data->size *2; i++)
+    {
+        (*node)->children[i] = NULL;
     }
 
-    return node->data->ntype;
+    (*node)->data->size *= 2 ;
+    //(*node)->children = tmp
+
+    //memset(&(*node)->children[(*node)->data->child_count],0, sizeof(Nnode)*((*node)->data->size-(*node)->data->child_count));
+}
+
+Ntype node_type(S_ELEM *stack_elem)
+{
+    if (stack_elem) {
+        switch (stack_elem->psa_symbol) {
+            case PSA_MULTIPLICATION:
+                return  MUL;
+
+            case PSA_DIVISION:
+
+                return  DIV;
+            case PSA_DIVISION_INT:
+                return DIVINIT;
+
+            case PSA_ADDITION:
+                return ADD;
+
+            case PSA_SUBTRACTION:
+                return SUB;
+
+            case PSA_LESS:
+                return LESS;
+
+            case PSA_LESSEQUAL:
+                return LOQ;
+
+            case PSA_GREATER:
+                return GR;
+
+            case PSA_GREATEREQUAL:
+                return GEQ;
+
+            case PSA_EQUAL:
+                return COMP;
+
+            case PSA_NOTEQUAL:
+                return NOTCOMP;
+
+            default:
+                return NO_NODE;
+        }
+    } else {
+        return NO_NODE;
+    }
 }

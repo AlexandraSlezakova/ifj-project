@@ -132,8 +132,7 @@ void infix2postfix (NStack *in,Nnode node) {
 
     for(int i = 0; i <= out->top;i++)
     {
-        node->children[node->data->child_count+i]=out->nstack[i];
+        ast_add_node(&node,out->nstack[i]->data->ntype,out->nstack[i]->data->data,out->nstack[i]->data->inmain,out->nstack[i]->data->indent);
     }
-    node->data->child_count += out->top;
 
 }

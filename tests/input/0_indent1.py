@@ -1,6 +1,6 @@
 # Program 1: Vypocet faktorialu (iterativne)
 print('Zadejte cislo pro vypocet faktorialu: ')
-a = inputi()
+a = 5
 if a < 0:  # chybi kontrola a == None pro pripad nevalidniho vstupu
     print("""
 Faktorial nelze spocitat
@@ -11,3 +11,4 @@ else:
         vysl = vysl * a
         a = a - 1
         print('Vysledek je:', vysl, '\n')
+

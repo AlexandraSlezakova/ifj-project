@@ -63,7 +63,7 @@ typedef struct NDATA{
 
 typedef struct Node{
     NData *data;
-    struct Node *children[TAB_SIZE];
+    struct Node **children;
     struct Node *parent_node;
 } *Nnode;
 
@@ -73,7 +73,7 @@ typedef struct {
 } NStack;
 
 NStack* nStack;
-NStack *Arr_Nstack;
+NStack* Arr_Nstack;
 
 void NstackFirstPush(NStack *s, Nnode node);
 void NstackPopGround (NStack *s);

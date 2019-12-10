@@ -223,6 +223,10 @@ int get_token()
                 else if (c == EOF) {
                     token.type = T_IS_EOF;
                     return TOKEN_OK;
+                } /* some strange character */
+                else if (c > 31 && c < 256) {
+                    token.type = T_STRANGE_CHAR;
+                    return TOKEN_OK;
                 }
                 else {
                     state = S_ERROR;
@@ -358,7 +362,7 @@ int get_token()
                 if (c == '\\') {
                     state = S_ESC;
                 }
-                else if (c > 31 && c != 92) {
+                else if (c > 31 && c != 92 && c != 39) {
                     /* 34 - " 92 - \ */
                     if (c == 34 && previous_state == S_DOC_STRING) {
                         state = S_END_DOC_1;
@@ -648,6 +652,7 @@ int get_token()
                     iterator = 0;
                     line_position = 0;
                     line_counter++;
+                    indent_counter = 0;
                 }
                 else {
                     state = S_ERROR;
