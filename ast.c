@@ -142,13 +142,13 @@ Nnode ast_add_node(Nnode *node, Ntype type, char *data ,bool inmain, int indent)
 void ast_resize(Nnode *node) {
 
     //Nnode *tmp = NULL;
-    (*node)->children = realloc((*node)->children,3 * sizeof(Nnode *) * (*node)->data->size);
-    for(int i = 1; i <= 3; i++)
+    (*node)->children = realloc((*node)->children,2 * sizeof(struct Node) * (*node)->data->size);
+    for(int i = (*node)->data->size; i <= (*node)->data->size *2; i++)
     {
-        (*node)->children[(*node)->data->size + i] = NULL;
+        (*node)->children[i] = NULL;
     }
 
-    (*node)->data->size += 3;
+    (*node)->data->size *= 2 ;
     //(*node)->children = tmp
 
     //memset(&(*node)->children[(*node)->data->child_count],0, sizeof(Nnode)*((*node)->data->size-(*node)->data->child_count));
