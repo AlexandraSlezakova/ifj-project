@@ -196,13 +196,24 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
 
         }
         else {
-            result = token.type == T_IS_EOL ? SYNTAX_OK : LEX_ERR;
+            result = SYNTAX_OK;
+
+            if (!is_eol(token.type)) {
+                if (token.type == T_ELSE) {
+                    result = SYNTAX_ERR;
+                } else {
+                    if (is_term(token.type) || is_left_bracket(token.type)) {
+                        result = statement(GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
+                    } else {
+                        result = LEX_ERR;
+                    }
+                }
+            }
         }
 
         IF_VALUE_RETURN(result)
     }
 }
-
 
 int statement_list(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList* functions_list)
 {
@@ -531,6 +542,13 @@ int statement(int scope, HTable* table, Nnode ast, STACK* indent_stack, tDLList*
     else if (token.type == T_IS_EOL || token.type == T_IS_EOF) {
         result = SYNTAX_OK;
     }
+    else {
+        if (is_term(token.type) || is_left_bracket(token.type)) {
+            result = expression(scope, stack, table, NULL, NULL, indent_stack, previous_token);
+        } else {
+            result = SYNTAX_ERR;
+        }
+    }
 
     free(previous_tkn);
 
@@ -781,11 +799,17 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
     IF_RETURN(!top, ERR_INTERNAL)
 
     if (token.type == T_LEFT_BRACKET) {
+        /* save number of left brackets */
         while (token.type == T_LEFT_BRACKET) {
             left_bracket++;
-            add_node = ast_add_node((&add_node), LF_BR, "(", is_global_scope(scope), -1);
-            stackPush(nStack,add_node);
-            tmp = 1;
+
+            /* add to ast only if it not unused expression */
+            if (node) {
+                add_node = ast_add_node((&add_node), LF_BR, "(", is_global_scope(scope), -1);
+                stackPush(nStack,add_node);
+                tmp = 1;
+            }
+
             success = get_token();
             IF_VALUE_RETURN(success)
         }
@@ -802,27 +826,32 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
     while (input != PSA_END || top->psa_symbol != PSA_END) {
 
         /* EOL is PSA_END but colon has to be in IF or WHILE */
-        IF_RETURN((node->data->ntype == COND || node->data->ntype == WHILE) && token.type == T_IS_EOL, SYNTAX_ERR)
+        IF_RETURN(node && (node->data->ntype == COND || node->data->ntype == WHILE) && token.type == T_IS_EOL, SYNTAX_ERR)
 
         IF_RETURN(!(input <= PSA_END), SYNTAX_ERR)
 
         switch (psa_table[top->psa_symbol][input]) {
             case '=':
                 IF_RETURN(!(stack_push(stack, input, TYPE_UNKNOWN) == OK), ERR_INTERNAL)
-
+                /* save token */
                 previous->type = token.type;
                 previous->value.is_char = token.value.is_char;
                 previous->value = token.value;
 
                 if (token.type == T_RIGHT_BRACKET) {
+                    /* save number of right brackets */
                     while (token.type == T_RIGHT_BRACKET) {
                         right_bracket++;
-                        add_node = ast_add_node((&add_node), RG_BR, ")", is_global_scope(scope), -1);
-                        stackPush(nStack,add_node);
+
+                        if (node) {
+                            add_node = ast_add_node((&add_node), RG_BR, ")", is_global_scope(scope), -1);
+                            stackPush(nStack,add_node);
+                        }
 
                         success = get_token();
                         IF_VALUE_RETURN(success)
                     }
+                    /* check brackets */
                     IF_RETURN(left_bracket != right_bracket, SYNTAX_ERR)
                 }
                 else {
@@ -865,37 +894,39 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 previous->type = token.type;
                 previous->value = token.value;
 
+                /* add to ast only if it not unused expression */
+                if (node) {
+                    if(token.type == T_ADD)
+                        add_node = ast_add_node((&add_node), ADD, NULL, is_global_scope(scope), -1);
+                    else if(token.type == T_SUB)
+                        add_node = ast_add_node((&add_node), SUB, NULL, is_global_scope(scope), -1);
+                    else if(token.type == T_MUL)
+                        add_node = ast_add_node((&add_node), MUL, NULL, is_global_scope(scope), -1);
+                    else if(token.type == T_DIV)
+                        add_node = ast_add_node((&add_node), DIV, NULL, is_global_scope(scope), -1);
+                    else if(token.type == T_DIV_INT)
+                        add_node = ast_add_node((&add_node), DIVINIT, NULL, is_global_scope(scope), -1);
+                    else if(token.type == T_IS_EQUAL)
+                        add_node = ast_add_node((&add_node), COMP, NULL, is_global_scope(scope), -1);
+                    else if(token.type == T_IS_NOT_EQUAL)
+                        add_node = ast_add_node((&add_node), NOTCOMP, NULL, is_global_scope(scope), -1);
+                    else if(token.type == T_IS_GREATER)
+                        add_node = ast_add_node((&add_node), GR, NULL, is_global_scope(scope), -1);
+                    else if(token.type == T_IS_GREATER_OR_EQUAL)
+                        add_node = ast_add_node((&add_node), GEQ, NULL, is_global_scope(scope), -1);
+                    else if(token.type == T_IS_SMALLER)
+                        add_node = ast_add_node((&add_node), LESS, NULL, is_global_scope(scope), -1);
+                    else if(token.type == T_IS_SMALLER_OR_EQUAL)
+                        add_node = ast_add_node((&add_node), LOQ, NULL, is_global_scope(scope), -1);
 
-                if(token.type == T_ADD)
-                    add_node = ast_add_node((&add_node), ADD, NULL, is_global_scope(scope), -1);
-                else if(token.type == T_SUB)
-                    add_node = ast_add_node((&add_node), SUB, NULL, is_global_scope(scope), -1);
-                else if(token.type == T_MUL)
-                    add_node = ast_add_node((&add_node), MUL, NULL, is_global_scope(scope), -1);
-                else if(token.type == T_DIV)
-                    add_node = ast_add_node((&add_node), DIV, NULL, is_global_scope(scope), -1);
-                else if(token.type == T_DIV_INT)
-                    add_node = ast_add_node((&add_node), DIVINIT, NULL, is_global_scope(scope), -1);
-                else if(token.type == T_IS_EQUAL)
-                    add_node = ast_add_node((&add_node), COMP, NULL, is_global_scope(scope), -1);
-                else if(token.type == T_IS_NOT_EQUAL)
-                    add_node = ast_add_node((&add_node), NOTCOMP, NULL, is_global_scope(scope), -1);
-                else if(token.type == T_IS_GREATER)
-                    add_node = ast_add_node((&add_node), GR, NULL, is_global_scope(scope), -1);
-                else if(token.type == T_IS_GREATER_OR_EQUAL)
-                    add_node = ast_add_node((&add_node), GEQ, NULL, is_global_scope(scope), -1);
-                else if(token.type == T_IS_SMALLER)
-                add_node = ast_add_node((&add_node), LESS, NULL, is_global_scope(scope), -1);
-                else if(token.type == T_IS_SMALLER_OR_EQUAL)
-                    add_node = ast_add_node((&add_node), LOQ, NULL, is_global_scope(scope), -1);
-
-                else if (token.type == T_VAR)
-                    add_node = ast_add_node((&add_node), VAR, token.value.is_char, is_global_scope(scope), -1);
-                else if (token.type != T_LEFT_BRACKET && token.type != T_RIGHT_BRACKET)
-                    add_node = ast_add_node((&add_node), VAL, create_value(&token), is_global_scope(scope), -1);
-                if(tmp == 0)
-                    stackPush(nStack,add_node);
-                tmp = 0;
+                    else if (token.type == T_VAR)
+                        add_node = ast_add_node((&add_node), VAR, token.value.is_char, is_global_scope(scope), -1);
+                    else if (token.type != T_LEFT_BRACKET && token.type != T_RIGHT_BRACKET)
+                        add_node = ast_add_node((&add_node), VAL, create_value(&token), is_global_scope(scope), -1);
+                    if(tmp == 0)
+                        stackPush(nStack,add_node);
+                    tmp = 0;
+                }
 
                 success = get_token();
                 IF_VALUE_RETURN(success)
@@ -903,17 +934,18 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
                 IF_RETURN((previous->type == T_DIV || previous->type == T_DIV_INT) && (token.value.is_int == 0 || token.value.is_float == 0),
                           ERR_ZERO_DIV)
 
-                if (token.type == T_IS_COLON && (node->data->ntype == COND || node->data->ntype == WHILE)) {
+                if (token.type == T_IS_COLON && node && (node->data->ntype == COND || node->data->ntype == WHILE)) {
                     colon_counter++;
                     IF_RETURN(colon_counter > 1, SYNTAX_ERR)
                 }
 
-                if (token.type == T_LEFT_BRACKET)
-                {
+
+                if (token.type == T_LEFT_BRACKET && node) {
                     add_node = ast_add_node((&add_node), LF_BR, "(", is_global_scope(scope), -1);
                     left_bracket++;
                 }
-                if (token.type == T_RIGHT_BRACKET)
+
+                if (token.type == T_RIGHT_BRACKET && node)
                     add_node = ast_add_node((&add_node), RG_BR, ")", is_global_scope(scope), -1);
 
 
@@ -935,7 +967,7 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
         input = token_to_psa_symbol();
     }
 
-    infix2postfix(nStack,node);
+    if (node) infix2postfix(nStack,node);
 
     /* update data type of variable */
     if (token_name) {
@@ -979,7 +1011,6 @@ int reduce(STACK* stack, struct TToken* previous)
                 /* undefined variable */
                 IF_RETURN(stack_elem[0].type == UNDEFINED || stack_elem[2].type == UNDEFINED, SEM_ERR_UNDEF_VAR)
 
-                //original = NULL;
                 type_of_node = node_type(&stack_elem[1]);
                 IF_RETURN(type_of_node == NO_NODE, ERR_INTERNAL)
 
