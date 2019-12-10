@@ -72,7 +72,8 @@ int get_token()
 
             /* write to buffer without comments */
             if (state != S_DOC_CONTENT && state != S_LINE_COMMENT) {
-                if (c == 32 && previous_state == START_STRING) {
+                /* change space to escape sequence */
+                if (c == 32 && (previous_state == START_STRING || previous_state == S_DOC_STRING)) {
                     for (int i = 0; i < 4; i++) {
                         buffer = realloc(buffer, (size_t) ++allocated);
                     }
@@ -80,17 +81,22 @@ int get_token()
                     buffer[iterator++] = '0';
                     buffer[iterator++] = '3';
                     buffer[iterator++] = '2';
-                } else {
+                } /* change new line character to escape sequence */
+                else if (c == 10 && previous_state == S_DOC_STRING) {
+                    for (int i = 0; i < 4; i++) {
+                        buffer = realloc(buffer, (size_t) ++allocated);
+                    }
+                    buffer[iterator++] = '\\';
+                    buffer[iterator++] = '0';
+                    buffer[iterator++] = '1';
+                    buffer[iterator++] = '0';
+                } /* save character to buffer */
+                else {
                     buffer[iterator++] = c;
                 }
 
             }
-            else if (c == 34 && previous_state != START) {
-                buffer[iterator++] = c;
-            }
-
-        }
-        else if (state == S_ERROR) {
+        } else if (state == S_ERROR) {
             token.type = T_IS_ERR;
             line_position++;
             line_counter++;
