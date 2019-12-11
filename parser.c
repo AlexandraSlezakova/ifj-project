@@ -45,6 +45,7 @@ int function_arguments(HTable* function_symtable, char* function_name, Nnode ast
         success = get_token();
         IF_VALUE_RETURN(success)
 
+        /* rule 31 */
         while (token.type != T_RIGHT_BRACKET) {
             IF_RETURN(!is_comma(token.type), SYNTAX_ERR)
 
@@ -113,12 +114,12 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
 
         HTable* function_table = NULL;
 
-        /* end of file */
+        /* end of file -> rule 2 */
         if (token.type == T_IS_EOF) {
             /* empty file */
             IF_RETURN(iterator == 0, SYNTAX_ERR)
             return result;
-        } /* function definition */
+        } /* function definition -> rule 24 */
         else if (token.type == T_DEF) {
             IF_VALUE_RETURN(get_token())
 
@@ -145,7 +146,7 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
             Nnode function_node = ast_add_node(&ast, FUNC_DEF, name, SCOPE, indent_stack->top->indent_counter);
             IF_RETURN(!function_node, ERR_INTERNAL)
 
-            /* left bracket*/
+            /* left bracket -> rule 29 */
             IF_VALUE_RETURN(get_token())
             IF_RETURN(!is_left_bracket(token.type), SYNTAX_ERR)
 
@@ -156,11 +157,11 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
             int arg = function_arguments(function_table, name, function_node, indent_stack);
             IF_VALUE_RETURN(arg)
 
-            /* colon */
+            /* colon -> rule 24 */
             IF_VALUE_RETURN(get_token())
             IF_RETURN(token.type != T_IS_COLON, SYNTAX_ERR)
 
-            /* eol */
+            /* eol -> rule 24 */
             IF_VALUE_RETURN(get_token())
             IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
 
@@ -177,10 +178,10 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
             Nnode function_body = ast_add_node(&function_node, BODY, NULL, SCOPE, indent_stack->top->indent_counter);
             IF_RETURN(!function_body, ERR_INTERNAL)
 
-            /* statement list - body of function */
+            /* statement list - body of function -> rule 6 */
             result = statement_list(1, SCOPE, function_table, function_body, indent_stack, functions_list);
 
-        } /* variable | if statement | while | pass */
+        } /* variable | if statement | while | pass -> rule 11 | 9 | 10 | 12 */
         else if (token.type == T_VAR || token.type == T_IF || token.type == T_WHILE || token.type == T_PASS) {
             result = statement(0, GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
 
@@ -193,6 +194,7 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
                     result = SYNTAX_ERR;
                 } else {
                     if (is_term(token.type) || is_left_bracket(token.type)) {
+                        /* rule 15 */
                         result = statement(0, GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
                     } else {
                         result = LEX_ERR;
@@ -272,7 +274,7 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
     HTItem* found;
     struct TToken* previous_tkn = malloc(sizeof(struct TToken));
 
-    /* variable */
+    /* variable -> 13 */
     if (token.type == T_VAR) {
         /* save previous token */
         previous_tkn->type = token.type;
@@ -281,7 +283,7 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
         success = get_token();
         IF_VALUE_RETURN(success)
 
-        /* function call without assignment */
+        /* function call without assignment -> rule 16 */
         if (is_left_bracket(token.type)) {
 
             found = ht_search(global_hashtable, previous_tkn->value.is_char);
@@ -304,7 +306,7 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
         }
         else {
             char* name = previous_tkn->value.is_char;
-            /* correct assignment */
+            /* correct assignment -> rule 13 */
             if (token.type == T_ASSIGNMENT) {
                 Nnode equals = ast_add_node((&ast), ASSIGN, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
                 IF_RETURN(!equals, ERR_INTERNAL)
@@ -326,6 +328,7 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
                 /* start of expression */
                 success = get_token();
                 IF_VALUE_RETURN(success)
+                /* rule 15 */
                 result = expression(scope, stack, table, equals, name, indent_stack, previous_token);
 
                 found = ht_search(table, name);
@@ -336,7 +339,7 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
             else if (is_eol(token.type)) {
                 result = insert_variable(table, name, UNDEFINED);
 
-            } /* unused code */
+            } /* unused code -> rule 15 */
             else if (is_operator(token.type)) {
                 found = ht_search(table, name);
                 IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
@@ -349,7 +352,7 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
             }
         }
 
-    } /* if statement */
+    } /* if statement -> rule 9 */
     else if (token.type == T_IF) {
 
         if (indent_counter == 0) indent_stack->top->token_type = T_IF;
@@ -416,12 +419,11 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
 
         result = handle_indent(in_def, scope, table, else_body, indent_stack, functions_list);
 
-    } /* while */
+    } /* while -> rule 10 */
     else if (token.type == T_WHILE) {
         if (indent_counter == 0) indent_stack->top->token_type = T_WHILE;
 
         Nnode while_node = ast_add_node(&ast, WHILE, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
-        //while_node->data->child_count++;
 
         success = get_token();
         IF_VALUE_RETURN(success)
@@ -453,14 +455,12 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
 
         result = handle_indent(in_def, scope, table, while_body, indent_stack, functions_list);
 
-    } /* return */
+    } /* return -> rule 11 */
     else if (token.type == T_RETURN) {
         /* return used only in functions */
         IF_RETURN(is_global_scope(scope), SYNTAX_ERR)
         Nnode return_node = ast_add_node((&ast), RETURN, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
         previous_token = T_RETURN;
-
-        //ast_add_node(&return_node, PARAM, create_value(&token),is_global_scope(scope),indent_stack->top->indent_counter);
 
         success = get_token();
         IF_VALUE_RETURN(success)
@@ -496,7 +496,7 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
         }
 
 
-    } /* pass */
+    } /* pass -> rule 12 */
     else if (token.type == T_PASS) {
         /* eol */
         success = get_token();
@@ -559,6 +559,7 @@ int handle_indent(int in_def, int scope, HTable* table, Nnode node, STACK* inden
     int success = 0;
 
     do {
+        /* rule 8 - 12 */
         result = statement(in_def, scope, table, node, indent_stack, functions_list);
 
         if (token.type != T_ELSE) {

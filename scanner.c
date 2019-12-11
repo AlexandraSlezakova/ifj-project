@@ -302,6 +302,10 @@ int get_token()
                     state = S_EXP;
                     break;
                 }
+                else if (isalpha(c)) {
+                    state = S_ERROR;
+                    break;
+                }
                 else {
                     previous_state = S_FLOAT;
                     line_position++;
