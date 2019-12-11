@@ -588,9 +588,9 @@ int handle_indent(int in_def, int scope, HTable* table, Nnode node, STACK* inden
                     return SYNTAX_ERR;
                 }
 
-                if (help && !in_def) {
-                    if ((token.type == T_ELSE && indent_stack->top->token_type == T_WHILE) || token.type != T_ELSE) {
-                        if (token.type != T_WHILE) {
+                if (help) {
+                    if (!in_def || (in_def && indent_stack->top->indent_counter == 0)) {
+                        if (token.type != T_ELSE) {
                             unget_token();
                             for (int i = 0; i < indent_counter; i++) {
                                 ungetc(32, stdin);
@@ -599,6 +599,7 @@ int handle_indent(int in_def, int scope, HTable* table, Nnode node, STACK* inden
                         }
                     }
                 }
+
                 IF_RETURN((indent_stack->top->indent_counter != indent_counter)
                           && (indent_stack->top->indent_counter == 0), LEX_ERR)
             }
