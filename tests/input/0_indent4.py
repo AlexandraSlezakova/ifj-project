@@ -15,8 +15,8 @@ def vypisOseknuty(s, n):
     n = delka
   while i < n:
     oseknuty = oseknuty + s
-    i = i + 1
-    print(oseknuty)
+  i = i + 1
+  print(oseknuty)
 
 # Hlavni telo programu
 vypisOseknuty("""a = inputi()
