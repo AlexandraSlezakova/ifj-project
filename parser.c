@@ -235,11 +235,6 @@ int statement_list(int in_def, int scope, HTable* table, Nnode ast, STACK* inden
 
         IF_VALUE_RETURN(result)
 
-        if (token.type == T_RETURN) {
-            success = get_token();
-            IF_VALUE_RETURN(success)
-        }
-
         /* eol */
         if (is_eol(token.type)) {
             /* check indent */
