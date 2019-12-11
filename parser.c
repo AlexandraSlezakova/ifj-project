@@ -541,7 +541,7 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
     }
     else {
         if (is_term(token.type) || is_left_bracket(token.type)) {
-            result = expression(scope, stack, table, NULL, NULL, indent_stack, previous_token);
+            result = expression(scope, stack, table, NULL, NULL, indent_stack, T_VAR);
         } else {
             result = SYNTAX_ERR;
         }
