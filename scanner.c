@@ -476,6 +476,16 @@ int get_token()
             case S_HEX_ESCAPE2:
                 if (isdigit(c) || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')) {
                     /* \xhh */
+                    char a[2];
+                    a[0]=buffer[iterator -2];
+                    a[1]=buffer[iterator-1];
+                    int b;
+                    sscanf(a,"%x",&b);
+                    char pole[3];
+                    sprintf(pole, "%d", b);
+                    buffer[iterator-3] = pole[0];
+                    buffer[iterator-2] = pole[1];
+                    buffer[iterator-1] = pole[2];
                     state = S_STRING_CONTENT;
                     break;
                 }
