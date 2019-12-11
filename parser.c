@@ -353,7 +353,7 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
                 found = ht_search(table, name);
                 IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
 
-                result = expression(scope, stack, table, NULL, NULL, indent_stack, previous_token);
+                result = expression(scope, stack, table, NULL, NULL, indent_stack, T_VAR);
 
             }  /* strange character */
             else if (token.type == T_STRANGE_CHAR) {
@@ -635,15 +635,20 @@ int handle_indent(int in_def, int scope, HTable* table, Nnode node, STACK* inden
 
 int expression(int scope, STACK* stack, HTable* table, Nnode ast, char* token_name, STACK* indent_stack, TType previous_token)
 {
-    if (previous_token != T_RETURN) IF_RETURN(!(is_assignment_correct(token.type)), SYNTAX_ERR)
-
     int result = SYNTAX_ERR;
     int success = 0;
 
     bool fce_call = false;
     struct TToken* previous_tkn = malloc(sizeof(struct TToken));
 
-    if (is_term(token.type) || is_left_bracket(token.type)) {
+     /* used only with unused code */
+    if (previous_token == T_VAR) {
+        result = psa(scope, stack, ast, table, token_name);
+
+    }
+    else if (is_term(token.type) || is_left_bracket(token.type)) {
+        IF_RETURN(!(is_assignment_correct(token.type)), SYNTAX_ERR)
+
         if (token.type == T_VAR) {
             /* save previous token */
             previous_tkn->type = token.type;
