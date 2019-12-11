@@ -312,6 +312,19 @@ void generate_math_aritmetic(Nnode ast)
                     fprintf(stdout, "CONCAT LF@%s LF@%s LF@%s\n", new, c1->data->data, c2->data->data);
                     fprintf(stdout, "LABEL %s\n", end_add);
                 } else {
+                    fprintf(stdout, "DEFVAR TF@%s\n", var1_str);
+                    //fprintf(stdout, "DEFVAR TF@%s\n", var2_str);
+                    fprintf(stdout, "TYPE TF@%s LF@%s\n", var1_str, c1->data->data);
+                    //fprintf(stdout, "TYPE TF@%s LF@%s\n", var2_str, c2->data->data);
+                    fprintf(stdout, "JUMPIFEQ %s TF@%s string@string\n", var1_str, var1_str);
+                    fprintf(stdout, "JUMPIFEQ %s TF@%s string@bool\n", var1_str, var1_str);
+                    fprintf(stdout, "JUMP %s\n", end_add);
+                    fprintf(stdout, "LABEL %s\n", var1_str);
+                    fprintf(stdout, "EXIT int@4\n");
+
+
+
+                    fprintf(stdout, "LABEL %s\n", end_add);
                     aritmetic_operation(o);
                     fprintf(stdout, " LF@%s LF@%s LF@%s\n", new, c1->data->data, c2->data->data);
 
@@ -501,7 +514,7 @@ char* memory_model(Nnode ast)
 int generate_assign(Nnode ast)
 {
 
-    int in_glob = 0;
+    //int in_glob = 0;
     if (ast->data->inmain) {
 
 
@@ -613,6 +626,8 @@ void type_control() //type control of  == !=
     fprintf(stdout, "TYPE LF@cmp2 LF@%%2\n");
 
     fprintf(stdout, "JUMPIFEQ same_type LF@cmp1 LF@cmp2\n");
+    fprintf(stdout, "JUMPIFEQ same_type LF@cmp1 nil@nil\n");
+    fprintf(stdout, "JUMPIFEQ same_type LF@cmp2 nil@nil\n");
     fprintf(stdout, "MOVE LF@%%RETVAL bool@false\n");
     fprintf(stdout, "JUMP contr_end\n");
     fprintf(stdout, "LABEL same_type\n");
@@ -640,6 +655,10 @@ void type_control_exit() //typová kontrola =<>=
     fprintf(stdout, "JUMPIFEQ same_type_exit LF@cmp1 LF@cmp2\n");
     fprintf(stdout, "JUMPIFEQ wrong_type LF@cmp1 string@string\n");
     fprintf(stdout, "JUMPIFEQ wrong_type LF@cmp2 string@string\n");
+    fprintf(stdout, "JUMPIFEQ wrong_type LF@cmp1 nil@nil\n");
+    fprintf(stdout, "JUMPIFEQ wrong_type LF@cmp2 nil@nil\n");
+    fprintf(stdout, "JUMPIFEQ wrong_type LF@cmp1 string@bool\n");
+    fprintf(stdout, "JUMPIFEQ wrong_type LF@cmp2 string@bool\n");
     fprintf(stdout, "JUMPIFEQ convert_first LF@cmp1 string@int\n");
     fprintf(stdout, "MOVE LF@convert LF@%%2\n");
     fprintf(stdout, "INT2FLOAT LF@%%2 LF@convert\n");
@@ -782,19 +801,14 @@ int generate_aritmetic(Nnode ast)
             ast->data->inmain = false;
             generate_type_control_exit(ast);
             ast->data->inmain = before;
+            char *type = generate_unique_identifier();
+            char *end = generate_unique_label();
+            fprintf(stdout, "DEFVAR LF@%s\n", type);
+            fprintf(stdout, "TYPE LF@%s LF@%s\n", type, ast->children[0]->data->data);
+            fprintf(stdout, "JUMPIFNEQ %s LF@%s string@string\n", end, type);
+            fprintf(stdout, "EXIT int@4\n");
+            fprintf(stdout, "LABEL %s\n",end );
             aritmetic_operation(ast->children[2]);
-
-            // if (ast->data->inmain){
-            //     fprintf(stdout, " GF@%s GF@%s GF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
-            //     fprintf(stdout, "AND GF@%s TF@%%RETVAL GF@%s\n", new, new);
-            //     if (ast->data->ntype == LOQ){
-            //         fprintf(stdout, "EQ TF@%%RETVAL GF@%s GF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
-            //         fprintf(stdout, "OR GF@%s TF@%%RETVAL GF@%s\n", new, new);
-            //     } else if (ast->data->ntype == GEQ) {
-            //         fprintf(stdout, "EQ TF@%%RETVAL GF@%s GF@%s\n", ast->children[0]->data->data, ast->children[1]->data->data);
-            //         fprintf(stdout, "OR GF@%s TF@%%RETVAL GF@%s\n", new, new);
-            //     }
-            // } else {
             fprintf(stdout, " LF@%s LF@%s LF@%s\n", new, ast->children[0]->data->data, ast->children[1]->data->data);
             fprintf(stdout, "AND LF@%s TF@%%RETVAL LF@%s\n", new, new);
             if (ast->children[2]->data->ntype == LOQ){
@@ -1002,10 +1016,14 @@ void generate_return(Nnode ast)
 {
     fprintf(stdout,"POPFRAME\n");
     if(ast->children[0] != NULL) {
-        if(ast->children[0]->data->data != NULL){
-            fprintf(stdout, "MOVE TF@%%RETVAL TF@%s\n", ast->children[0]->data->data);
+        if (ast->children[0]->data->ntype == VAL) {
+            fprintf(stdout, "MOVE TF@%%RETVAL %s\n", ast->children[0]->data->data);
         } else {
-            fprintf(stdout, "MOVE TF@%%RETVAL nil@nil\n");
+            if(ast->children[0]->data->data != NULL){
+                fprintf(stdout, "MOVE TF@%%RETVAL TF@%s\n", ast->children[0]->data->data);
+            } else {
+                fprintf(stdout, "MOVE TF@%%RETVAL nil@nil\n");
+            }
         }
 
     } else
@@ -1076,7 +1094,7 @@ void indetify_call_function(Nnode ast)
         case 3:
             //fprintf(stdout, "PUSHFRAME\n");
             generate_write_func(ast);
-            fprintf(stdout, "POPFRAME\n");
+            //fprintf(stdout, "POPFRAME\n");
             return;
             break;
         case 4:
@@ -1410,6 +1428,7 @@ void generate_write_func(Nnode ast) {
         }
         fprintf(stdout, "PUSHFRAME\n");
         fprintf(stdout,"WRITE LF@%s\n",tmp);
+        fprintf(stdout, "POPFRAME\n");
     }
 }
 
@@ -1480,7 +1499,7 @@ void identify_header(Nnode ast, HTable *table)
 
 int generate(Nnode ast, HTable *table)
 {
-    FrameVars new;
+    //FrameVars new;
     if(ast) {
         if (ast->data->ntype == PROG) {
             fflush(stdout);
