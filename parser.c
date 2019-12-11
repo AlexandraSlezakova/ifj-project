@@ -472,13 +472,13 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
         success = get_token();
         IF_VALUE_RETURN(success)
 
-        /* local scope ends with return */
-        IF_RETURN(indent_stack->top->indent_counter <= indent_counter, SYNTAX_ERR)
-
         while (is_eol(token.type)) {
             success = get_token();
             IF_VALUE_RETURN(success)
         }
+
+        /* local scope ends with return */
+        IF_RETURN(indent_stack->top->indent_counter <= indent_counter, SYNTAX_ERR)
 
         /* indent counter should be smaller here */
         while (indent_stack->top->indent_counter != indent_counter) {
