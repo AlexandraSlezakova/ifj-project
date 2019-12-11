@@ -180,20 +180,8 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
             /* statement list - body of function */
             result = statement_list(1, SCOPE, function_table, function_body, indent_stack, functions_list);
 
-        } /* variable */
-        else if (token.type == T_VAR) {
-            result = statement(0, GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
-
-        } /* if statement */
-        else if (token.type == T_IF) {
-            result = statement(0, GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
-
-        } /* while */
-        else if (token.type == T_WHILE) {
-            result = statement(0, GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
-
-        } /* pass */
-        else if (token.type == T_PASS) {
+        } /* variable | if statement | while | pass */
+        else if (token.type == T_VAR || token.type == T_IF || token.type == T_WHILE || token.type == T_PASS) {
             result = statement(0, GLOBAL_SCOPE, global_hashtable, ast, indent_stack, functions_list);
 
         }
@@ -201,7 +189,7 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
             result = SYNTAX_OK;
 
             if (!is_eol(token.type)) {
-                if (token.type == T_ELSE) {
+                if (token.type == T_ELSE || token.type == T_RETURN) {
                     result = SYNTAX_ERR;
                 } else {
                     if (is_term(token.type) || is_left_bracket(token.type)) {
@@ -500,10 +488,13 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
                       && (indent_stack->top->indent_counter == 0), SYNTAX_ERR)
         }
 
-        unget_token();
-        for (int i = 0; i < indent_counter; i++) {
-            ungetc(32, stdin);
+        if (token.type != T_ELSE) {
+            unget_token();
+            for (int i = 0; i < indent_counter; i++) {
+                ungetc(32, stdin);
+            }
         }
+
 
     } /* pass */
     else if (token.type == T_PASS) {
@@ -836,7 +827,7 @@ int psa(int scope, STACK* stack, Nnode node, HTable* table, char* token_name)
         /* EOL is PSA_END but colon has to be in IF or WHILE */
         IF_RETURN(node && (node->data->ntype == COND || node->data->ntype == WHILE) && token.type == T_IS_EOL, SYNTAX_ERR)
 
-        IF_RETURN(!(input <= PSA_END), SYNTAX_ERR)
+        IF_RETURN(!(input <= PSA_END), LEX_ERR)
 
         switch (psa_table[top->psa_symbol][input]) {
             case '=':
