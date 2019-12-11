@@ -315,40 +315,45 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
 
         }
         else {
-            Nnode equals = ast_add_node((&ast), ASSIGN, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
-            IF_RETURN(!equals, ERR_INTERNAL)
-
             char* name = previous_tkn->value.is_char;
-
-            /* variable definition if it does not exist */
-            found = ht_search(table, name);
-            /* variable cannot have same name as function */
-            IF_RETURN(found && found->type != IDENTIFIER, SEM_ERR_UNDEF_VAR)
-            if (!found && !is_global_scope(scope)) {
-                found = ht_search(global_hashtable, name);
-                IF_RETURN(found && found->type != IDENTIFIER, SEM_ERR_UNDEF_VAR)
-            }
-
-            Nnode l_value = found
-                            ? ast_add_node((&equals), VAR, name, is_global_scope(scope), indent_stack->top->indent_counter)
-                            : ast_add_node((&equals), VAR_DEF, name, is_global_scope(scope), indent_stack->top->indent_counter);
-            IF_RETURN(!l_value, ERR_INTERNAL)
-
+            /* correct assignment */
             if (token.type == T_ASSIGNMENT) {
+                Nnode equals = ast_add_node((&ast), ASSIGN, NULL, is_global_scope(scope), indent_stack->top->indent_counter);
+                IF_RETURN(!equals, ERR_INTERNAL)
+
+                /* variable definition if it does not exist */
+                found = ht_search(table, name);
+                /* variable cannot have same name as function */
+                IF_RETURN(found && found->type != IDENTIFIER, SEM_ERR_UNDEF_VAR)
+                if (!found && !is_global_scope(scope)) {
+                    found = ht_search(global_hashtable, name);
+                    IF_RETURN(found && found->type != IDENTIFIER, SEM_ERR_UNDEF_VAR)
+                }
+
+                Nnode l_value = found
+                                ? ast_add_node((&equals), VAR, name, is_global_scope(scope), indent_stack->top->indent_counter)
+                                : ast_add_node((&equals), VAR_DEF, name, is_global_scope(scope), indent_stack->top->indent_counter);
+                IF_RETURN(!l_value, ERR_INTERNAL)
+
                 /* start of expression */
                 success = get_token();
                 IF_VALUE_RETURN(success)
-
                 result = expression(scope, stack, table, equals, name, indent_stack, previous_token);
 
                 found = ht_search(table, name);
                 if (found == NULL)
                     insert_variable(table, name, TYPE_UNKNOWN);
-            }
-            else {
-                IF_RETURN(!is_eol(token.type), SYNTAX_ERR)
-                /* undefined variable */
+
+            } /* undefined variable */
+            else if (is_eol(token.type)) {
                 result = insert_variable(table, name, UNDEFINED);
+
+            } /* unused code */
+            else if (is_operator(token.type)) {
+                found = ht_search(table, name);
+                IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
+
+                result = expression(scope, stack, table, NULL, NULL, indent_stack, previous_token);
             }
         }
 
