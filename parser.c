@@ -109,6 +109,8 @@ int recursive_descent(Nnode ast, STACK* indent_stack, tDLList* functions_list)
         success = get_token();
         IF_VALUE_RETURN(success)
 
+        IF_RETURN(indent_counter > 0, SYNTAX_ERR)
+
         HTable* function_table = NULL;
 
         /* end of file */
@@ -527,7 +529,10 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
             while (indent_stack->top->indent_counter != indent_counter) {
                 stack_pop(indent_stack);
                 /* wrong indent */
-                IF_RETURN((indent_stack->top->indent_counter != indent_counter)
+                IF_RETURN((indent_stack->top->indent_counter < indent_counter)
+                          && (indent_stack->top->indent_counter == 0), LEX_ERR)
+
+                IF_RETURN((indent_stack->top->indent_counter > indent_counter)
                           && (indent_stack->top->indent_counter == 0), SYNTAX_ERR)
             }
 
