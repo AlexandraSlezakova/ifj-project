@@ -354,6 +354,10 @@ int statement(int in_def, int scope, HTable* table, Nnode ast, STACK* indent_sta
                 IF_RETURN(!found, SEM_ERR_UNDEF_VAR)
 
                 result = expression(scope, stack, table, NULL, NULL, indent_stack, previous_token);
+
+            }  /* strange character */
+            else if (token.type == T_STRANGE_CHAR) {
+                return LEX_ERR;
             }
         }
 
