@@ -486,9 +486,16 @@ int get_token()
                     sscanf(a,"%x",&b);
                     sprintf(pole, "%d", b);
 
-                    buffer[iterator-3] = pole[0];
-                    buffer[iterator-2] = pole[1];
-                    buffer[iterator-1] = pole[2];
+                    if (pole[2] == '\0') {
+                        buffer[iterator-3] = '0';
+                        buffer[iterator-2] = pole[0];
+                        buffer[iterator-1] = pole[1];
+                    } else {
+                        buffer[iterator-3] = pole[0];
+                        buffer[iterator-2] = pole[1];
+                        buffer[iterator-1] = pole[2];
+                    }
+
                     state = S_STRING_CONTENT;
 
                     break;
