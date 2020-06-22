@@ -1,4 +1,0 @@
-None se nerovna zadnemu cislu.
-Ani desetinnemu, ale je kompatibilni se vsemi typy na porovnani.
-Prazdny retezec neni None.
-Bool je pripadne implicitne konvertovan na cislo 1 nebo 1.0.

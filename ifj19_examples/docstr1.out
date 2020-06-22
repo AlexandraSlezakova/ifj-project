@@ -1,3 +1,0 @@
-a = inputi()
-if a < 0.0:  # pred porovnanim probehne implicitni konverze int na float
-  print('Fakto
